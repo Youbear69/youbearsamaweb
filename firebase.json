@@ -53,11 +53,11 @@
       },
       {
         "source": "/",
-        "destination": "/landing.html"
+        "destination": "/12vtubergame.html"
       },
       {
         "source": "**",
-        "destination": "/landing.html"
+        "destination": "/12vtubergame.html"
       }
     ]
   }
