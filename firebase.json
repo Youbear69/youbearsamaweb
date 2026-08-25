@@ -8,6 +8,14 @@
     ],
     "rewrites": [
       {
+        "source": "/12vtubergame",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/12vtubergame/",
+        "destination": "/index.html"
+      },
+      {
         "source": "/12vtubergame/register",
         "destination": "/register.html"
       },
@@ -42,6 +50,10 @@
       {
         "source": "/zodiac/**",
         "destination": "/zodiac.html"
+      },
+      {
+        "source": "/",
+        "destination": "/landing.html"
       },
       {
         "source": "**",
