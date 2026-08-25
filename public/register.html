@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ลงทะเบียน - ศึก 12 วีทูบเบอร์</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Slot Logo -->
+    <div class="logo-container" style="margin-top: 1rem;">
+      <a href="/12vtubergame"><img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์ Logo" class="slot-logo"></a>
+    </div>
+
+    <!-- Description -->
+    <p class="page-subtitle">
+      รายละเอียดทั้งหมดที่ลงทะเบียน จะโชว์แค่บัญชี X หรือ Youtube ของคุณและราศีของคุณ<br>
+      <span class="sub-note" style="margin-top: 0.4rem;">ราศียึดตามปี 2569 นี้เท่านั้น</span>
+    </p>
+
+    <!-- Registration Form -->
+    <div class="form-container">
+      <form id="register-form">
+        <!-- X Account -->
+        <div class="form-group">
+          <label class="form-label" for="xAccount">
+            ชื่อบัญชี X
+          </label>
+          <span class="form-hint">(แนะนำเป็นลิงก์ และเป็น X เพื่อการติดต่อกลับ)</span>
+          <input type="text" id="xAccount" name="xAccount" class="form-input" placeholder="https://x.com/username หรือ @username" required>
+        </div>
+
+        <!-- Display Name -->
+        <div class="form-group">
+          <label class="form-label" for="displayName">
+            ชื่อสำหรับเรียกในไลฟ์
+          </label>
+          <span class="form-hint">(ต่อท้ายด้วยช่อง Youtube)</span>
+          <input type="text" id="displayName" name="displayName" class="form-input" placeholder="ชื่อที่ใช้เรียกในไลฟ์" required>
+        </div>
+
+        <!-- Zodiac Sign Interactive Card Selector -->
+        <div class="form-group">
+          <label class="form-label">
+            ราศีของคุณ
+            <span style="font-size: 0.95rem; font-weight: normal; color: #c4b5fd;">(เลือกได้ 1 ราศี)</span>
+          </label>
+          <input type="hidden" id="zodiacKey" name="zodiacKey" required>
+          <div id="zodiac-selector" class="zodiac-selector-grid">
+            <!-- Injected via JavaScript as interactive cards -->
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="text-align: center; margin-top: 1.4rem;">
+          <button type="button" id="btn-pre-submit" class="btn-submit">ลงทะเบียน</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Confirmation Popup Modal -->
+  <div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>รายละเอียดและยืนยันการร่วมไลฟ์</span>
+      </div>
+      
+      <div class="modal-desc" id="modal-live-info">
+        ไลฟ์จะมีขึ้นในวันนี้ และรายละเอียดตามที่กำหนด
+      </div>
+
+      <div class="modal-note">
+        <strong>ข้อมูลสำคัญ:</strong> ถ้ามีคนลงทะเบียนราศีของคุณเยอะ จะติดต่อกลับเพื่อถามความสะดวกในวันไลฟ์อีกรอบ
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-btn-cancel" class="btn-modal-cancel">ยกเลิก</button>
+        <button type="button" id="modal-btn-confirm" class="btn-modal-confirm">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/register.js"></script>
+</body>
+</html>

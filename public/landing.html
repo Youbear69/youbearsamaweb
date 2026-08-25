@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YuuBearSama — กำลังทำเว็บ</title>
+  <meta name="description" content="เว็บไซต์ของ YuuBearSama กำลังอยู่ในระหว่างการพัฒนา">
+  <style>
+    @font-face {
+      font-family: 'Layiji Mahaniyom V1.5';
+      src: url('/fonts/LayijiMahaniyomV105.ttf') format('truetype'),
+           url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype'),
+           local('Layiji Mahaniyom V1.5'),
+           local('Layiji Mahaniyom 1.5'),
+           local('LayijiMahaniyomV105');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Layiji Mahaniyom V1.5';
+      src: url('/fonts/LayijiMahaniyomV105.ttf') format('truetype'),
+           url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    html {
+      font-size: 19px;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Layiji Mahaniyom V1.5', 'LayijiMahaniyom', sans-serif !important;
+    }
+
+    body {
+      background: #1a1410;
+      color: #fff;
+      font-size: 1.15rem;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Warm dark background with soft orange glow */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 40%, rgba(255, 160, 60, 0.12) 0%, transparent 70%),
+        radial-gradient(circle at 20% 80%, rgba(200, 100, 30, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 180, 80, 0.06) 0%, transparent 50%),
+        linear-gradient(180deg, #1a1410 0%, #1e1812 40%, #15110d 100%);
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.5;
+    }
+
+    .bg-orb-1 {
+      width: 50vw;
+      height: 50vw;
+      top: -15%;
+      left: 20%;
+      background: radial-gradient(circle, rgba(255, 160, 60, 0.18) 0%, transparent 70%);
+      animation: orbFloat1 20s ease-in-out infinite alternate;
+    }
+
+    .bg-orb-2 {
+      width: 40vw;
+      height: 40vw;
+      bottom: -10%;
+      right: 10%;
+      background: radial-gradient(circle, rgba(200, 120, 40, 0.15) 0%, transparent 70%);
+      animation: orbFloat2 24s ease-in-out infinite alternate;
+    }
+
+    .bg-particles {
+      position: absolute;
+      inset: -40px;
+      background-image:
+        radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 190, 100, 0.5) 100%, transparent),
+        radial-gradient(1.2px 1.2px at 40% 60%, rgba(255, 220, 150, 0.35) 100%, transparent),
+        radial-gradient(1.8px 1.8px at 70% 20%, rgba(255, 170, 70, 0.45) 100%, transparent),
+        radial-gradient(1px 1px at 85% 75%, rgba(255, 200, 120, 0.3) 100%, transparent),
+        radial-gradient(1.4px 1.4px at 55% 85%, rgba(255, 190, 100, 0.4) 100%, transparent);
+      background-repeat: repeat;
+      background-size: 300px 300px;
+      animation: driftParticles 50s linear infinite;
+      opacity: 0.4;
+    }
+
+    @keyframes orbFloat1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(40px, 30px) scale(1.08); }
+    }
+    @keyframes orbFloat2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-30px, -25px) scale(1.06); }
+    }
+    @keyframes driftParticles {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-80px, -80px); }
+    }
+    @keyframes fadeUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 160, 60, 0.15); }
+      50% { box-shadow: 0 0 35px rgba(255, 160, 60, 0.3); }
+    }
+    @keyframes dotBlink {
+      0%, 20% { opacity: 0; }
+      40% { opacity: 1; }
+    }
+
+    /* Content */
+    .landing-wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 2rem;
+      padding: 2rem;
+      animation: fadeUp 0.8s ease-out both;
+    }
+
+    .landing-badge {
+      display: inline-block;
+      background: rgba(255, 160, 60, 0.1);
+      border: 1px solid rgba(255, 160, 60, 0.25);
+      color: #ffb84d;
+      padding: 0.5rem 1.6rem;
+      border-radius: 9999px;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .landing-title {
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .landing-title span {
+      background: linear-gradient(135deg, #ffb84d, #ff8c1a, #ffcc66);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .landing-status {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      color: #c9b89e;
+      font-weight: 400;
+    }
+
+    .landing-dots span {
+      animation: dotBlink 1.4s infinite;
+    }
+    .landing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .landing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    .landing-divider {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 160, 60, 0.5), transparent);
+      margin: 0 auto;
+    }
+
+    .landing-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      background: rgba(255, 140, 26, 0.12);
+      border: 1px solid rgba(255, 160, 60, 0.35);
+      color: #ffc266;
+      padding: 1rem 3rem;
+      border-radius: 9999px;
+      font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .landing-btn:hover {
+      background: rgba(255, 140, 26, 0.22);
+      border-color: rgba(255, 180, 77, 0.6);
+      transform: translateY(-3px);
+      color: #ffd699;
+    }
+
+    .landing-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .landing-footer {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+      color: rgba(200, 180, 150, 0.35);
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Warm Dark Background -->
+  <div class="bg-layer">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-particles"></div>
+  </div>
+
+  <!-- Landing Content -->
+  <div class="landing-wrap">
+    <div class="landing-badge">yuubearsama.online</div>
+
+    <h1 class="landing-title"><span>YuuBearSama</span></h1>
+
+    <p class="landing-status">
+      กำลังทำเว็บ<span class="landing-dots"><span>.</span><span>.</span><span>.</span></span>
+    </p>
+
+    <div class="landing-divider"></div>
+
+    <a href="/12vtubergame" class="landing-btn">
+      สมัคร "ศึก 12 วีทูบเบอร์"
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+
+  <div class="landing-footer">yuubearsama.online</div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Firebase Admin Key (CRITICAL SECURITY: DO NOT UPLOAD TO GITHUB)
+vtubergame-676dc-firebase-adminsdk-fbsvc-082a608eba.json
+*-firebase-adminsdk-*.json
+*.pem
+*.key
+
+# Node Dependencies
+node_modules/
+
+# Local Database & Temporary Scratch
+database/
+scratch/
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.env
+.idea/
+.vscode/

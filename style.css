@@ -1,0 +1,66 @@
+@font-face {
+  font-family: 'Layiji Mahaniyom V1.5';
+  src: url('/fonts/LayijiMahaniyomV105.ttf') format('truetype'),
+       url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype'),
+       local('Layiji Mahaniyom V1.5'),
+       local('Layiji Mahaniyom 1.5'),
+       local('LayijiMahaniyomV105');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root{
+  --bg:#0b0f12;
+  --panel:#0f1620;
+  --muted:#98a0a6;
+  --accent:#ffb86b; /* ส้มอ่อน */
+  --accent-strong:#ff9d3a;
+}
+html { font-size: 19px; }
+html,body{height:100%;margin:0;font-family:'Layiji Mahaniyom V1.5','LayijiMahaniyom',system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans","Helvetica Neue",Arial;}
+body{
+  background:linear-gradient(180deg,var(--bg) 0%, #071018 100%);
+  color: #e6eef2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.card{
+  width:100%;
+  max-width:760px;
+  background:linear-gradient(180deg, rgba(255,184,107,0.04), rgba(255,184,107,0.02));
+  border:1px solid rgba(255,184,107,0.06);
+  backdrop-filter: blur(6px);
+  padding:40px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 6px 30px rgba(2,6,10,0.6);
+}
+.title{font-size:2.4rem;margin:0 0 8px;color:#fff;}
+.domain{color:var(--muted);margin:0 0 20px;}
+.btn{
+  display:inline-block;
+  text-decoration:none;
+  padding:12px 20px;
+  border-radius:10px;
+  background:linear-gradient(180deg,var(--accent),var(--accent-strong));
+  color:#111;
+  font-weight:600;
+  box-shadow:0 6px 18px rgba(255,156,58,0.14);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.btn:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(255,156,58,0.18);}
+.btn.secondary{
+  background:transparent;
+  color:var(--muted);
+  border:1px solid rgba(255,184,107,0.06);
+  box-shadow:none;
+  margin-top:12px;
+}
+@media (max-width:520px){
+  .card{padding:28px}
+  .title{font-size:1.6rem}
+  .btn{width:100%}
+}

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการหลังบ้าน (Admin Panel) - ศึก 12 วีทูบเบอร์</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Top Nav -->
+  <nav class="site-nav">
+    <div class="nav-links">
+      <a href="/12vtubergame" class="nav-link">หน้าแรก</a>
+      <a href="/12vtubergame/register" class="nav-link">ลงทะเบียน</a>
+      <a href="/12vtubergame/allzodiac" class="nav-link">โควต้าราศี</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- ==========================================
+         Admin Login View (Unauthenticated)
+    ========================================== -->
+    <div id="admin-login-view" style="width: 100%; max-width: 480px; margin: 3rem auto;">
+      <div class="admin-card" style="text-align: center; padding: 2.8rem 2.2rem; border: 1.5px solid rgba(168, 85, 247, 0.4); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);">
+        <div style="width: 64px; height: 64px; margin: 0 auto 1rem auto; background: rgba(168, 85, 247, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(168, 85, 247, 0.4); color: #c084fc;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+
+        <h1 style="font-size: 1.7rem; font-weight: 700; color: #ffffff; margin-bottom: 0.4rem;">ลงชื่อเข้าใช้ระบบแอดมิน</h1>
+        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.8rem;">กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบจัดการหลังบ้าน</p>
+
+        <form id="admin-login-form" style="text-align: left;">
+          <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label class="form-label" for="login-email" style="font-size: 1.2rem;">อีเมล (Email)</label>
+            <input type="email" id="login-email" class="form-input" placeholder="admin@vtubergame.com" required style="font-size: 1.15rem;">
+          </div>
+          <div class="form-group" style="margin-bottom: 1.6rem;">
+            <label class="form-label" for="login-password" style="font-size: 1.2rem;">รหัสผ่าน (Password)</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required style="font-size: 1.15rem;">
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; font-size: 1.35rem; padding: 0.85rem 1rem;">
+            เข้าสู่ระบบ (Login)
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         Admin Dashboard View (Authenticated)
+    ========================================== -->
+    <div id="admin-dashboard-view" style="display: none; width: 100%;">
+      
+      <!-- Top Action Bar -->
+      <div class="admin-card" style="margin-bottom: 1.5rem; padding: 1.2rem 1.8rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.7rem; font-weight: 700; color: #ffffff; margin-bottom: 0.2rem;">ระบบจัดการหลังบ้าน (Admin Panel)</h1>
+            <p style="color: var(--text-muted); font-size: 1rem;">
+              เข้าสู่ระบบในชื่อ: <span id="admin-user-email" style="color: #6ee7b7; font-weight: 600;">admin@vtubergame.com</span>
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.8rem; align-items: center;">
+            <a id="btn-export-csv" href="/api/export-csv" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem;">ส่งออก CSV รวม</a>
+            <button id="btn-refresh" class="btn-primary" style="font-size: 1rem; padding: 0.55rem 1.4rem;">รีเฟรชข้อมูล</button>
+            <button id="btn-logout" class="btn-propose" style="font-size: 1rem; padding: 0.55rem 1.4rem; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; background: rgba(239, 68, 68, 0.15);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registration Section -->
+      <div class="admin-card">
+        <!-- Stats Summary -->
+        <div class="stat-pills">
+          <div class="stat-pill">
+            <span class="stat-pill-label">ยอดผู้ลงทะเบียนตรง</span>
+            <span class="stat-pill-value" id="stat-total">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-pill-label">ยอดเสนอวีทูบเบอร์</span>
+            <span class="stat-pill-value" id="stat-proposals" style="color: #fbbf24;">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-pill-label">อนุมัติโชว์หน้าแรกแล้ว</span>
+            <span class="stat-pill-value" id="stat-approved" style="color: #10b981;">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-pill-label">ราศีที่มีผู้สมัครสูงสุด</span>
+            <span class="stat-pill-value" id="stat-top" style="color: #c084fc;">-</span>
+          </div>
+        </div>
+
+        <!-- Search and Filter Toolbar for Registrations -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
+          <h2 style="font-size: 1.35rem; font-weight: 700; color: #ffffff;">รายชื่อผู้ลงทะเบียนตรง (Direct Registrations)</h2>
+        </div>
+        <div class="admin-toolbar">
+          <div class="admin-search-box">
+            <input type="text" id="admin-search" class="form-input" placeholder="ค้นหาชื่อ หรือบัญชี X...">
+          </div>
+          <div style="min-width: 220px;">
+            <select id="admin-filter-zodiac" class="form-select">
+              <option value="">ทุกราศี (ทั้งหมด)</option>
+              <!-- Injected by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Registrations Table -->
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ชื่อสำหรับเรียกในไลฟ์</th>
+                <th>บัญชี X</th>
+                <th>ราศี</th>
+                <th>วันที่ลงทะเบียน</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Proposed VTubers Section -->
+      <div class="admin-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
+          <div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #ffffff;">รายการเสนอวีทูบเบอร์ (Proposed VTubers)</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">ข้อมูลจากการเสนอผ่านปุ่ม "เสนอวีทูบเบอร์" ที่หน้าแรก (ต้องติ๊กอนุมัติก่อนถึงจะขึ้นโชว์)</p>
+          </div>
+        </div>
+
+        <div class="admin-toolbar">
+          <div class="admin-search-box">
+            <input type="text" id="proposal-search" class="form-input" placeholder="ค้นหาลิงก์ X หรือชื่อ...">
+          </div>
+          <div style="min-width: 220px;">
+            <select id="proposal-filter-status" class="form-select">
+              <option value="">ทุกสถานะ (ทั้งหมด)</option>
+              <option value="pending">เฉพาะที่รออนุมัติ (ยังไม่โชว์)</option>
+              <option value="approved">เฉพาะที่อนุมัติแล้ว (โชว์หน้าแรก)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Proposals Table -->
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ลิงก์ X วีทูบเบอร์</th>
+                <th>ราศีที่ระบุ</th>
+                <th>วันที่เสนอ</th>
+                <th>แสดงหน้าแรก (อนุมัติ)</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="proposals-table-body">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Event Settings Card -->
+      <div class="admin-card">
+        <h2 style="font-size: 1.45rem; font-weight: 700; color: #ffffff; margin-bottom: 1.2rem;">ตั้งค่ากำหนดการและข้อความแจ้งเตือน (หน้าแรก & Popup)</h2>
+        <form id="settings-form">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem;">
+            <!-- Close Date Section -->
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.1);">
+              <h3 style="font-size: 1.25rem; font-weight: 700; color: #ffb84d; margin-bottom: 0.8rem;">1. กำหนดการปิดรับสมัคร</h3>
+              <div class="form-group">
+                <label class="form-label" for="settingCloseDate">วันและเวลาปิดรับสมัคร (สำหรับนับถอยหลัง)</label>
+                <input type="datetime-local" id="settingCloseDate" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="settingCloseDisplay">ข้อความแสดงผลวันปิดรับสมัคร (บนป้ายหน้าแรก)</label>
+                <input type="text" id="settingCloseDisplay" class="form-input" placeholder="เช่น 1/10/2026 หรือ 1 ตุลาคม 2569">
+              </div>
+            </div>
+
+            <!-- Live Date Section -->
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.1);">
+              <h3 style="font-size: 1.25rem; font-weight: 700; color: #c084fc; margin-bottom: 0.8rem;">2. กำหนดการวันไลฟ์</h3>
+              <div class="form-group">
+                <label class="form-label" for="settingLiveDate">วันและเวลาไลฟ์ (สำหรับนับถอยหลัง)</label>
+                <input type="datetime-local" id="settingLiveDate" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="settingLiveDisplay">ข้อความแสดงผลวันไลฟ์ (บนป้ายหน้าแรก & Popup)</label>
+                <input type="text" id="settingLiveDisplay" class="form-input" placeholder="เช่น 14 พฤศจิกายน 2569 เวลา 21:00 น.">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 1.2rem;">
+            <label class="form-label" for="settingPopupMessage">ข้อความรายละเอียดเพิ่มเติมใน Popup ยืนยัน</label>
+            <textarea id="settingPopupMessage" class="form-input" rows="3" style="resize: vertical;"></textarea>
+          </div>
+
+          <div style="margin-top: 1.4rem;">
+            <button type="submit" class="btn-primary" style="padding: 0.85rem 3rem;">บันทึกการตั้งค่ากำหนดการ</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Change Admin Password Card -->
+      <div class="admin-card">
+        <h2 style="font-size: 1.45rem; font-weight: 700; color: #ffffff; margin-bottom: 1.2rem;">เปลี่ยนอีเมลและรหัสผ่านแอดมิน (Admin Security)</h2>
+        <form id="change-credentials-form" style="max-width: 600px;">
+          <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label class="form-label" for="change-curr-pass">รหัสผ่านปัจจุบัน (เพื่อยืนยัน)</label>
+            <input type="password" id="change-curr-pass" class="form-input" required placeholder="••••••••">
+          </div>
+          <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label class="form-label" for="change-new-email">อีเมลแอดมินใหม่ (เว้นว่างได้หากไม่เปลี่ยน)</label>
+            <input type="email" id="change-new-email" class="form-input" placeholder="admin@vtubergame.com">
+          </div>
+          <div class="form-group" style="margin-bottom: 1.4rem;">
+            <label class="form-label" for="change-new-pass">รหัสผ่านใหม่ (เว้นว่างได้หากไม่เปลี่ยน)</label>
+            <input type="password" id="change-new-pass" class="form-input" placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn-secondary" style="padding: 0.75rem 2.4rem; font-size: 1.2rem;">
+            เปลี่ยนรหัสผ่าน / อีเมล
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
