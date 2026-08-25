@@ -244,10 +244,9 @@ async function showZodiacDetail(signKey) {
   `).join('');
 
   try {
-    const res = await fetch(`/api/zodiac/${encodeURIComponent(signKey)}`);
-    const result = await res.json();
+    const result = await fbGetZodiacDetail(signKey);
 
-    if (!result.success || !result.zodiac) {
+    if (!result || !result.zodiac) {
       titleText.textContent = 'ไม่พบข้อมูลราศี';
       grid.innerHTML = `<div class="empty-state"><h3>ไม่พบข้อมูลราศี</h3></div>`;
       return;

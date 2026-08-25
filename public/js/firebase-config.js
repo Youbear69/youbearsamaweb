@@ -178,6 +178,8 @@ async function fbGetZodiacStats() {
     const count = regs.filter(r => r.zodiacKey === z.key).length;
     return {
       key: z.key,
+      th: z.th,
+      en: z.en,
       nameTh: z.th,
       nameEn: z.en,
       dateRange: z.dateRange,
@@ -191,6 +193,8 @@ async function fbGetZodiacStats() {
   if (settings.showUnknownZodiac || unknownCount > 0) {
     stats.push({
       key: 'unknown',
+      th: 'ไม่ทราบราศี',
+      en: 'Unknown',
       nameTh: 'ไม่ทราบราศี',
       nameEn: 'Unknown',
       dateRange: '',
