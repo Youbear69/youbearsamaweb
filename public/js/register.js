@@ -43,12 +43,11 @@ async function initRegisterPage() {
 
   // Fetch live date details from settings for the modal
   try {
-    const res = await fetch('/api/settings');
-    const data = await res.json();
-    if (data.success && data.data && modalLiveInfo) {
+    const settings = await fbGetSettings();
+    if (settings && modalLiveInfo) {
       modalLiveInfo.innerHTML = `
-        <strong>กำหนดการไลฟ์:</strong> ${data.data.liveDateDisplay || 'เร็วๆ นี้'}<br>
-        <p style="margin-top:0.4rem; color: #b8b3cf;">${data.data.popupMessage || ''}</p>
+        <strong>กำหนดการไลฟ์:</strong> ${settings.liveDateDisplay || 'เร็วๆ นี้'}<br>
+        <p style="margin-top:0.4rem; color: #b8b3cf;">${settings.popupMessage || ''}</p>
       `;
     }
   } catch (e) {
@@ -101,29 +100,17 @@ async function initRegisterPage() {
       btnModalConfirm.textContent = 'กำลังบันทึก...';
 
       try {
-        const response = await fetch('/api/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ xAccount, displayName, zodiacKey })
-        });
+        await fbAddRegistration({ xAccount, displayName, zodiacKey });
 
-        const result = await response.json();
-
-        if (result.success) {
-          if (confirmModal) confirmModal.classList.remove('show');
-          showToast('ลงทะเบียนสำเร็จ! กำลังกลับสู่หน้าแรก...', 'success');
-          setTimeout(() => {
-            if (typeof navigateTo === 'function') {
-              navigateTo('/12vtubergame');
-            } else {
-              window.location.href = '/12vtubergame';
-            }
-          }, 1500);
-        } else {
-          showToast(result.message || 'เกิดข้อผิดพลาดในการลงทะเบียน', 'error');
-          btnModalConfirm.disabled = false;
-          btnModalConfirm.textContent = 'ตกลง';
-        }
+        if (confirmModal) confirmModal.classList.remove('show');
+        showToast('ลงทะเบียนสำเร็จ! กำลังกลับสู่หน้าแรก...', 'success');
+        setTimeout(() => {
+          if (typeof navigateTo === 'function') {
+            navigateTo('/12vtubergame');
+          } else {
+            window.location.href = '/12vtubergame';
+          }
+        }, 1500);
       } catch (err) {
         console.error(err);
         showToast('ไม่สามารถเชื่อมต่อกับระบบหลังบ้านได้', 'error');

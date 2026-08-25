@@ -10,12 +10,11 @@ async function initAllZodiacPage() {
   `).join('');
 
   try {
-    const res = await fetch('/api/zodiac-stats');
-    const result = await res.json();
+    const data = await fbGetZodiacStats();
 
-    if (result.success && result.data) {
+    if (data) {
       grid.innerHTML = '';
-      result.data.forEach(item => {
+      data.forEach(item => {
         const card = document.createElement('a');
         card.href = `/12vtubergame/zodiac/${item.key}`;
         const isUnknown = item.isUnknown || item.key === 'unknown';
@@ -23,7 +22,7 @@ async function initAllZodiacPage() {
 
         const iconContent = isUnknown
           ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
-          : `<img src="/assets/images/white/${item.icon}" alt="${item.th} (${item.en})">`;
+          : `<img src="/assets/images/white/${item.icon}" alt="${item.nameTh || item.th} (${item.nameEn || item.en})">`;
 
         const iconBoxStyle = isUnknown ? `style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"` : '';
         const titleStyle = isUnknown ? `style="color: #fbbf24;"` : '';
@@ -35,7 +34,7 @@ async function initAllZodiacPage() {
             ${iconContent}
           </div>
           <div class="zodiac-info">
-            <div class="zodiac-name" ${titleStyle}>${item.th} (${item.en})</div>
+            <div class="zodiac-name" ${titleStyle}>${item.nameTh || item.th} (${item.nameEn || item.en})</div>
             <div class="zodiac-date" ${dateStyle}>${item.dateRange}</div>
             <div class="zodiac-count"><span ${countStyle}>${item.count}</span> คน</div>
           </div>

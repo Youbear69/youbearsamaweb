@@ -184,13 +184,9 @@ async function loadQuotaData() {
   `).join('');
 
   try {
-    const res = await fetch('/api/zodiac-stats');
-    const result = await res.json();
-
-    if (result.success && result.data) {
-      currentZodiacStats = result.data;
-      renderQuotaGrid(result.data);
-    }
+    const data = await fbGetZodiacStats();
+    currentZodiacStats = data;
+    renderQuotaGrid(data);
   } catch (err) {
     console.error('Failed to load zodiac quota:', err);
     showToast('เกิดข้อผิดพลาดในการโหลดโควต้าราศี', 'error');
@@ -386,29 +382,19 @@ function setupPopupRegister() {
       btnModalConfirm.textContent = 'กำลังบันทึก...';
 
       try {
-        const response = await fetch('/api/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ xAccount, displayName, zodiacKey })
-        });
+        await fbAddRegistration({ xAccount, displayName, zodiacKey });
 
-        const result = await response.json();
-
-        if (result.success) {
-          if (confirmModal) confirmModal.classList.remove('show');
-          closeRegisterModal();
-          // Reset form
-          document.getElementById('popup-register-form').reset();
-          document.getElementById('pop-zodiacKey').value = '';
-          const selector = document.getElementById('pop-zodiac-selector');
-          if (selector) selector.querySelectorAll('.zodiac-select-card').forEach(c => c.classList.remove('selected'));
-          
-          showToast('ลงทะเบียนสำเร็จเรียบร้อยแล้ว!', 'success');
-          // Reload quota counts in background
-          loadQuotaData();
-        } else {
-          showToast(result.message || 'เกิดข้อผิดพลาดในการลงทะเบียน', 'error');
-        }
+        if (confirmModal) confirmModal.classList.remove('show');
+        closeRegisterModal();
+        // Reset form
+        document.getElementById('popup-register-form').reset();
+        document.getElementById('pop-zodiacKey').value = '';
+        const selector = document.getElementById('pop-zodiac-selector');
+        if (selector) selector.querySelectorAll('.zodiac-select-card').forEach(c => c.classList.remove('selected'));
+        
+        showToast('ลงทะเบียนสำเร็จเรียบร้อยแล้ว!', 'success');
+        // Reload quota counts in background
+        loadQuotaData();
       } catch (err) {
         console.error(err);
         showToast('ไม่สามารถเชื่อมต่อกับระบบหลังบ้านได้', 'error');
@@ -464,25 +450,15 @@ function setupPopupPropose() {
     btnProposeSubmit.textContent = 'กำลังส่งข้อมูล...';
 
     try {
-      const response = await fetch('/api/propose', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ xAccount, zodiacKey })
-      });
+      await fbAddProposal({ xAccount, zodiacKey });
 
-      const result = await response.json();
+      closeProposeModal();
+      if (xAccountInput) xAccountInput.value = '';
+      if (hiddenZodiac) hiddenZodiac.value = '';
+      const selector = document.getElementById('propose-zodiac-selector');
+      if (selector) selector.querySelectorAll('.zodiac-select-card').forEach(c => c.classList.remove('selected'));
 
-      if (result.success) {
-        closeProposeModal();
-        if (xAccountInput) xAccountInput.value = '';
-        if (hiddenZodiac) hiddenZodiac.value = '';
-        const selector = document.getElementById('propose-zodiac-selector');
-        if (selector) selector.querySelectorAll('.zodiac-select-card').forEach(c => c.classList.remove('selected'));
-
-        showToast('เสนอชื่อวีทูบเบอร์สำเร็จเรียบร้อยแล้ว! ขอบคุณสำหรับข้อมูล', 'success');
-      } else {
-        showToast(result.message || 'เกิดข้อผิดพลาดในการเสนอวีทูบเบอร์', 'error');
-      }
+      showToast('เสนอชื่อวีทูบเบอร์สำเร็จเรียบร้อยแล้ว! ขอบคุณสำหรับข้อมูล', 'success');
     } catch (err) {
       console.error(err);
       showToast('ไม่สามารถเชื่อมต่อกับระบบหลังบ้านได้', 'error');
@@ -508,10 +484,8 @@ async function setupTimeBadges() {
   const quotaModalCountdown = document.getElementById('quota-modal-live-countdown');
 
   try {
-    const res = await fetch('/api/settings');
-    const data = await res.json();
-    if (data.success && data.data) {
-      appSettings = data.data;
+    appSettings = await fbGetSettings();
+    if (appSettings) {
 
       const closeDate = new Date(appSettings.closeDate || "2026-10-01T23:59:59.000Z");
       const liveDate = new Date(appSettings.liveDate || "2026-11-14T14:00:00.000Z");

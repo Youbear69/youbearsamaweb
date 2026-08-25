@@ -52,11 +52,7 @@ async function initLiveCountdown() {
   const closeLabelEl = document.getElementById('close-date-label');
 
   try {
-    const res = await fetch('/api/settings');
-    const data = await res.json();
-    if (!data.success || !data.data) return;
-
-    const s = data.data;
+    const s = await fbGetSettings();
 
     // Update labels if provided
     if (liveLabelEl && s.liveDateDisplay) {

@@ -30,30 +30,6 @@ async function initAdminPage() {
   let allRegistrations = [];
   let allProposals = [];
 
-  // Token management
-  function getToken() {
-    return sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token') || '';
-  }
-
-  function setToken(token) {
-    sessionStorage.setItem('admin_token', token);
-    localStorage.setItem('admin_token', token);
-  }
-
-  function clearToken() {
-    sessionStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_token');
-  }
-
-  function getAuthHeaders(extraHeaders = {}) {
-    const token = getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...extraHeaders
-    };
-  }
-
   // Populate Zodiac filter dropdown
   if (filterZodiac) {
     filterZodiac.innerHTML = '<option value="">ทุกราศี (ทั้งหมด)</option>';
@@ -65,39 +41,6 @@ async function initAdminPage() {
     });
   }
 
-  // Verify Session Token
-  async function checkAuth() {
-    const token = getToken();
-    if (!token) {
-      showLoginView();
-      return false;
-    }
-
-    try {
-      const res = await fetch('/api/admin/verify', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await res.json();
-      if (result.success) {
-        if (userEmailBadge && result.admin) {
-          userEmailBadge.textContent = result.admin.email;
-        }
-        showDashboardView();
-        loadAdminData();
-        return true;
-      } else {
-        clearToken();
-        showLoginView();
-        return false;
-      }
-    } catch (err) {
-      console.error(err);
-      clearToken();
-      showLoginView();
-      return false;
-    }
-  }
-
   function showLoginView() {
     if (loginView) loginView.style.display = 'block';
     if (dashboardView) dashboardView.style.display = 'none';
@@ -106,12 +49,22 @@ async function initAdminPage() {
   function showDashboardView() {
     if (loginView) loginView.style.display = 'none';
     if (dashboardView) dashboardView.style.display = 'block';
-    if (btnExportCsv) {
-      btnExportCsv.href = `/api/export-csv?token=${encodeURIComponent(getToken())}`;
-    }
   }
 
-  // Login Form Submission
+  // Firebase Auth State Listener
+  fbAuth.onAuthStateChanged((user) => {
+    if (user) {
+      if (userEmailBadge) {
+        userEmailBadge.textContent = user.email || 'Admin';
+      }
+      showDashboardView();
+      loadAdminData();
+    } else {
+      showLoginView();
+    }
+  });
+
+  // Login Form Submission with Firebase Auth
   if (loginForm) {
     loginForm.onsubmit = async (e) => {
       e.preventDefault();
@@ -124,27 +77,19 @@ async function initAdminPage() {
       }
 
       try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const result = await res.json();
-
-        if (result.success && result.token) {
-          setToken(result.token);
-          if (userEmailBadge && result.admin) {
-            userEmailBadge.textContent = result.admin.email;
-          }
-          showToast('เข้าสู่ระบบสำเร็จ', 'success');
-          showDashboardView();
-          loadAdminData();
-        } else {
-          showToast(result.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'error');
-        }
+        await fbAuth.signInWithEmailAndPassword(email, password);
+        showToast('เข้าสู่ระบบสำเร็จ', 'success');
       } catch (err) {
-        console.error(err);
-        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+        console.error('Login error:', err);
+        let errMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        if (err.code === 'auth/user-not-found') {
+          errMsg = 'ไม่พบบัญชีอีเมลนี้ในระบบ Firebase Auth';
+        } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          errMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        } else if (err.code === 'auth/too-many-requests') {
+          errMsg = 'มีการพยายามเข้าสู่ระบบมากเกินไป กรุณารอสักครู่';
+        }
+        showToast(errMsg, 'error');
       }
     };
   }
@@ -152,17 +97,12 @@ async function initAdminPage() {
   // Logout Handler
   if (btnLogout) {
     btnLogout.onclick = async () => {
-      const token = getToken();
       try {
-        await fetch('/api/admin/logout', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-      } catch (e) {}
-
-      clearToken();
-      showToast('ออกจากระบบเรียบร้อยแล้ว');
-      showLoginView();
+        await fbAuth.signOut();
+        showToast('ออกจากระบบเรียบร้อยแล้ว');
+      } catch (e) {
+        console.error(e);
+      }
     };
   }
 
@@ -174,101 +114,97 @@ async function initAdminPage() {
       const newEmail = document.getElementById('change-new-email').value.trim();
       const newPassword = document.getElementById('change-new-pass').value.trim();
 
-      try {
-        const res = await fetch('/api/admin/change-credentials', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ currentPassword, newEmail, newPassword })
-        });
-        const result = await res.json();
+      const user = fbAuth.currentUser;
+      if (!user) {
+        showToast('กรุณาเข้าสู่ระบบก่อน', 'error');
+        return;
+      }
 
-        if (result.success) {
-          showToast(result.message, 'success');
-          if (userEmailBadge && result.admin) {
-            userEmailBadge.textContent = result.admin.email;
-          }
-          changeCredsForm.reset();
-        } else {
-          showToast(result.message || 'ไม่สามารถเปลี่ยนข้อมูลได้', 'error');
+      try {
+        // Re-authenticate
+        const cred = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+        await user.reauthenticateWithCredential(cred);
+
+        if (newEmail && newEmail !== user.email) {
+          await user.updateEmail(newEmail);
         }
+        if (newPassword) {
+          await user.updatePassword(newPassword);
+        }
+
+        showToast('เปลี่ยนข้อมูลการเข้าสู่ระบบสำเร็จ', 'success');
+        if (userEmailBadge && newEmail) {
+          userEmailBadge.textContent = newEmail;
+        }
+        changeCredsForm.reset();
       } catch (err) {
         console.error(err);
-        showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+        showToast('เกิดข้อผิดพลาด: ' + (err.message || 'รหัสผ่านปัจจุบันไม่ถูกต้อง'), 'error');
       }
+    };
+  }
+
+  // Export CSV
+  if (btnExportCsv) {
+    btnExportCsv.onclick = (e) => {
+      e.preventDefault();
+      fbExportCSV(allRegistrations, allProposals);
     };
   }
 
   // Load Data
   async function loadAdminData() {
     try {
-      const headers = getAuthHeaders();
-      const [regRes, propRes, statsRes, settingsRes] = await Promise.all([
-        fetch('/api/registrations', { headers }),
-        fetch('/api/proposals', { headers }),
-        fetch('/api/zodiac-stats'),
-        fetch('/api/settings')
+      const [regs, props, stats, settings] = await Promise.all([
+        fbGetRegistrations(),
+        fbGetProposals(),
+        fbGetZodiacStats(),
+        fbGetSettings()
       ]);
 
-      if (regRes.status === 401 || propRes.status === 401) {
-        clearToken();
-        showLoginView();
-        showToast('เซสชันหมดอายุ กรุณาลงชื่อเข้าใช้อีกครั้ง', 'error');
-        return;
-      }
+      allRegistrations = regs || [];
+      if (statTotal) statTotal.textContent = allRegistrations.length;
+      renderRegistrationTable();
 
-      const regData = await regRes.json();
-      const propData = await propRes.json();
-      const statsData = await statsRes.json();
-      const settingsData = await settingsRes.json();
+      allProposals = props || [];
+      if (statProposals) statProposals.textContent = allProposals.length;
+      const approvedCount = allProposals.filter(p => p.approved).length;
+      if (statApproved) statApproved.textContent = approvedCount;
+      renderProposalsTable();
 
-      if (regData.success) {
-        allRegistrations = regData.data || [];
-        if (statTotal) statTotal.textContent = allRegistrations.length;
-        renderRegistrationTable();
-      }
-
-      if (propData.success) {
-        allProposals = propData.data || [];
-        if (statProposals) statProposals.textContent = allProposals.length;
-        const approvedCount = allProposals.filter(p => p.approved).length;
-        if (statApproved) statApproved.textContent = approvedCount;
-        renderProposalsTable();
-      }
-
-      if (statsData.success && statsData.data && statTop) {
+      if (stats && statTop) {
         let maxCount = 0;
         let topSign = '-';
-        statsData.data.forEach(s => {
+        stats.forEach(s => {
           if (s.count > maxCount) {
             maxCount = s.count;
-            topSign = `${s.th} (${s.count} คน)`;
+            topSign = `${s.nameTh || s.th} (${s.count} คน)`;
           }
         });
         statTop.textContent = maxCount > 0 ? topSign : 'ยังไม่มี';
       }
 
-      if (settingsData.success && settingsData.data) {
-        const s = settingsData.data;
+      if (settings) {
         const pad = (n) => String(n).padStart(2, '0');
 
-        if (s.liveDate && settingLiveDate) {
-          const d = new Date(s.liveDate);
+        if (settings.liveDate && settingLiveDate) {
+          const d = new Date(settings.liveDate);
           const localIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
           settingLiveDate.value = localIso;
         }
-        if (settingLiveDisplay) settingLiveDisplay.value = s.liveDateDisplay || '';
+        if (settingLiveDisplay) settingLiveDisplay.value = settings.liveDateDisplay || '';
 
         const settingCloseDate = document.getElementById('settingCloseDate');
         const settingCloseDisplay = document.getElementById('settingCloseDisplay');
 
-        if (s.closeDate && settingCloseDate) {
-          const d = new Date(s.closeDate);
+        if (settings.closeDate && settingCloseDate) {
+          const d = new Date(settings.closeDate);
           const localIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
           settingCloseDate.value = localIso;
         }
-        if (settingCloseDisplay) settingCloseDisplay.value = s.closeDateDisplay || '';
+        if (settingCloseDisplay) settingCloseDisplay.value = settings.closeDateDisplay || '';
 
-        if (settingPopupMessage) settingPopupMessage.value = s.popupMessage || '';
+        if (settingPopupMessage) settingPopupMessage.value = settings.popupMessage || '';
       }
     } catch (err) {
       console.error(err);
@@ -346,22 +282,12 @@ async function initAdminPage() {
         const id = select.getAttribute('data-id');
         const newZodiacKey = select.value;
         try {
-          const res = await fetch(`/api/registrations/${id}/zodiac`, {
-            method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ zodiacKey: newZodiacKey })
-          });
-          const result = await res.json();
-          if (result.success) {
-            showToast(result.message, 'success');
-            loadAdminData();
-          } else {
-            showToast(result.message || 'ไม่สามารถเปลี่ยนราศีได้', 'error');
-            loadAdminData();
-          }
+          await fbUpdateRegistrationZodiac(id, newZodiacKey);
+          showToast('เปลี่ยนราศีเรียบร้อยแล้ว', 'success');
+          loadAdminData();
         } catch (err) {
           console.error(err);
-          showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+          showToast('เกิดข้อผิดพลาดในการเปลี่ยนราศี', 'error');
         }
       };
     });
@@ -373,20 +299,12 @@ async function initAdminPage() {
         const name = btn.getAttribute('data-name');
         if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ "${name}" ?`)) {
           try {
-            const res = await fetch(`/api/registrations/${id}`, {
-              method: 'DELETE',
-              headers: getAuthHeaders()
-            });
-            const result = await res.json();
-            if (result.success) {
-              showToast('ลบรายการสำเร็จ', 'success');
-              loadAdminData();
-            } else {
-              showToast(result.message || 'ไม่สามารถลบรายการได้', 'error');
-            }
+            await fbDeleteRegistration(id);
+            showToast('ลบรายการสำเร็จ', 'success');
+            loadAdminData();
           } catch (err) {
             console.error(err);
-            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            showToast('เกิดข้อผิดพลาดในการลบรายการ', 'error');
           }
         }
       };
@@ -430,7 +348,7 @@ async function initAdminPage() {
         xLink = 'https://x.com/' + xLink.replace(/^@/, '');
       }
 
-      const dateStr = new Date(p.createdAt || Date.now()).toLocaleString('th-TH', {
+      const dateStr = new Date(p.proposedAt || p.createdAt || Date.now()).toLocaleString('th-TH', {
         dateStyle: 'medium',
         timeStyle: 'short'
       });
@@ -478,22 +396,12 @@ async function initAdminPage() {
         const id = select.getAttribute('data-id');
         const newZodiacKey = select.value;
         try {
-          const res = await fetch(`/api/proposals/${id}/zodiac`, {
-            method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ zodiacKey: newZodiacKey })
-          });
-          const result = await res.json();
-          if (result.success) {
-            showToast(result.message, 'success');
-            loadAdminData();
-          } else {
-            showToast(result.message || 'ไม่สามารถเปลี่ยนราศีได้', 'error');
-            loadAdminData();
-          }
+          await fbUpdateProposalZodiac(id, newZodiacKey);
+          showToast('เปลี่ยนราศีเรียบร้อยแล้ว', 'success');
+          loadAdminData();
         } catch (err) {
           console.error(err);
-          showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+          showToast('เกิดข้อผิดพลาดในการเปลี่ยนราศี', 'error');
         }
       };
     });
@@ -502,29 +410,18 @@ async function initAdminPage() {
     proposalsTableBody.querySelectorAll('.prop-approve-checkbox').forEach(chk => {
       chk.onchange = async () => {
         const id = chk.getAttribute('data-id');
-        const isChecked = chk.checked;
         try {
-          const res = await fetch(`/api/proposals/${id}/toggle-approve`, {
-            method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ approved: isChecked })
-          });
-          const result = await res.json();
-          if (result.success) {
-            showToast(result.message, 'success');
-            const prop = allProposals.find(p => p.id === id);
-            if (prop) prop.approved = isChecked;
-            const approvedCount = allProposals.filter(p => p.approved).length;
-            if (statApproved) statApproved.textContent = approvedCount;
-            renderProposalsTable();
-          } else {
-            showToast(result.message || 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
-            chk.checked = !isChecked;
-          }
+          const updated = await fbToggleProposalApproval(id);
+          showToast(updated.approved ? 'อนุมัติการเสนอชื่อแล้ว' : 'ยกเลิกการอนุมัติแล้ว', 'success');
+          const prop = allProposals.find(p => p.id === id);
+          if (prop) prop.approved = updated.approved;
+          const approvedCount = allProposals.filter(p => p.approved).length;
+          if (statApproved) statApproved.textContent = approvedCount;
+          renderProposalsTable();
         } catch (err) {
           console.error(err);
-          showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-          chk.checked = !isChecked;
+          showToast('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ', 'error');
+          chk.checked = !chk.checked;
         }
       };
     });
@@ -536,24 +433,16 @@ async function initAdminPage() {
         const account = btn.getAttribute('data-account');
         if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการเสนอของ "${account}" ?`)) {
           try {
-            const res = await fetch(`/api/proposals/${id}`, {
-              method: 'DELETE',
-              headers: getAuthHeaders()
-            });
-            const result = await res.json();
-            if (result.success) {
-              showToast('ลบรายการเสนอสำเร็จ', 'success');
-              allProposals = allProposals.filter(p => p.id !== id);
-              if (statProposals) statProposals.textContent = allProposals.length;
-              const approvedCount = allProposals.filter(p => p.approved).length;
-              if (statApproved) statApproved.textContent = approvedCount;
-              renderProposalsTable();
-            } else {
-              showToast(result.message || 'ไม่สามารถลบรายการได้', 'error');
-            }
+            await fbDeleteProposal(id);
+            showToast('ลบรายการเสนอสำเร็จ', 'success');
+            allProposals = allProposals.filter(p => p.id !== id);
+            if (statProposals) statProposals.textContent = allProposals.length;
+            const approvedCount = allProposals.filter(p => p.approved).length;
+            if (statApproved) statApproved.textContent = approvedCount;
+            renderProposalsTable();
           } catch (err) {
             console.error(err);
-            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            showToast('เกิดข้อผิดพลาดในการลบรายการ', 'error');
           }
         }
       };
@@ -590,26 +479,21 @@ async function initAdminPage() {
       const popupMessage = settingPopupMessage.value.trim();
 
       try {
-        const res = await fetch('/api/settings', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ liveDate, liveDateDisplay, closeDate, closeDateDisplay, popupMessage })
-        });
-        const result = await res.json();
-        if (result.success) {
-          showToast('บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success');
-        } else {
-          showToast('บันทึกการตั้งค่าไม่สำเร็จ', 'error');
-        }
+        const payload = {};
+        if (liveDate) payload.liveDate = liveDate;
+        if (liveDateDisplay) payload.liveDateDisplay = liveDateDisplay;
+        if (closeDate) payload.closeDate = closeDate;
+        if (closeDateDisplay) payload.closeDateDisplay = closeDateDisplay;
+        if (popupMessage !== undefined) payload.popupMessage = popupMessage;
+
+        await fbSaveSettings(payload);
+        showToast('บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success');
       } catch (err) {
         console.error(err);
         showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
       }
     };
   }
-
-  // Initial Auth Check
-  checkAuth();
 }
 
 if (document.readyState === 'loading') {
