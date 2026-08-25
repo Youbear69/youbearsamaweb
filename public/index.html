@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +10,19 @@
     @font-face {
       font-family: 'Layiji Mahaniyom V1.5';
       src: url('/fonts/LayijiMahaniyomV105.ttf') format('truetype'),
-           url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype'),
-           local('Layiji Mahaniyom V1.5'),
-           local('Layiji Mahaniyom 1.5'),
-           local('LayijiMahaniyomV105');
+        url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype'),
+        local('Layiji Mahaniyom V1.5'),
+        local('Layiji Mahaniyom 1.5'),
+        local('LayijiMahaniyomV105');
       font-weight: 400;
       font-style: normal;
       font-display: swap;
     }
+
     @font-face {
       font-family: 'Layiji Mahaniyom V1.5';
       src: url('/fonts/LayijiMahaniyomV105.ttf') format('truetype'),
-           url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype');
+        url('/fonts/LayijiMahaniyomV105ot.otf') format('opentype');
       font-weight: 700;
       font-style: normal;
       font-display: swap;
@@ -30,7 +32,9 @@
       font-size: 19px;
     }
 
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -103,28 +107,69 @@
     }
 
     @keyframes orbFloat1 {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(40px, 30px) scale(1.08); }
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(40px, 30px) scale(1.08);
+      }
     }
+
     @keyframes orbFloat2 {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(-30px, -25px) scale(1.06); }
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(-30px, -25px) scale(1.06);
+      }
     }
+
     @keyframes driftParticles {
-      0% { transform: translate(0, 0); }
-      100% { transform: translate(-80px, -80px); }
+      0% {
+        transform: translate(0, 0);
+      }
+
+      100% {
+        transform: translate(-80px, -80px);
+      }
     }
+
     @keyframes fadeUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
+      0% {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 20px rgba(255, 160, 60, 0.15); }
-      50% { box-shadow: 0 0 35px rgba(255, 160, 60, 0.3); }
+
+      0%,
+      100% {
+        box-shadow: 0 0 20px rgba(255, 160, 60, 0.15);
+      }
+
+      50% {
+        box-shadow: 0 0 35px rgba(255, 160, 60, 0.3);
+      }
     }
+
     @keyframes dotBlink {
-      0%, 20% { opacity: 0; }
-      40% { opacity: 1; }
+
+      0%,
+      20% {
+        opacity: 0;
+      }
+
+      40% {
+        opacity: 1;
+      }
     }
 
     /* Content */
@@ -177,8 +222,14 @@
     .landing-dots span {
       animation: dotBlink 1.4s infinite;
     }
-    .landing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .landing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    .landing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .landing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
 
     .landing-divider {
       width: 80px;
@@ -233,6 +284,7 @@
     }
   </style>
 </head>
+
 <body>
   <!-- Warm Dark Background -->
   <div class="bg-layer">
@@ -253,12 +305,16 @@
 
     <div class="landing-divider"></div>
 
-    <a href="/12vtubergame" class="landing-btn">
+    <a href="/landing" class="landing-btn">
       สมัคร "ศึก 12 วีทูบเบอร์"
-      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      <svg viewBox="0 0 24 24">
+        <line x1="5" y1="12" x2="19" y2="12" />
+        <polyline points="12 5 19 12 12 19" />
+      </svg>
     </a>
   </div>
 
   <div class="landing-footer">yuubearsama.online</div>
 </body>
+
 </html>
