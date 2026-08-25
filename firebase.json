@@ -1,0 +1,52 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/12vtubergame/register",
+        "destination": "/register.html"
+      },
+      {
+        "source": "/12vtubergame/allzodiac",
+        "destination": "/allzodiac.html"
+      },
+      {
+        "source": "/12vtubergame/adminpanel",
+        "destination": "/adminpanel.html"
+      },
+      {
+        "source": "/12vtubergame/zodiac/**",
+        "destination": "/zodiac.html"
+      },
+      {
+        "source": "/12vtubergame/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/register",
+        "destination": "/register.html"
+      },
+      {
+        "source": "/allzodiac",
+        "destination": "/allzodiac.html"
+      },
+      {
+        "source": "/adminpanel",
+        "destination": "/adminpanel.html"
+      },
+      {
+        "source": "/zodiac/**",
+        "destination": "/zodiac.html"
+      },
+      {
+        "source": "**",
+        "destination": "/landing.html"
+      }
+    ]
+  }
+}
