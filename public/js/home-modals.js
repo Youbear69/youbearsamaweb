@@ -264,10 +264,7 @@ async function showZodiacDetail(signKey) {
     if (dateText) dateText.textContent = zodiac.dateRange;
 
     const members = result.members || [];
-    const regMembers = members.filter(m => !m.isProposal);
-    const propMembers = members.filter(m => m.isProposal);
-
-    if (regMembers.length === 0 && propMembers.length === 0) {
+    if (members.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
           <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
@@ -278,8 +275,11 @@ async function showZodiacDetail(signKey) {
         </div>
       `;
     } else {
-      // Helper: build a compact name row for a member
-      function buildMemberRow(m, isProposal) {
+      grid.innerHTML = '';
+      members.forEach((m) => {
+        const card = document.createElement('div');
+        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
+
         let rawX = (m.xAccount || '').trim();
         let username = rawX
           .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
@@ -287,51 +287,30 @@ async function showZodiacDetail(signKey) {
           .split('/')[0]
           .split('?')[0];
 
-        const avatarUrl = username
-          ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}`
-          : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        const xAvatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
 
         let xLink = rawX;
         if (!xLink.startsWith('http')) {
           xLink = 'https://x.com/' + username;
         }
 
-        const badge = isProposal
-          ? `<span class="seg-proposal-badge">⭐</span>`
-          : '';
-
-        return `
-          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="seg-member-row${isProposal ? ' seg-proposal-row' : ''}">
-            <img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(m.displayName)}" class="seg-member-avatar"
+        card.innerHTML = `
+          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+            <img src="${escapeHtml(xAvatarUrl)}" 
+                 alt="${escapeHtml(m.displayName)}" 
+                 class="participant-bg-img"
                  loading="lazy"
                  onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}';">
-            <span class="seg-member-name">${escapeHtml(m.displayName)}</span>
-            ${badge}
+            <div class="participant-fade-overlay"></div>
+            <div class="participant-content">
+              <div class="participant-name" title="${escapeHtml(m.displayName)}">
+                ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
+              </div>
+            </div>
           </a>
         `;
-      }
-
-      // Build left column (registrations)
-      const leftHtml = regMembers.length > 0
-        ? `<div class="seg-section-label">ผู้ลงทะเบียน (${regMembers.length})</div>
-           <div class="seg-member-list">${regMembers.map(m => buildMemberRow(m, false)).join('')}</div>`
-        : `<div class="seg-section-label">ผู้ลงทะเบียน</div>
-           <div class="seg-empty-note">ยังไม่มีผู้ลงทะเบียน</div>`;
-
-      // Build right column (proposals)
-      const rightHtml = propMembers.length > 0
-        ? `<div class="seg-section-label seg-proposal-label">วีทูบเบอร์ที่ถูกเสนอ (${propMembers.length})</div>
-           <div class="seg-member-list">${propMembers.map(m => buildMemberRow(m, true)).join('')}</div>`
-        : `<div class="seg-section-label seg-proposal-label">วีทูบเบอร์ที่ถูกเสนอ</div>
-           <div class="seg-empty-note">ยังไม่มีการเสนอ</div>`;
-
-      grid.innerHTML = `
-        <div class="seg-split-container">
-          <div class="seg-column seg-column-left">${leftHtml}</div>
-          <div class="seg-divider"></div>
-          <div class="seg-column seg-column-right">${rightHtml}</div>
-        </div>
-      `;
+        grid.appendChild(card);
+      });
     }
   } catch (err) {
     console.error('Failed to load zodiac members:', err);
