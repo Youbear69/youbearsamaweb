@@ -217,7 +217,21 @@ async function fbGetZodiacDetail(sign) {
   const regs = await fbGetRegistrations();
   const proposals = await fbGetProposals();
   const approvedProposals = proposals.filter(p => p.approved);
-  const zodiac = ZODIAC_METADATA.find(z => z.key === sign);
+
+  // Handle unknown zodiac separately
+  let zodiac;
+  if (sign === 'unknown') {
+    zodiac = {
+      key: 'unknown',
+      th: 'ไม่ทราบราศี',
+      en: 'Unknown',
+      dateRange: '',
+      icon: null,
+      isUnknown: true
+    };
+  } else {
+    zodiac = ZODIAC_METADATA.find(z => z.key === sign);
+  }
 
   // Combine registrations + approved proposals for this zodiac
   const regMembers = regs.filter(r => r.zodiacKey === sign);

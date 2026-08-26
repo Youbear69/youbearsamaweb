@@ -278,7 +278,7 @@ async function showZodiacDetail(signKey) {
       grid.innerHTML = '';
       members.forEach((m) => {
         const card = document.createElement('div');
-        card.className = 'participant-card';
+        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
 
         let rawX = (m.xAccount || '').trim();
         let username = rawX
@@ -294,6 +294,11 @@ async function showZodiacDetail(signKey) {
           xLink = 'https://x.com/' + username;
         }
 
+        // Different label for proposals vs registrations
+        const metaLabel = m.isProposal
+          ? `⭐ วีทูบเบอร์ที่ถูกเสนอ`
+          : `ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})`;
+
         card.innerHTML = `
           <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
             <img src="${escapeHtml(xAvatarUrl)}" 
@@ -306,8 +311,8 @@ async function showZodiacDetail(signKey) {
               <div class="participant-name" title="${escapeHtml(m.displayName)}">
                 ${escapeHtml(m.displayName)}
               </div>
-              <div class="participant-meta">
-                ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})
+              <div class="participant-meta${m.isProposal ? ' proposal-meta' : ''}">
+                ${metaLabel}
               </div>
             </div>
           </a>
