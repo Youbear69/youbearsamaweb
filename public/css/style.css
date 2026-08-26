@@ -59,40 +59,21 @@ html {
   font-size: 19px;
 }
 
-/* Ultrawide PC (3440x1440) */
-@media (min-width: 2560px) {
-  html {
-    font-size: 22px;
-  }
-}
-
-@media (max-width: 1440px) {
+@media (max-width: 1024px) {
   html {
     font-size: 18px;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   html {
     font-size: 17px;
   }
 }
 
-@media (max-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
 @media (max-width: 480px) {
   html {
-    font-size: 15px;
-  }
-}
-
-@media (max-width: 360px) {
-  html {
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
@@ -150,9 +131,7 @@ body {
 /* Homepage No-Scroll Fix */
 body.page-home {
   height: 100vh;
-  height: 100dvh;
   max-height: 100vh;
-  max-height: 100dvh;
   overflow: hidden !important;
 }
 
@@ -242,20 +221,10 @@ body.page-home {
   justify-content: flex-start;
 }
 
-/* Ultrawide: wider content area */
-@media (min-width: 2560px) {
-  .main-content {
-    max-width: 1600px;
-    padding: 3rem 2.5rem 2.5rem 2.5rem;
-  }
-}
-
 /* Homepage Specific Layout (Fit Viewport, No Scroll) */
 .home-content {
   height: 100vh;
-  height: 100dvh;
   max-height: 100vh;
-  max-height: 100dvh;
   padding: 1.5rem 1.5rem 0 1.5rem !important;
   display: flex;
   flex-direction: column;
@@ -292,26 +261,6 @@ body.page-home {
 
 .slot-logo:hover {
   transform: scale(1.03);
-}
-
-/* Mobile: smaller logo */
-@media (max-width: 480px) {
-  .slot-logo {
-    max-width: 260px;
-  }
-}
-
-@media (max-width: 360px) {
-  .slot-logo {
-    max-width: 220px;
-  }
-}
-
-/* Ultrawide: bigger logo */
-@media (min-width: 2560px) {
-  .slot-logo {
-    max-width: 480px;
-  }
 }
 
 /* Typography */
