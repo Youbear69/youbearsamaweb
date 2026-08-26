@@ -1697,19 +1697,21 @@ body.page-home {
     width: 100%;
     padding: 0.8rem 1.5rem;
     font-size: 1.25rem;
-    order: -1;
+    order: 1;
   }
 
   .btn-secondary {
     width: 100%;
     padding: 0.7rem 1.5rem;
     font-size: 1.15rem;
+    order: 3;
   }
 
   .btn-propose {
     width: 100%;
     padding: 0.7rem 1.5rem;
     font-size: 1.15rem;
+    order: 2;
   }
 
   /* Time badges stack vertically */
