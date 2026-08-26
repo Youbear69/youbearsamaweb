@@ -264,7 +264,10 @@ async function showZodiacDetail(signKey) {
     if (dateText) dateText.textContent = zodiac.dateRange;
 
     const members = result.members || [];
-    if (members.length === 0) {
+    const regMembers = members.filter(m => !m.isProposal);
+    const propMembers = members.filter(m => m.isProposal);
+
+    if (regMembers.length === 0 && propMembers.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
           <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
@@ -275,11 +278,8 @@ async function showZodiacDetail(signKey) {
         </div>
       `;
     } else {
-      grid.innerHTML = '';
-      members.forEach((m) => {
-        const card = document.createElement('div');
-        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
-
+      // Helper: build a compact name row for a member
+      function buildMemberRow(m, isProposal) {
         let rawX = (m.xAccount || '').trim();
         let username = rawX
           .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
@@ -287,38 +287,51 @@ async function showZodiacDetail(signKey) {
           .split('/')[0]
           .split('?')[0];
 
-        const xAvatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        const avatarUrl = username
+          ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}`
+          : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
 
         let xLink = rawX;
         if (!xLink.startsWith('http')) {
           xLink = 'https://x.com/' + username;
         }
 
-        // Different label for proposals vs registrations
-        const metaLabel = m.isProposal
-          ? `⭐ วีทูบเบอร์ที่ถูกเสนอ`
-          : `ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})`;
+        const badge = isProposal
+          ? `<span class="seg-proposal-badge">⭐</span>`
+          : '';
 
-        card.innerHTML = `
-          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-            <img src="${escapeHtml(xAvatarUrl)}" 
-                 alt="${escapeHtml(m.displayName)}" 
-                 class="participant-bg-img"
+        return `
+          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="seg-member-row${isProposal ? ' seg-proposal-row' : ''}">
+            <img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(m.displayName)}" class="seg-member-avatar"
                  loading="lazy"
                  onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}';">
-            <div class="participant-fade-overlay"></div>
-            <div class="participant-content">
-              <div class="participant-name" title="${escapeHtml(m.displayName)}">
-                ${escapeHtml(m.displayName)}
-              </div>
-              <div class="participant-meta${m.isProposal ? ' proposal-meta' : ''}">
-                ${metaLabel}
-              </div>
-            </div>
+            <span class="seg-member-name">${escapeHtml(m.displayName)}</span>
+            ${badge}
           </a>
         `;
-        grid.appendChild(card);
-      });
+      }
+
+      // Build left column (registrations)
+      const leftHtml = regMembers.length > 0
+        ? `<div class="seg-section-label">ผู้ลงทะเบียน (${regMembers.length})</div>
+           <div class="seg-member-list">${regMembers.map(m => buildMemberRow(m, false)).join('')}</div>`
+        : `<div class="seg-section-label">ผู้ลงทะเบียน</div>
+           <div class="seg-empty-note">ยังไม่มีผู้ลงทะเบียน</div>`;
+
+      // Build right column (proposals)
+      const rightHtml = propMembers.length > 0
+        ? `<div class="seg-section-label seg-proposal-label">วีทูบเบอร์ที่ถูกเสนอ (${propMembers.length})</div>
+           <div class="seg-member-list">${propMembers.map(m => buildMemberRow(m, true)).join('')}</div>`
+        : `<div class="seg-section-label seg-proposal-label">วีทูบเบอร์ที่ถูกเสนอ</div>
+           <div class="seg-empty-note">ยังไม่มีการเสนอ</div>`;
+
+      grid.innerHTML = `
+        <div class="seg-split-container">
+          <div class="seg-column seg-column-left">${leftHtml}</div>
+          <div class="seg-divider"></div>
+          <div class="seg-column seg-column-right">${rightHtml}</div>
+        </div>
+      `;
     }
   } catch (err) {
     console.error('Failed to load zodiac members:', err);

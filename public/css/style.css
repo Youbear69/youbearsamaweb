@@ -1197,6 +1197,118 @@ body.page-home {
   font-weight: 600;
 }
 
+/* ==========================================
+   Segment Split Layout — Registrations | Proposals
+   ========================================== */
+.seg-split-container {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  min-height: 120px;
+  background: rgba(20, 14, 40, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.seg-column {
+  flex: 1;
+  padding: 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.seg-divider {
+  width: 1px;
+  background: linear-gradient(to bottom, transparent 5%, rgba(255, 255, 255, 0.12) 20%, rgba(255, 255, 255, 0.12) 80%, transparent 95%);
+  flex-shrink: 0;
+}
+
+.seg-section-label {
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  font-weight: 700;
+  color: #c4b5fd;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.3px;
+}
+
+.seg-section-label.seg-proposal-label {
+  color: #fcd34d;
+}
+
+.seg-empty-note {
+  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+  color: rgba(255, 255, 255, 0.35);
+  padding: 0.8rem 0;
+}
+
+.seg-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.seg-member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.seg-member-row:hover {
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.seg-member-row.seg-proposal-row:hover {
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.seg-member-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  background: #1a1030;
+}
+
+.seg-proposal-row .seg-member-avatar {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.seg-member-name {
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.seg-proposal-badge {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Mobile: stack columns vertically */
+@media (max-width: 600px) {
+  .seg-split-container {
+    flex-direction: column;
+  }
+  .seg-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent 5%, rgba(255, 255, 255, 0.12) 20%, rgba(255, 255, 255, 0.12) 80%, transparent 95%);
+  }
+}
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
