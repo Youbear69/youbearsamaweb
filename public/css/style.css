@@ -1243,58 +1243,11 @@ body.page-home {
   padding: 0.8rem 0;
 }
 
-.seg-member-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.seg-member-row {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: background 0.2s ease;
-}
-
-.seg-member-row:hover {
-  background: rgba(168, 85, 247, 0.12);
-}
-
-.seg-member-row.seg-proposal-row:hover {
-  background: rgba(251, 191, 36, 0.1);
-}
-
-.seg-member-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  flex-shrink: 0;
-  background: #1a1030;
-}
-
-.seg-proposal-row .seg-member-avatar {
-  border-color: rgba(251, 191, 36, 0.35);
-}
-
-.seg-member-name {
-  font-size: clamp(1rem, 1.6vw, 1.15rem);
-  font-weight: 600;
-  color: #e2e8f0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
-}
-
-.seg-proposal-badge {
-  font-size: 1rem;
-  flex-shrink: 0;
+/* Card grid inside each segment column */
+.seg-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
 }
 
 /* Mobile: stack columns vertically */
