@@ -169,13 +169,18 @@ async function fbUpdateProposalZodiac(id, zodiacKey) {
   return p;
 }
 
-// Get zodiac stats (count per zodiac)
+// Get zodiac stats (count per zodiac) — includes both registrations AND approved proposals
 async function fbGetZodiacStats() {
   const regs = await fbGetRegistrations();
+  const proposals = await fbGetProposals();
+  const approvedProposals = proposals.filter(p => p.approved);
   const settings = await fbGetSettings();
 
+  // Combine registrations + approved proposals
+  const allMembers = [...regs, ...approvedProposals];
+
   const stats = ZODIAC_METADATA.map(z => {
-    const count = regs.filter(r => r.zodiacKey === z.key).length;
+    const count = allMembers.filter(r => r.zodiacKey === z.key).length;
     return {
       key: z.key,
       th: z.th,
@@ -189,7 +194,7 @@ async function fbGetZodiacStats() {
   });
 
   // Add unknown zodiac if enabled
-  const unknownCount = regs.filter(r => r.zodiacKey === 'unknown').length;
+  const unknownCount = allMembers.filter(r => r.zodiacKey === 'unknown').length;
   if (settings.showUnknownZodiac || unknownCount > 0) {
     stats.push({
       key: 'unknown',
@@ -207,11 +212,23 @@ async function fbGetZodiacStats() {
   return stats;
 }
 
-// Get zodiac detail (registrations for a specific sign)
+// Get zodiac detail (registrations + approved proposals for a specific sign)
 async function fbGetZodiacDetail(sign) {
   const regs = await fbGetRegistrations();
+  const proposals = await fbGetProposals();
+  const approvedProposals = proposals.filter(p => p.approved);
   const zodiac = ZODIAC_METADATA.find(z => z.key === sign);
-  const members = regs.filter(r => r.zodiacKey === sign);
+
+  // Combine registrations + approved proposals for this zodiac
+  const regMembers = regs.filter(r => r.zodiacKey === sign);
+  const proposalMembers = approvedProposals
+    .filter(p => p.zodiacKey === sign)
+    .map(p => ({
+      ...p,
+      displayName: p.displayName || p.xAccount,
+      isProposal: true
+    }));
+  const members = [...regMembers, ...proposalMembers];
 
   return {
     zodiac: zodiac || { key: sign, th: sign, en: sign, dateRange: '', icon: sign + '.png' },
