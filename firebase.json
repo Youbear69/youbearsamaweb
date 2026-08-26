@@ -9,11 +9,11 @@
     "rewrites": [
       {
         "source": "/12vtubergame",
-        "destination": "/index.html"
+        "destination": "/12vtubergame.html"
       },
       {
         "source": "/12vtubergame/",
-        "destination": "/index.html"
+        "destination": "/12vtubergame.html"
       },
       {
         "source": "/12vtubergame/register",
@@ -33,7 +33,7 @@
       },
       {
         "source": "/12vtubergame/**",
-        "destination": "/index.html"
+        "destination": "/12vtubergame.html"
       },
       {
         "source": "/register",
