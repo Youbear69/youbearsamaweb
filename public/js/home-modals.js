@@ -264,10 +264,7 @@ async function showZodiacDetail(signKey) {
     if (dateText) dateText.textContent = zodiac.dateRange;
 
     const members = result.members || [];
-    const regMembers = members.filter(m => !m.isProposal);
-    const propMembers = members.filter(m => m.isProposal);
-
-    if (regMembers.length === 0 && propMembers.length === 0) {
+    if (members.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
           <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
@@ -278,8 +275,11 @@ async function showZodiacDetail(signKey) {
         </div>
       `;
     } else {
-      // Helper: build a card HTML for a member
-      function buildCard(m) {
+      grid.innerHTML = '';
+      members.forEach((m) => {
+        const card = document.createElement('div');
+        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
+
         let rawX = (m.xAccount || '').trim();
         let username = rawX
           .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
@@ -294,48 +294,23 @@ async function showZodiacDetail(signKey) {
           xLink = 'https://x.com/' + username;
         }
 
-        return `
-          <div class="participant-card${m.isProposal ? ' proposal-card' : ''}">
-            <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-              <img src="${escapeHtml(xAvatarUrl)}" 
-                   alt="${escapeHtml(m.displayName)}" 
-                   class="participant-bg-img"
-                   loading="lazy"
-                   onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}';">
-              <div class="participant-fade-overlay"></div>
-              <div class="participant-content">
-                <div class="participant-name" title="${escapeHtml(m.displayName)}">
-                  ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
-                </div>
+        card.innerHTML = `
+          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+            <img src="${escapeHtml(xAvatarUrl)}" 
+                 alt="${escapeHtml(m.displayName)}" 
+                 class="participant-bg-img"
+                 loading="lazy"
+                 onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}';">
+            <div class="participant-fade-overlay"></div>
+            <div class="participant-content">
+              <div class="participant-name" title="${escapeHtml(m.displayName)}">
+                ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
               </div>
-            </a>
-          </div>
+            </div>
+          </a>
         `;
-      }
-
-      // Build registrations section
-      const regCardsHtml = regMembers.length > 0
-        ? regMembers.map(m => buildCard(m)).join('')
-        : `<div class="seg-empty-note">ยังไม่มีผู้ลงทะเบียน</div>`;
-
-      // Build proposals section
-      const propCardsHtml = propMembers.length > 0
-        ? propMembers.map(m => buildCard(m)).join('')
-        : `<div class="seg-empty-note">ยังไม่มีการเสนอ</div>`;
-
-      grid.innerHTML = `
-        <div class="seg-split-container seg-split-cards">
-          <div class="seg-column">
-            <div class="seg-section-label">ผู้ลงทะเบียน (${regMembers.length})</div>
-            <div class="seg-cards-grid">${regCardsHtml}</div>
-          </div>
-          <div class="seg-divider"></div>
-          <div class="seg-column">
-            <div class="seg-section-label seg-proposal-label">วีทูบเบอร์ที่ถูกเสนอ (${propMembers.length})</div>
-            <div class="seg-cards-grid">${propCardsHtml}</div>
-          </div>
-        </div>
-      `;
+        grid.appendChild(card);
+      });
     }
   } catch (err) {
     console.error('Failed to load zodiac members:', err);
