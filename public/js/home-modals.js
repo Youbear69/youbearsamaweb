@@ -446,12 +446,14 @@ function setupPopupPropose() {
   const btnProposeSubmit = document.getElementById('btn-propose-submit');
   const proposeModal = document.getElementById('modal-propose');
   const xAccountInput = document.getElementById('propose-xAccount');
+  const displayNameInput = document.getElementById('propose-displayName');
   const hiddenZodiac = document.getElementById('propose-zodiacKey');
 
   if (!btnProposeSubmit) return;
 
   btnProposeSubmit.onclick = async () => {
     const xAccount = (xAccountInput ? xAccountInput.value : '').trim();
+    const displayName = (displayNameInput ? displayNameInput.value : '').trim();
     const zodiacKey = (hiddenZodiac ? hiddenZodiac.value : '') || 'unknown';
 
     if (!xAccount) {
@@ -460,14 +462,21 @@ function setupPopupPropose() {
       return;
     }
 
+    if (!displayName) {
+      showToast('กรุณากรอกชื่อวีทูบเบอร์ที่เสนอ', 'error');
+      if (displayNameInput) displayNameInput.focus();
+      return;
+    }
+
     btnProposeSubmit.disabled = true;
     btnProposeSubmit.textContent = 'กำลังส่งข้อมูล...';
 
     try {
-      await fbAddProposal({ xAccount, zodiacKey });
+      await fbAddProposal({ xAccount, displayName, zodiacKey });
 
       closeProposeModal();
       if (xAccountInput) xAccountInput.value = '';
+      if (displayNameInput) displayNameInput.value = '';
       if (hiddenZodiac) hiddenZodiac.value = '';
       const selector = document.getElementById('propose-zodiac-selector');
       if (selector) selector.querySelectorAll('.zodiac-select-card').forEach(c => c.classList.remove('selected'));

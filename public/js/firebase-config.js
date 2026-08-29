@@ -138,9 +138,20 @@ async function fbAddProposal(data) {
   const id = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiacKey = data.zodiacKey || 'unknown';
   const zodiac = ZODIAC_METADATA.find(z => z.key === zodiacKey);
+  
+  let displayName = (data.displayName || '').trim();
+  if (!displayName && data.xAccount) {
+    displayName = data.xAccount
+      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
+      .replace(/^@/, '')
+      .split('/')[0]
+      .split('?')[0] || data.xAccount;
+  }
+
   const proposal = {
     id: id,
     xAccount: data.xAccount,
+    displayName: displayName,
     zodiacKey: zodiacKey,
     zodiacNameTh: zodiac ? zodiac.th : (zodiacKey === 'unknown' ? 'ไม่ทราบ' : zodiacKey),
     zodiacNameEn: zodiac ? zodiac.en : (zodiacKey === 'unknown' ? 'Unknown' : zodiacKey),
