@@ -66,10 +66,13 @@ async function fbGetRegistrations() {
 async function fbAddRegistration(data) {
   const id = 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiac = ZODIAC_METADATA.find(z => z.key === data.zodiacKey);
+  const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: data.displayName }) : '');
+
   const registration = {
     id: id,
     xAccount: data.xAccount,
     displayName: data.displayName,
+    imageUrl: imageUrl,
     zodiacKey: data.zodiacKey,
     zodiacNameTh: zodiac ? zodiac.th : data.zodiacKey,
     zodiacNameEn: zodiac ? zodiac.en : data.zodiacKey,
@@ -133,7 +136,7 @@ async function fbGetProposals() {
   return Object.values(val);
 }
 
-// Add a proposal
+// Add a proposal (auto-approved by default)
 async function fbAddProposal(data) {
   const id = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiacKey = data.zodiacKey || 'unknown';
@@ -148,14 +151,17 @@ async function fbAddProposal(data) {
       .split('?')[0] || data.xAccount;
   }
 
+  const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: displayName }) : '');
+
   const proposal = {
     id: id,
     xAccount: data.xAccount,
     displayName: displayName,
+    imageUrl: imageUrl,
     zodiacKey: zodiacKey,
     zodiacNameTh: zodiac ? zodiac.th : (zodiacKey === 'unknown' ? 'ไม่ทราบ' : zodiacKey),
     zodiacNameEn: zodiac ? zodiac.en : (zodiacKey === 'unknown' ? 'Unknown' : zodiacKey),
-    approved: false,
+    approved: true, // Auto-approve so it shows on the website immediately
     proposedAt: new Date().toISOString()
   };
   const snap = await rtdb.ref('proposals').once('value');
@@ -281,6 +287,9 @@ async function fbGetZodiacDetail(sign) {
         zodiacLabel: zMeta ? `ราศี${zMeta.th} (${zMeta.en})` : 'ไม่ทราบราศี'
       };
     });
+    if (typeof sortThaiEnglish === 'function') {
+      members.sort(sortThaiEnglish);
+    }
     return { zodiac, members, count: members.length };
   }
 
@@ -301,6 +310,9 @@ async function fbGetZodiacDetail(sign) {
 
   // Only registrations for zodiac detail (proposals are in their own section)
   const regMembers = regs.filter(r => r.zodiacKey === sign);
+  if (typeof sortThaiEnglish === 'function') {
+    regMembers.sort(sortThaiEnglish);
+  }
 
   return {
     zodiac: zodiac || { key: sign, th: sign, en: sign, dateRange: '', icon: sign + '.png' },

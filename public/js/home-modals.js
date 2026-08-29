@@ -267,7 +267,11 @@ async function showZodiacDetail(signKey) {
     if (titleText) titleText.textContent = isProposed ? 'วีทูบเบอร์ที่เสนอชื่อ' : `โควต้าราศี : ${zodiac.th} (${zodiac.en})`;
     if (dateText) dateText.textContent = zodiac.dateRange || '';
 
-    const members = result.members || [];
+    let members = result.members || [];
+    if (typeof sortThaiEnglish === 'function') {
+      members.sort(sortThaiEnglish);
+    }
+
     if (members.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
@@ -284,25 +288,9 @@ async function showZodiacDetail(signKey) {
         const card = document.createElement('div');
         card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
 
-        let rawX = (m.xAccount || '').trim();
-        let username = rawX
-          .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
-          .replace(/^@/, '')
-          .split('/')[0]
-          .split('?')[0];
-
-        // Avatar source: custom imageUrl if set, otherwise unavatar
-        let avatarUrl;
-        if (m.imageUrl) {
-          avatarUrl = m.imageUrl;
-        } else {
-          avatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
-        }
-
-        let xLink = rawX;
-        if (!xLink.startsWith('http')) {
-          xLink = 'https://x.com/' + username;
-        }
+        const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
+        const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
+        const clickUrl = parsedSocial.url || m.xAccount || '#';
 
         // Build zodiac label
         let zodiacLabelHtml = '';
@@ -312,12 +300,12 @@ async function showZodiacDetail(signKey) {
         }
 
         card.innerHTML = `
-          <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+          <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
             <img src="${escapeHtml(avatarUrl)}" 
                  alt="${escapeHtml(m.displayName)}" 
                  class="participant-bg-img"
                  loading="lazy"
-                 onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}';">
+                 onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
             <div class="participant-fade-overlay"></div>
             <div class="participant-content">
               <div class="participant-name" title="${escapeHtml(m.displayName)}">

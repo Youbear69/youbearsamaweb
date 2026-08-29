@@ -44,6 +44,88 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Alphabetical Sorting: Thai (ก-ฮ) first, then English (A-Z)
+function sortThaiEnglish(a, b, desc = false) {
+  const nameA = ((typeof a === 'string' ? a : (a?.displayName || a?.xAccount || ''))).trim();
+  const nameB = ((typeof b === 'string' ? b : (b?.displayName || b?.xAccount || ''))).trim();
+
+  const isThaiA = /^[\u0E00-\u0E7F]/.test(nameA);
+  const isThaiB = /^[\u0E00-\u0E7F]/.test(nameB);
+
+  let res = 0;
+  if (isThaiA && !isThaiB) {
+    res = -1;
+  } else if (!isThaiA && isThaiB) {
+    res = 1;
+  } else {
+    res = nameA.localeCompare(nameB, 'th', { numeric: true, sensitivity: 'base' });
+  }
+
+  return desc ? -res : res;
+}
+
+// Date Sorting: Newest first (desc = true) or Oldest first (desc = false)
+function sortDate(a, b, desc = true) {
+  const dateA = new Date(a?.registeredAt || a?.proposedAt || a?.createdAt || 0).getTime();
+  const dateB = new Date(b?.registeredAt || b?.proposedAt || b?.createdAt || 0).getTime();
+  return desc ? (dateB - dateA) : (dateA - dateB);
+}
+
+// Parse social links (X, YouTube, TikTok)
+function parseSocialLink(raw) {
+  const text = (raw || '').trim();
+  if (!text) return { type: 'x', url: '', username: '' };
+
+  // 1. YouTube
+  if (/youtube\.com|youtu\.be/i.test(text)) {
+    let handle = text.replace(/^https?:\/\/(www\.)?youtube\.com\//i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0];
+    let fullUrl = text.startsWith('http') ? text : `https://${text}`;
+    return { type: 'youtube', url: fullUrl, username: handle || text };
+  }
+
+  // 2. TikTok
+  if (/tiktok\.com/i.test(text)) {
+    let handle = text.replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0];
+    let fullUrl = text.startsWith('http') ? text : `https://${text}`;
+    return { type: 'tiktok', url: fullUrl, username: handle || text };
+  }
+
+  // 3. X / Twitter
+  let username = text
+    .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
+    .replace(/^@/, '')
+    .split('/')[0]
+    .split('?')[0];
+
+  let fullUrl = text.startsWith('http') ? text : `https://x.com/${username}`;
+  return { type: 'x', url: fullUrl, username: username || text };
+}
+
+// Resolve profile picture avatar URL
+function resolveAvatarUrl(item) {
+  if (!item) return 'https://api.dicebear.com/7.x/bottts/svg?seed=user';
+
+  // 1. Custom Image URL or Firebase Data URL
+  if (item.imageUrl && item.imageUrl.trim()) {
+    return item.imageUrl.trim();
+  }
+
+  const rawLink = item.xAccount || '';
+  const parsed = parseSocialLink(rawLink);
+  const fallbackSeed = encodeURIComponent(item.displayName || parsed.username || 'user');
+  const fallbackDicebear = `https://api.dicebear.com/7.x/bottts/svg?seed=${fallbackSeed}`;
+
+  if (parsed.type === 'youtube') {
+    return parsed.username ? `https://unavatar.io/youtube/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
+  } else if (parsed.type === 'tiktok') {
+    return parsed.username ? `https://unavatar.io/tiktok/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
+  } else {
+    return parsed.username ? `https://unavatar.io/x/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
+  }
+}
+
 // Calculate countdown to live date & close date from settings
 async function initLiveCountdown() {
   const liveEl = document.getElementById('live-countdown');

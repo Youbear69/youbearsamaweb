@@ -108,6 +108,7 @@ async function initAdminPage() {
 
   const filterZodiac = document.getElementById('admin-filter-zodiac');
   const searchInput = document.getElementById('admin-search');
+  const sortRegistrations = document.getElementById('admin-sort-registrations');
   const tableBody = document.getElementById('admin-table-body');
   const statTotal = document.getElementById('stat-total');
   const statProposals = document.getElementById('stat-proposals');
@@ -117,6 +118,7 @@ async function initAdminPage() {
 
   const proposalSearchInput = document.getElementById('proposal-search');
   const proposalFilterStatus = document.getElementById('proposal-filter-status');
+  const sortProposals = document.getElementById('proposal-sort');
   const proposalsTableBody = document.getElementById('proposals-table-body');
 
   const settingsForm = document.getElementById('settings-form');
@@ -316,8 +318,9 @@ async function initAdminPage() {
 
     const search = (searchInput ? searchInput.value : '').toLowerCase().trim();
     const filter = filterZodiac ? filterZodiac.value : '';
+    const sortVal = sortRegistrations ? sortRegistrations.value : 'date-desc';
 
-    const filtered = allRegistrations.filter(r => {
+    let filtered = allRegistrations.filter(r => {
       const matchZodiac = !filter || r.zodiacKey === filter;
       const matchSearch = !search || 
         (r.displayName && r.displayName.toLowerCase().includes(search)) ||
@@ -325,6 +328,18 @@ async function initAdminPage() {
         (r.zodiacNameTh && r.zodiacNameTh.toLowerCase().includes(search));
       return matchZodiac && matchSearch;
     });
+
+    // Apply sorting
+    if (sortVal === 'name-asc') {
+      filtered.sort((a, b) => sortThaiEnglish(a, b, false));
+    } else if (sortVal === 'name-desc') {
+      filtered.sort((a, b) => sortThaiEnglish(a, b, true));
+    } else if (sortVal === 'date-asc') {
+      filtered.sort((a, b) => sortDate(a, b, false));
+    } else {
+      // date-desc (default)
+      filtered.sort((a, b) => sortDate(a, b, true));
+    }
 
     if (filtered.length === 0) {
       tableBody.innerHTML = `
@@ -338,10 +353,9 @@ async function initAdminPage() {
     }
 
     tableBody.innerHTML = filtered.map((r, index) => {
-      let xLink = r.xAccount;
-      if (!xLink.startsWith('http')) {
-        xLink = 'https://x.com/' + xLink.replace(/^@/, '');
-      }
+      const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(r.xAccount) : { url: r.xAccount || '#', type: 'x' };
+      const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(r) : (r.imageUrl || '');
+      const clickUrl = parsedSocial.url || r.xAccount || '#';
 
       const dateStr = new Date(r.registeredAt).toLocaleString('th-TH', {
         dateStyle: 'medium',
@@ -349,8 +363,8 @@ async function initAdminPage() {
       });
 
       // Thumbnail preview
-      const thumbHtml = r.imageUrl 
-        ? `<img src="${escapeHtml(r.imageUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(168,85,247,0.3);">`
+      const thumbHtml = avatarUrl 
+        ? `<img src="${escapeHtml(avatarUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(168,85,247,0.4);" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(r.displayName || 'user')}';">`
         : '';
 
       const zodiacInfo = ZODIAC_LIST.find(z => z.key === r.zodiacKey);
@@ -361,8 +375,9 @@ async function initAdminPage() {
           <td style="color: var(--text-muted);">${index + 1}</td>
           <td>${thumbHtml}<strong>${escapeHtml(r.displayName)}</strong></td>
           <td>
-            <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" style="color: #c77dff; text-decoration: none;">
-              ${escapeHtml(r.xAccount)}
+            <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" style="color: #c77dff; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <span>${escapeHtml(r.xAccount)}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </td>
           <td style="color: #c4b5fd;">${escapeHtml(zodiacLabel)}</td>
@@ -413,8 +428,9 @@ async function initAdminPage() {
 
     const search = (proposalSearchInput ? proposalSearchInput.value : '').toLowerCase().trim();
     const statusFilter = proposalFilterStatus ? proposalFilterStatus.value : '';
+    const sortVal = sortProposals ? sortProposals.value : 'date-desc';
 
-    const filtered = allProposals.filter(p => {
+    let filtered = allProposals.filter(p => {
       const matchStatus = !statusFilter || 
         (statusFilter === 'approved' && p.approved) || 
         (statusFilter === 'pending' && !p.approved);
@@ -426,6 +442,18 @@ async function initAdminPage() {
 
       return matchStatus && matchSearch;
     });
+
+    // Apply sorting
+    if (sortVal === 'name-asc') {
+      filtered.sort((a, b) => sortThaiEnglish(a, b, false));
+    } else if (sortVal === 'name-desc') {
+      filtered.sort((a, b) => sortThaiEnglish(a, b, true));
+    } else if (sortVal === 'date-asc') {
+      filtered.sort((a, b) => sortDate(a, b, false));
+    } else {
+      // date-desc (default)
+      filtered.sort((a, b) => sortDate(a, b, true));
+    }
 
     if (filtered.length === 0) {
       proposalsTableBody.innerHTML = `
@@ -439,10 +467,9 @@ async function initAdminPage() {
     }
 
     proposalsTableBody.innerHTML = filtered.map((p, index) => {
-      let xLink = p.xAccount;
-      if (!xLink.startsWith('http')) {
-        xLink = 'https://x.com/' + xLink.replace(/^@/, '');
-      }
+      const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(p.xAccount) : { url: p.xAccount || '#', type: 'x' };
+      const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(p) : (p.imageUrl || '');
+      const clickUrl = parsedSocial.url || p.xAccount || '#';
 
       const dateStr = new Date(p.proposedAt || p.createdAt || Date.now()).toLocaleString('th-TH', {
         dateStyle: 'medium',
@@ -450,13 +477,12 @@ async function initAdminPage() {
       });
 
       const isUnknown = p.zodiacKey === 'unknown' || !p.zodiacKey;
-
       const zodiacInfo = !isUnknown ? ZODIAC_LIST.find(z => z.key === p.zodiacKey) : null;
       const zodiacLabel = zodiacInfo ? `${zodiacInfo.th} (${zodiacInfo.en})` : 'ไม่ทราบราศี';
 
       // Thumbnail preview
-      const thumbHtml = p.imageUrl 
-        ? `<img src="${escapeHtml(p.imageUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(251,191,36,0.3);">`
+      const thumbHtml = avatarUrl 
+        ? `<img src="${escapeHtml(avatarUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(251,191,36,0.4);" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.displayName || 'user')}';">`
         : '';
 
       return `
@@ -464,7 +490,7 @@ async function initAdminPage() {
           <td style="color: var(--text-muted);">${index + 1}</td>
           <td>${thumbHtml}<strong style="color: #fcd34d;">${escapeHtml(p.displayName || '-')}</strong></td>
           <td>
-            <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
               <span>${escapeHtml(p.xAccount)}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
@@ -546,9 +572,11 @@ async function initAdminPage() {
   // Filter & Search events
   if (searchInput) searchInput.oninput = renderRegistrationTable;
   if (filterZodiac) filterZodiac.onchange = renderRegistrationTable;
+  if (sortRegistrations) sortRegistrations.onchange = renderRegistrationTable;
 
   if (proposalSearchInput) proposalSearchInput.oninput = renderProposalsTable;
   if (proposalFilterStatus) proposalFilterStatus.onchange = renderProposalsTable;
+  if (sortProposals) sortProposals.onchange = renderProposalsTable;
 
   if (btnRefresh) {
     btnRefresh.onclick = () => {
