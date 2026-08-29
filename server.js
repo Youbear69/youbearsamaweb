@@ -32,6 +32,117 @@ const ZODIAC_METADATA = [
   { key: 'capricorn', th: 'มังกร', en: 'Capricorn', dateRange: '22 ธันวาคม – 19 มกราคม', icon: 'capricorn.png' }
 ];
 
+// Alphabetical Sorting: Thai (ก-ฮ) first, then English (A-Z)
+function sortThaiEnglishServer(a, b, desc = false) {
+  const nameA = ((typeof a === 'string' ? a : (a?.displayName || a?.xAccount || ''))).trim();
+  const nameB = ((typeof b === 'string' ? b : (b?.displayName || b?.xAccount || ''))).trim();
+
+  const isThaiA = /^[\u0E00-\u0E7F]/.test(nameA);
+  const isThaiB = /^[\u0E00-\u0E7F]/.test(nameB);
+
+  let res = 0;
+  if (isThaiA && !isThaiB) {
+    res = -1;
+  } else if (!isThaiA && isThaiB) {
+    res = 1;
+  } else {
+    res = nameA.localeCompare(nameB, 'th', { numeric: true, sensitivity: 'base' });
+  }
+
+  return desc ? -res : res;
+}
+
+// Fetch avatar from X, YouTube, TikTok and convert to data URL or URL
+async function resolveAvatarUrlServer(link, fallbackName) {
+  if (!link) return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || 'user')}`;
+
+  const cleanLink = link.trim();
+  let avatarUrl = null;
+
+  // 1. YouTube
+  if (/youtube\.com|youtu\.be/i.test(cleanLink)) {
+    try {
+      let targetUrl = cleanLink;
+      if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const ogMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
+        const yt3Match = html.match(/https:\/\/yt3\.googleusercontent\.com\/[a-zA-Z0-9_\-=]+/g);
+        avatarUrl = (ogMatch ? ogMatch[1] : null) || (yt3Match ? yt3Match[0] : null);
+      }
+    } catch (e) {
+      console.warn('YouTube avatar fetch failed:', e.message);
+    }
+  }
+
+  // 2. TikTok
+  else if (/tiktok\.com/i.test(cleanLink)) {
+    try {
+      let targetUrl = cleanLink;
+      if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'
+        }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const avatarMatch = html.match(/https:\/\/[^"']*(?:tiktokcdn|avatar)[^"']*\.(?:jpeg|jpg|png|webp|image)[^"']*/i) ||
+                            html.match(/"avatarLarger":"([^"]+)"/) ||
+                            html.match(/"avatarMedium":"([^"]+)"/);
+        if (avatarMatch) {
+          avatarUrl = (avatarMatch[1] || avatarMatch[0]).replace(/\\u0026/g, '&').replace(/\\/g, '');
+        }
+      }
+    } catch (e) {
+      console.warn('TikTok avatar fetch failed:', e.message);
+    }
+  }
+
+  // 3. X / Twitter
+  else {
+    const handle = cleanLink
+      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
+      .replace(/^@/, '')
+      .split('/')[0]
+      .split('?')[0];
+
+    if (handle) {
+      avatarUrl = `https://unavatar.io/x/${handle}`;
+    }
+  }
+
+  if (!avatarUrl) {
+    avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink)}`;
+  }
+
+  // Try to download image buffer and convert to base64 data URL for permanent storage
+  try {
+    const imgRes = await fetch(avatarUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    if (imgRes.ok) {
+      const buffer = Buffer.from(await imgRes.arrayBuffer());
+      const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+      if (buffer.length > 0 && buffer.length < 5 * 1024 * 1024) {
+        return `data:${contentType};base64,${buffer.toString('base64')}`;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not convert image to data URL, using direct URL:', err.message);
+  }
+
+  return avatarUrl;
+}
+
 // Active admin sessions Map (token -> user data)
 const activeAdminTokens = new Map();
 
@@ -347,6 +458,8 @@ app.get('/api/zodiac/:sign', (req, res) => {
       isProposal: true
     }));
 
+    approvedProposals.sort(sortThaiEnglishServer);
+
     return res.json({
       success: true,
       zodiac: zodiacInfo,
@@ -368,6 +481,8 @@ app.get('/api/zodiac/:sign', (req, res) => {
     r => (r.zodiacKey || '').toLowerCase() === zodiacInfo.key.toLowerCase()
   );
 
+  registeredMembers.sort(sortThaiEnglishServer);
+
   res.json({
     success: true,
     zodiac: zodiacInfo,
@@ -376,8 +491,8 @@ app.get('/api/zodiac/:sign', (req, res) => {
   });
 });
 
-app.post('/api/register', (req, res) => {
-  const { xAccount, displayName, zodiacKey } = req.body;
+app.post('/api/register', async (req, res) => {
+  const { xAccount, displayName, zodiacKey, imageUrl } = req.body;
 
   if (!xAccount || !displayName || !zodiacKey) {
     return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง' });
@@ -388,11 +503,14 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, message: 'กรุณาเลือกรังสี/ราศีที่ถูกต้อง' });
   }
 
+  const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(xAccount, displayName);
+
   const db = readData();
   const newEntry = {
     id: 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: xAccount.trim(),
     displayName: displayName.trim(),
+    imageUrl: resolvedAvatar,
     zodiacKey: zodiacInfo.key,
     zodiacNameTh: zodiacInfo.th,
     zodiacNameEn: zodiacInfo.en,
@@ -437,8 +555,8 @@ app.delete('/api/registrations/:id', requireAdminAuth, (req, res) => {
 // Proposal API Routes (เสนอวีทูบเบอร์)
 // ==========================================
 
-app.post('/api/propose', (req, res) => {
-  const { xAccount, displayName, zodiacKey } = req.body;
+app.post('/api/propose', async (req, res) => {
+  const { xAccount, displayName, zodiacKey, imageUrl } = req.body;
 
   if (!xAccount || !xAccount.trim()) {
     return res.status(400).json({ success: false, message: 'กรุณากรอกลิงก์หรือชื่อบัญชี X ของวีทูบเบอร์' });
@@ -467,6 +585,7 @@ app.post('/api/propose', (req, res) => {
     .split('?')[0] || cleanX;
 
   let finalDisplayName = (displayName && displayName.trim()) ? displayName.trim() : autoDisplayName;
+  const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(cleanX, finalDisplayName);
 
   const db = readData();
   db.proposals = db.proposals || [];
@@ -475,10 +594,11 @@ app.post('/api/propose', (req, res) => {
     id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: cleanX,
     displayName: finalDisplayName,
+    imageUrl: resolvedAvatar,
     zodiacKey: zKey,
     zodiacNameTh: zNameTh,
     zodiacNameEn: zNameEn,
-    approved: false, // Default false: won't show on homepage until admin checks checkbox
+    approved: true, // Auto-approved by default so it shows on the website immediately
     createdAt: new Date().toISOString()
   };
 
