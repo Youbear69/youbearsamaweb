@@ -438,7 +438,7 @@ app.delete('/api/registrations/:id', requireAdminAuth, (req, res) => {
 // ==========================================
 
 app.post('/api/propose', (req, res) => {
-  const { xAccount, zodiacKey } = req.body;
+  const { xAccount, displayName, zodiacKey } = req.body;
 
   if (!xAccount || !xAccount.trim()) {
     return res.status(400).json({ success: false, message: 'กรุณากรอกลิงก์หรือชื่อบัญชี X ของวีทูบเบอร์' });
@@ -459,12 +459,14 @@ app.post('/api/propose', (req, res) => {
     zKey = 'unknown';
   }
 
-  // Derive simple display name from X account
+  // Derive simple display name from X account or use provided displayName
   let autoDisplayName = cleanX
     .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
     .replace(/^@/, '')
     .split('/')[0]
     .split('?')[0] || cleanX;
+
+  let finalDisplayName = (displayName && displayName.trim()) ? displayName.trim() : autoDisplayName;
 
   const db = readData();
   db.proposals = db.proposals || [];
@@ -472,7 +474,7 @@ app.post('/api/propose', (req, res) => {
   const newProposal = {
     id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: cleanX,
-    displayName: autoDisplayName,
+    displayName: finalDisplayName,
     zodiacKey: zKey,
     zodiacNameTh: zNameTh,
     zodiacNameEn: zNameEn,
