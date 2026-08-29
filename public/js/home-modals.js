@@ -200,25 +200,25 @@ function renderQuotaGrid(data) {
   grid.innerHTML = '';
   data.forEach(item => {
     const card = document.createElement('div');
-    const isUnknown = item.isUnknown || item.key === 'unknown';
-    card.className = 'zodiac-card' + (isUnknown ? ' unknown-quota-card' : '');
+    const isProposed = item.isProposed || item.key === 'proposed';
+    card.className = 'zodiac-card' + (isProposed ? ' proposed-quota-card' : '');
     card.onclick = () => showZodiacDetail(item.key);
 
-    const iconContent = isUnknown
-      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+    const iconContent = isProposed
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`
       : `<img src="/assets/images/white/${item.icon}" alt="${item.th} (${item.en})">`;
 
-    const iconBoxStyle = isUnknown ? `style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"` : '';
-    const titleStyle = isUnknown ? `style="color: #fbbf24;"` : '';
-    const dateStyle = isUnknown ? `style="color: #fde68a;"` : '';
-    const countStyle = isUnknown ? `style="color: #fbbf24;"` : '';
+    const iconBoxStyle = isProposed ? `style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"` : '';
+    const titleStyle = isProposed ? `style="color: #fbbf24;"` : '';
+    const dateStyle = isProposed ? `style="color: #fde68a;"` : '';
+    const countStyle = isProposed ? `style="color: #fbbf24;"` : '';
 
     card.innerHTML = `
       <div class="zodiac-icon-box" ${iconBoxStyle}>
         ${iconContent}
       </div>
       <div class="zodiac-info">
-        <div class="zodiac-name" ${titleStyle}>${item.th} (${item.en})</div>
+        <div class="zodiac-name" ${titleStyle}>${item.th}${isProposed ? '' : ` (${item.en})`}</div>
         <div class="zodiac-date" ${dateStyle}>${item.dateRange}</div>
         <div class="zodiac-count"><span ${countStyle}>${item.count}</span> คน</div>
       </div>
@@ -253,22 +253,26 @@ async function showZodiacDetail(signKey) {
     }
 
     const zodiac = result.zodiac;
+    const isProposed = zodiac.isProposed || zodiac.key === 'proposed';
+
     if (iconBox) {
-      if (zodiac.isUnknown || zodiac.key === 'unknown') {
+      if (isProposed) {
+        iconBox.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fbbf24;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>`;
+      } else if (zodiac.isUnknown || zodiac.key === 'unknown') {
         iconBox.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fbbf24;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>`;
       } else {
         iconBox.innerHTML = `<img src="/assets/images/white/${zodiac.icon}" alt="${zodiac.th}" style="width:100%;height:100%;object-fit:contain;">`;
       }
     }
-    if (titleText) titleText.textContent = `โควต้าราศี : ${zodiac.th} (${zodiac.en})`;
-    if (dateText) dateText.textContent = zodiac.dateRange;
+    if (titleText) titleText.textContent = isProposed ? 'วีทูบเบอร์ที่เสนอชื่อ' : `โควต้าราศี : ${zodiac.th} (${zodiac.en})`;
+    if (dateText) dateText.textContent = zodiac.dateRange || '';
 
     const members = result.members || [];
     if (members.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
-          <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
-          <p>คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})</p>
+          <h3>${isProposed ? 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ' : 'ยังไม่มีผู้ลงทะเบียนในราศีนี้'}</h3>
+          <p>${isProposed ? 'ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วม!' : `คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})`}</p>
           <div style="margin-top: 1.5rem;">
             <button type="button" class="btn-primary" onclick="openRegisterFromQuota()">ลงทะเบียน</button>
           </div>
@@ -287,16 +291,29 @@ async function showZodiacDetail(signKey) {
           .split('/')[0]
           .split('?')[0];
 
-        const xAvatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        // Avatar source: custom imageUrl if set, otherwise unavatar
+        let avatarUrl;
+        if (m.imageUrl) {
+          avatarUrl = m.imageUrl;
+        } else {
+          avatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        }
 
         let xLink = rawX;
         if (!xLink.startsWith('http')) {
           xLink = 'https://x.com/' + username;
         }
 
+        // Build zodiac label
+        let zodiacLabelHtml = '';
+        if (isProposed) {
+          const label = m.zodiacLabel || 'ไม่ทราบราศี';
+          zodiacLabelHtml = `<div class="participant-meta">${escapeHtml(label)}</div>`;
+        }
+
         card.innerHTML = `
           <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-            <img src="${escapeHtml(xAvatarUrl)}" 
+            <img src="${escapeHtml(avatarUrl)}" 
                  alt="${escapeHtml(m.displayName)}" 
                  class="participant-bg-img"
                  loading="lazy"
@@ -306,6 +323,7 @@ async function showZodiacDetail(signKey) {
               <div class="participant-name" title="${escapeHtml(m.displayName)}">
                 ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
               </div>
+              ${zodiacLabelHtml}
             </div>
           </a>
         `;

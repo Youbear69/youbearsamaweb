@@ -17,24 +17,24 @@ async function initAllZodiacPage() {
       data.forEach(item => {
         const card = document.createElement('a');
         card.href = `/12vtubergame/zodiac/${item.key}`;
-        const isUnknown = item.isUnknown || item.key === 'unknown';
-        card.className = 'zodiac-card' + (isUnknown ? ' unknown-quota-card' : '');
+        const isProposed = item.isProposed || item.key === 'proposed';
+        card.className = 'zodiac-card' + (isProposed ? ' proposed-quota-card' : '');
 
-        const iconContent = isUnknown
-          ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+        const iconContent = isProposed
+          ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`
           : `<img src="/assets/images/white/${item.icon}" alt="${item.nameTh || item.th} (${item.nameEn || item.en})">`;
 
-        const iconBoxStyle = isUnknown ? `style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"` : '';
-        const titleStyle = isUnknown ? `style="color: #fbbf24;"` : '';
-        const dateStyle = isUnknown ? `style="color: #fde68a;"` : '';
-        const countStyle = isUnknown ? `style="color: #fbbf24;"` : '';
+        const iconBoxStyle = isProposed ? `style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"` : '';
+        const titleStyle = isProposed ? `style="color: #fbbf24;"` : '';
+        const dateStyle = isProposed ? `style="color: #fde68a;"` : '';
+        const countStyle = isProposed ? `style="color: #fbbf24;"` : '';
 
         card.innerHTML = `
           <div class="zodiac-icon-box" ${iconBoxStyle}>
             ${iconContent}
           </div>
           <div class="zodiac-info">
-            <div class="zodiac-name" ${titleStyle}>${item.nameTh || item.th} (${item.nameEn || item.en})</div>
+            <div class="zodiac-name" ${titleStyle}>${item.nameTh || item.th}${isProposed ? '' : ` (${item.nameEn || item.en})`}</div>
             <div class="zodiac-date" ${dateStyle}>${item.dateRange}</div>
             <div class="zodiac-count"><span ${countStyle}>${item.count}</span> คน</div>
           </div>

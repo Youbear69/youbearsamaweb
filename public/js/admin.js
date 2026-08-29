@@ -1,3 +1,101 @@
+// ==========================================
+// Edit Modal Functions (Global Scope)
+// ==========================================
+
+function openEditModal(entryType, entryData) {
+  const modal = document.getElementById('edit-modal');
+  if (!modal) return;
+
+  document.getElementById('edit-entry-id').value = entryData.id;
+  document.getElementById('edit-entry-type').value = entryType;
+  document.getElementById('edit-displayName').value = entryData.displayName || '';
+  document.getElementById('edit-xAccount').value = entryData.xAccount || '';
+
+  // Populate zodiac dropdown
+  const zodiacSelect = document.getElementById('edit-zodiacKey');
+  if (zodiacSelect) {
+    zodiacSelect.innerHTML = '';
+    if (entryType === 'proposal') {
+      zodiacSelect.innerHTML += `<option value="unknown">ไม่ทราบราศี (Unknown)</option>`;
+    }
+    ZODIAC_LIST.forEach(z => {
+      const opt = document.createElement('option');
+      opt.value = z.key;
+      opt.textContent = `${z.th} (${z.en})`;
+      zodiacSelect.appendChild(opt);
+    });
+    zodiacSelect.value = entryData.zodiacKey || (entryType === 'proposal' ? 'unknown' : ZODIAC_LIST[0].key);
+  }
+
+  // Image preview
+  const previewContainer = document.getElementById('edit-image-preview');
+  const previewImg = document.getElementById('edit-image-preview-img');
+  const clearBtn = document.getElementById('btn-clear-image');
+  const urlInput = document.getElementById('edit-imageUrl');
+
+  if (entryData.imageUrl) {
+    previewContainer.style.display = 'block';
+    previewImg.src = entryData.imageUrl;
+    clearBtn.style.display = 'inline-block';
+    urlInput.value = entryData.imageUrl;
+  } else {
+    previewContainer.style.display = 'none';
+    previewImg.src = '';
+    clearBtn.style.display = 'none';
+    urlInput.value = '';
+  }
+
+  // Reset file input
+  const fileInput = document.getElementById('edit-imageFile');
+  if (fileInput) fileInput.value = '';
+  const fileName = document.getElementById('file-upload-name');
+  if (fileName) fileName.textContent = '';
+
+  // Reset to URL tab
+  switchImageTab('url');
+
+  modal.classList.add('show');
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('edit-modal');
+  if (modal) modal.classList.remove('show');
+}
+
+function switchImageTab(tab) {
+  const urlTab = document.getElementById('img-tab-url');
+  const fileTab = document.getElementById('img-tab-file');
+  const urlInput = document.getElementById('img-input-url');
+  const fileInput = document.getElementById('img-input-file');
+
+  if (tab === 'url') {
+    urlTab.classList.add('active');
+    fileTab.classList.remove('active');
+    urlInput.style.display = 'block';
+    fileInput.style.display = 'none';
+  } else {
+    urlTab.classList.remove('active');
+    fileTab.classList.add('active');
+    urlInput.style.display = 'none';
+    fileInput.style.display = 'block';
+  }
+}
+
+function clearEditImage() {
+  document.getElementById('edit-imageUrl').value = '';
+  document.getElementById('edit-image-preview').style.display = 'none';
+  document.getElementById('edit-image-preview-img').src = '';
+  document.getElementById('btn-clear-image').style.display = 'none';
+  const fileInput = document.getElementById('edit-imageFile');
+  if (fileInput) fileInput.value = '';
+  const fileName = document.getElementById('file-upload-name');
+  if (fileName) fileName.textContent = '';
+}
+
+// ==========================================
+// Main Admin Init
+// ==========================================
+
 async function initAdminPage() {
   const loginView = document.getElementById('admin-login-view');
   const dashboardView = document.getElementById('admin-dashboard-view');
@@ -176,7 +274,7 @@ async function initAdminPage() {
         let maxCount = 0;
         let topSign = '-';
         stats.forEach(s => {
-          if (s.count > maxCount) {
+          if (s.count > maxCount && !s.isProposed) {
             maxCount = s.count;
             topSign = `${s.nameTh || s.th} (${s.count} คน)`;
           }
@@ -250,45 +348,43 @@ async function initAdminPage() {
         timeStyle: 'short'
       });
 
-      const optionsHtml = ZODIAC_LIST.map(z => 
-        `<option value="${z.key}" ${z.key === r.zodiacKey ? 'selected' : ''}>${z.th} (${z.en})</option>`
-      ).join('');
+      // Thumbnail preview
+      const thumbHtml = r.imageUrl 
+        ? `<img src="${escapeHtml(r.imageUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(168,85,247,0.3);">`
+        : '';
+
+      const zodiacInfo = ZODIAC_LIST.find(z => z.key === r.zodiacKey);
+      const zodiacLabel = zodiacInfo ? `${zodiacInfo.th} (${zodiacInfo.en})` : (r.zodiacNameTh || r.zodiacKey);
 
       return `
         <tr>
           <td style="color: var(--text-muted);">${index + 1}</td>
-          <td><strong>${escapeHtml(r.displayName)}</strong></td>
+          <td>${thumbHtml}<strong>${escapeHtml(r.displayName)}</strong></td>
           <td>
             <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" style="color: #c77dff; text-decoration: none;">
               ${escapeHtml(r.xAccount)}
             </a>
           </td>
-          <td>
-            <select class="admin-zodiac-select reg-zodiac-change" data-id="${r.id}" style="background: #1e153b; color: #e2e8f0; border: 1.5px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.95rem; cursor: pointer;">
-              ${optionsHtml}
-            </select>
-          </td>
+          <td style="color: #c4b5fd;">${escapeHtml(zodiacLabel)}</td>
           <td style="font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
           <td>
-            <button class="btn-delete btn-delete-reg" data-id="${r.id}" data-name="${escapeHtml(r.displayName)}">ลบ</button>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <button class="btn-edit btn-edit-reg" data-id="${r.id}" title="แก้ไข">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button class="btn-delete btn-delete-reg" data-id="${r.id}" data-name="${escapeHtml(r.displayName)}">ลบ</button>
+            </div>
           </td>
         </tr>
       `;
     }).join('');
 
-    // Attach zodiac change listeners for registrations
-    tableBody.querySelectorAll('.reg-zodiac-change').forEach(select => {
-      select.onchange = async () => {
-        const id = select.getAttribute('data-id');
-        const newZodiacKey = select.value;
-        try {
-          await fbUpdateRegistrationZodiac(id, newZodiacKey);
-          showToast('เปลี่ยนราศีเรียบร้อยแล้ว', 'success');
-          loadAdminData();
-        } catch (err) {
-          console.error(err);
-          showToast('เกิดข้อผิดพลาดในการเปลี่ยนราศี', 'error');
-        }
+    // Attach edit listeners for registrations
+    tableBody.querySelectorAll('.btn-edit-reg').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        const entry = allRegistrations.find(r => r.id === id);
+        if (entry) openEditModal('registration', entry);
       };
     });
 
@@ -334,7 +430,7 @@ async function initAdminPage() {
     if (filtered.length === 0) {
       proposalsTableBody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
             ไม่พบข้อมูลการเสนอวีทูบเบอร์ตามเงื่อนไขที่ระบุ
           </td>
         </tr>
@@ -355,25 +451,25 @@ async function initAdminPage() {
 
       const isUnknown = p.zodiacKey === 'unknown' || !p.zodiacKey;
 
-      const propOptionsHtml = `
-        <option value="unknown" ${isUnknown ? 'selected' : ''}>ไม่ทราบราศี (Unknown)</option>
-        ${ZODIAC_LIST.map(z => `<option value="${z.key}" ${z.key === p.zodiacKey ? 'selected' : ''}>${z.th} (${z.en})</option>`).join('')}
-      `;
+      const zodiacInfo = !isUnknown ? ZODIAC_LIST.find(z => z.key === p.zodiacKey) : null;
+      const zodiacLabel = zodiacInfo ? `${zodiacInfo.th} (${zodiacInfo.en})` : 'ไม่ทราบราศี';
+
+      // Thumbnail preview
+      const thumbHtml = p.imageUrl 
+        ? `<img src="${escapeHtml(p.imageUrl)}" alt="thumb" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(251,191,36,0.3);">`
+        : '';
 
       return `
         <tr>
           <td style="color: var(--text-muted);">${index + 1}</td>
+          <td>${thumbHtml}<strong style="color: #fcd34d;">${escapeHtml(p.displayName || '-')}</strong></td>
           <td>
             <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
               <span>${escapeHtml(p.xAccount)}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </td>
-          <td>
-            <select class="admin-zodiac-select prop-zodiac-change" data-id="${p.id}" style="background: ${isUnknown ? '#33230a' : '#1e153b'}; color: ${isUnknown ? '#fcd34d' : '#c084fc'}; border: 1.5px solid ${isUnknown ? 'rgba(245,158,11,0.5)' : 'rgba(168,85,247,0.4)'}; border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.95rem; cursor: pointer; font-weight: 600;">
-              ${propOptionsHtml}
-            </select>
-          </td>
+          <td style="color: ${isUnknown ? '#fcd34d' : '#c4b5fd'};">${escapeHtml(zodiacLabel)}</td>
           <td style="font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
           <td>
             <label class="admin-checkbox-label">
@@ -384,25 +480,23 @@ async function initAdminPage() {
             </label>
           </td>
           <td>
-            <button class="btn-delete btn-delete-prop" data-id="${p.id}" data-account="${escapeHtml(p.xAccount)}">ลบ</button>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <button class="btn-edit btn-edit-prop" data-id="${p.id}" title="แก้ไข">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button class="btn-delete btn-delete-prop" data-id="${p.id}" data-account="${escapeHtml(p.xAccount)}">ลบ</button>
+            </div>
           </td>
         </tr>
       `;
     }).join('');
 
-    // Attach zodiac change listeners for proposals
-    proposalsTableBody.querySelectorAll('.prop-zodiac-change').forEach(select => {
-      select.onchange = async () => {
-        const id = select.getAttribute('data-id');
-        const newZodiacKey = select.value;
-        try {
-          await fbUpdateProposalZodiac(id, newZodiacKey);
-          showToast('เปลี่ยนราศีเรียบร้อยแล้ว', 'success');
-          loadAdminData();
-        } catch (err) {
-          console.error(err);
-          showToast('เกิดข้อผิดพลาดในการเปลี่ยนราศี', 'error');
-        }
+    // Attach edit listeners for proposals
+    proposalsTableBody.querySelectorAll('.btn-edit-prop').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        const entry = allProposals.find(p => p.id === id);
+        if (entry) openEditModal('proposal', entry);
       };
     });
 
@@ -493,6 +587,97 @@ async function initAdminPage() {
         showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
       }
     };
+  }
+
+  // ==========================================
+  // Edit Modal Save Handler
+  // ==========================================
+  const btnSaveEdit = document.getElementById('btn-save-edit');
+  if (btnSaveEdit) {
+    btnSaveEdit.onclick = async () => {
+      const entryId = document.getElementById('edit-entry-id').value;
+      const entryType = document.getElementById('edit-entry-type').value;
+      const displayName = document.getElementById('edit-displayName').value.trim();
+      const xAccount = document.getElementById('edit-xAccount').value.trim();
+      const zodiacKey = document.getElementById('edit-zodiacKey').value;
+      let imageUrl = document.getElementById('edit-imageUrl').value.trim();
+      const imageFile = document.getElementById('edit-imageFile').files[0];
+
+      if (!displayName) {
+        showToast('กรุณากรอกชื่อ', 'error');
+        return;
+      }
+      if (!xAccount) {
+        showToast('กรุณากรอกลิงก์ X', 'error');
+        return;
+      }
+
+      btnSaveEdit.disabled = true;
+      btnSaveEdit.textContent = 'กำลังบันทึก...';
+
+      try {
+        // If file is selected, upload first
+        if (imageFile) {
+          showToast('กำลังอัปโหลดรูปภาพ...', 'info');
+          imageUrl = await fbUploadImage(imageFile, 'vtuber-images');
+        }
+
+        const updateData = {
+          displayName,
+          xAccount,
+          zodiacKey,
+          imageUrl: imageUrl || ''
+        };
+
+        if (entryType === 'registration') {
+          await fbUpdateRegistration(entryId, updateData);
+        } else {
+          await fbUpdateProposal(entryId, updateData);
+        }
+
+        showToast('บันทึกการแก้ไขเรียบร้อยแล้ว', 'success');
+        closeEditModal();
+        loadAdminData();
+      } catch (err) {
+        console.error(err);
+        showToast('เกิดข้อผิดพลาดในการบันทึก: ' + (err.message || ''), 'error');
+      } finally {
+        btnSaveEdit.disabled = false;
+        btnSaveEdit.textContent = 'บันทึก';
+      }
+    };
+  }
+
+  // File input change listener for preview
+  const editImageFile = document.getElementById('edit-imageFile');
+  if (editImageFile) {
+    editImageFile.onchange = () => {
+      const file = editImageFile.files[0];
+      const fileName = document.getElementById('file-upload-name');
+      const previewContainer = document.getElementById('edit-image-preview');
+      const previewImg = document.getElementById('edit-image-preview-img');
+      const clearBtn = document.getElementById('btn-clear-image');
+
+      if (file) {
+        if (fileName) fileName.textContent = file.name;
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewContainer.style.display = 'block';
+          clearBtn.style.display = 'inline-block';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  // Edit modal backdrop click
+  const editModal = document.getElementById('edit-modal');
+  if (editModal) {
+    editModal.addEventListener('click', (e) => {
+      if (e.target === editModal) closeEditModal();
+    });
   }
 }
 

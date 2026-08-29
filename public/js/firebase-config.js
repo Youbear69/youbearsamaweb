@@ -14,6 +14,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const rtdb = firebase.database();
 const fbAuth = firebase.auth();
+const fbStorage = (typeof firebase.storage === 'function') ? firebase.storage() : null;
 
 // Zodiac metadata (same as server.js)
 const ZODIAC_METADATA = [
@@ -105,6 +106,24 @@ async function fbUpdateRegistrationZodiac(id, zodiacKey) {
   return reg;
 }
 
+// Update registration full data (name, link, zodiac, image)
+async function fbUpdateRegistration(id, data) {
+  const regs = await fbGetRegistrations();
+  const reg = regs.find(r => r.id === id);
+  if (!reg) throw new Error('Not found');
+  if (data.displayName !== undefined) reg.displayName = data.displayName;
+  if (data.xAccount !== undefined) reg.xAccount = data.xAccount;
+  if (data.zodiacKey !== undefined) {
+    const zodiac = ZODIAC_METADATA.find(z => z.key === data.zodiacKey);
+    reg.zodiacKey = data.zodiacKey;
+    reg.zodiacNameTh = zodiac ? zodiac.th : data.zodiacKey;
+    reg.zodiacNameEn = zodiac ? zodiac.en : data.zodiacKey;
+  }
+  if (data.imageUrl !== undefined) reg.imageUrl = data.imageUrl;
+  await rtdb.ref('registrations').set(regs);
+  return reg;
+}
+
 // Get all proposals as array
 async function fbGetProposals() {
   const snap = await rtdb.ref('proposals').once('value');
@@ -169,18 +188,33 @@ async function fbUpdateProposalZodiac(id, zodiacKey) {
   return p;
 }
 
-// Get zodiac stats (count per zodiac) — includes both registrations AND approved proposals
+// Update proposal full data (name, link, zodiac, image)
+async function fbUpdateProposal(id, data) {
+  const proposals = await fbGetProposals();
+  const p = proposals.find(x => x.id === id);
+  if (!p) throw new Error('Not found');
+  if (data.displayName !== undefined) p.displayName = data.displayName;
+  if (data.xAccount !== undefined) p.xAccount = data.xAccount;
+  if (data.zodiacKey !== undefined) {
+    const zodiac = ZODIAC_METADATA.find(z => z.key === data.zodiacKey);
+    p.zodiacKey = data.zodiacKey;
+    p.zodiacNameTh = zodiac ? zodiac.th : (data.zodiacKey === 'unknown' ? 'ไม่ทราบ' : data.zodiacKey);
+    p.zodiacNameEn = zodiac ? zodiac.en : (data.zodiacKey === 'unknown' ? 'Unknown' : data.zodiacKey);
+  }
+  if (data.imageUrl !== undefined) p.imageUrl = data.imageUrl;
+  await rtdb.ref('proposals').set(proposals);
+  return p;
+}
+
+// Get zodiac stats (count per zodiac) — registrations only (no proposals mixed in)
 async function fbGetZodiacStats() {
   const regs = await fbGetRegistrations();
   const proposals = await fbGetProposals();
   const approvedProposals = proposals.filter(p => p.approved);
-  const settings = await fbGetSettings();
-
-  // Combine registrations + approved proposals
-  const allMembers = [...regs, ...approvedProposals];
 
   const stats = ZODIAC_METADATA.map(z => {
-    const count = allMembers.filter(r => r.zodiacKey === z.key).length;
+    // Count only registrations for the 12 zodiac cards
+    const count = regs.filter(r => r.zodiacKey === z.key).length;
     return {
       key: z.key,
       th: z.th,
@@ -193,19 +227,18 @@ async function fbGetZodiacStats() {
     };
   });
 
-  // Add unknown zodiac if enabled
-  const unknownCount = allMembers.filter(r => r.zodiacKey === 'unknown').length;
-  if (settings.showUnknownZodiac || unknownCount > 0) {
+  // Add "วีทูบเบอร์ที่เสนอชื่อ" card — counts ALL approved proposals
+  if (approvedProposals.length > 0) {
     stats.push({
-      key: 'unknown',
-      th: 'ไม่ทราบราศี',
-      en: 'Unknown',
-      nameTh: 'ไม่ทราบราศี',
-      nameEn: 'Unknown',
-      dateRange: '',
+      key: 'proposed',
+      th: 'วีทูบเบอร์ที่เสนอชื่อ',
+      en: 'Proposed',
+      nameTh: 'วีทูบเบอร์ที่เสนอชื่อ',
+      nameEn: 'Proposed',
+      dateRange: 'วีทูบเบอร์ที่ถูกเสนอชื่อเข้าร่วม',
       icon: null,
-      count: unknownCount,
-      isUnknown: true
+      count: approvedProposals.length,
+      isProposed: true
     });
   }
 
@@ -217,6 +250,28 @@ async function fbGetZodiacDetail(sign) {
   const regs = await fbGetRegistrations();
   const proposals = await fbGetProposals();
   const approvedProposals = proposals.filter(p => p.approved);
+
+  // Handle "proposed" — show ALL approved proposals
+  if (sign === 'proposed') {
+    const zodiac = {
+      key: 'proposed',
+      th: 'วีทูบเบอร์ที่เสนอชื่อ',
+      en: 'Proposed',
+      dateRange: 'วีทูบเบอร์ที่ถูกเสนอชื่อเข้าร่วม',
+      icon: null,
+      isProposed: true
+    };
+    const members = approvedProposals.map(p => {
+      const zMeta = ZODIAC_METADATA.find(z => z.key === p.zodiacKey);
+      return {
+        ...p,
+        displayName: p.displayName || p.xAccount,
+        isProposal: true,
+        zodiacLabel: zMeta ? `ราศี${zMeta.th} (${zMeta.en})` : 'ไม่ทราบราศี'
+      };
+    });
+    return { zodiac, members, count: members.length };
+  }
 
   // Handle unknown zodiac separately
   let zodiac;
@@ -233,22 +288,23 @@ async function fbGetZodiacDetail(sign) {
     zodiac = ZODIAC_METADATA.find(z => z.key === sign);
   }
 
-  // Combine registrations + approved proposals for this zodiac
+  // Only registrations for zodiac detail (proposals are in their own section)
   const regMembers = regs.filter(r => r.zodiacKey === sign);
-  const proposalMembers = approvedProposals
-    .filter(p => p.zodiacKey === sign)
-    .map(p => ({
-      ...p,
-      displayName: p.displayName || p.xAccount,
-      isProposal: true
-    }));
-  const members = [...regMembers, ...proposalMembers];
 
   return {
     zodiac: zodiac || { key: sign, th: sign, en: sign, dateRange: '', icon: sign + '.png' },
-    members: members,
-    count: members.length
+    members: regMembers,
+    count: regMembers.length
   };
+}
+
+// Upload image to Firebase Storage and return download URL
+async function fbUploadImage(file, folder) {
+  const fileName = folder + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storageRef = fbStorage.ref(fileName);
+  const snapshot = await storageRef.put(file);
+  const downloadUrl = await snapshot.ref.getDownloadURL();
+  return downloadUrl;
 }
 
 // Export registrations and proposals as CSV
@@ -258,7 +314,7 @@ function fbExportCSV(registrations, proposals) {
     csv += `ลงทะเบียน,${r.id},"${r.xAccount}","${r.displayName || ''}",${r.zodiacNameTh || ''},${r.zodiacNameEn || ''},${r.registeredAt || ''},-\n`;
   });
   proposals.forEach(p => {
-    csv += `เสนอชื่อ,${p.id},"${p.xAccount}","",${p.zodiacNameTh || ''},${p.zodiacNameEn || ''},${p.proposedAt || ''},${p.approved ? 'อนุมัติ' : 'รอพิจารณา'}\n`;
+    csv += `เสนอชื่อ,${p.id},"${p.xAccount}","${p.displayName || ''}",${p.zodiacNameTh || ''},${p.zodiacNameEn || ''},${p.proposedAt || ''},${p.approved ? 'อนุมัติ' : 'รอพิจารณา'}\n`;
   });
 
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });

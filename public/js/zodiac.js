@@ -36,20 +36,38 @@ async function initZodiacPage() {
     }
 
     const zodiac = result.zodiac;
-    document.title = `โควต้าราศี : ${zodiac.th} (${zodiac.en}) - ศึก 12 วีทูบเบอร์`;
+    const isProposed = zodiac.isProposed || zodiac.key === 'proposed';
+
+    if (isProposed) {
+      document.title = `วีทูบเบอร์ที่เสนอชื่อ - ศึก 12 วีทูบเบอร์`;
+    } else {
+      document.title = `โควต้าราศี : ${zodiac.th} (${zodiac.en}) - ศึก 12 วีทูบเบอร์`;
+    }
 
     // Render Header Info
-    if (iconBox) iconBox.innerHTML = `<img src="/assets/images/white/${zodiac.icon}" alt="${zodiac.th}">`;
-    titleText.textContent = `โควต้าราศี : ${zodiac.th} (${zodiac.en})`;
-    if (dateText) dateText.textContent = zodiac.dateRange;
+    if (iconBox) {
+      if (isProposed) {
+        iconBox.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fbbf24;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>`;
+      } else {
+        iconBox.innerHTML = `<img src="/assets/images/white/${zodiac.icon}" alt="${zodiac.th}">`;
+      }
+    }
+
+    if (isProposed) {
+      titleText.textContent = `วีทูบเบอร์ที่เสนอชื่อ`;
+    } else {
+      titleText.textContent = `โควต้าราศี : ${zodiac.th} (${zodiac.en})`;
+    }
+
+    if (dateText) dateText.textContent = zodiac.dateRange || '';
 
     // Render Members
     const members = result.members || [];
     if (members.length === 0) {
       grid.innerHTML = `
         <div class="empty-state">
-          <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
-          <p>คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})</p>
+          <h3>${isProposed ? 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ' : 'ยังไม่มีผู้ลงทะเบียนในราศีนี้'}</h3>
+          <p>${isProposed ? 'ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วมกิจกรรมนี้!' : `คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})`}</p>
           <div style="margin-top: 2rem;">
             <a href="/12vtubergame/register" class="btn-primary">ลงทะเบียน</a>
           </div>
@@ -69,17 +87,32 @@ async function initZodiacPage() {
           .split('/')[0]
           .split('?')[0];
 
-        // Avatar source: unavatar for X / twitter with fallback
-        const xAvatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        // Avatar source: custom imageUrl if set, otherwise unavatar
+        let avatarUrl;
+        if (m.imageUrl) {
+          avatarUrl = m.imageUrl;
+        } else {
+          avatarUrl = username ? `https://unavatar.io/x/${username}?fallback=https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username || m.displayName)}` : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName)}`;
+        }
 
         let xLink = rawX;
         if (!xLink.startsWith('http')) {
           xLink = 'https://x.com/' + username;
         }
 
+        // Build zodiac label for the line below the name
+        let zodiacLabelHtml = '';
+        if (isProposed) {
+          // For proposed VTubers, show their individual zodiac
+          const label = m.zodiacLabel || 'ไม่ทราบราศี';
+          zodiacLabelHtml = `<div class="participant-meta">${escapeHtml(label)}</div>`;
+        } else {
+          zodiacLabelHtml = `<div class="participant-meta">ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})</div>`;
+        }
+
         card.innerHTML = `
           <a href="${escapeHtml(xLink)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-            <img src="${escapeHtml(xAvatarUrl)}" 
+            <img src="${escapeHtml(avatarUrl)}" 
                  alt="${escapeHtml(m.displayName)}" 
                  class="participant-bg-img"
                  loading="lazy"
@@ -89,9 +122,7 @@ async function initZodiacPage() {
               <div class="participant-name" title="${escapeHtml(m.displayName)}">
                 ${escapeHtml(m.displayName)}
               </div>
-              <div class="participant-meta">
-                ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})
-              </div>
+              ${zodiacLabelHtml}
             </div>
           </a>
         `;

@@ -990,6 +990,36 @@ body.page-home {
   box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
 }
 
+.zodiac-card.proposed-quota-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(234, 88, 12, 0.10) 100%), #21162b;
+  border: 1.5px solid rgba(251, 191, 36, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+.zodiac-card.proposed-quota-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(251, 191, 36, 0.08), transparent, rgba(251, 191, 36, 0.05), transparent);
+  animation: proposedShimmer 6s linear infinite;
+}
+
+@keyframes proposedShimmer {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.zodiac-card.proposed-quota-card:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(234, 88, 12, 0.18) 100%), #2d1d3b;
+  border-color: #fbbf24;
+  box-shadow: 0 8px 30px rgba(251, 191, 36, 0.4);
+  transform: translateY(-3px);
+}
+
 .zodiac-icon-box {
   width: 46px;
   height: 46px;
@@ -1574,6 +1604,60 @@ body.page-home {
 .btn-delete:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+.btn-edit {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit:hover {
+  background: rgba(168, 85, 247, 0.4);
+  color: #e9d5ff;
+  border-color: #c084fc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.file-upload-area {
+  border: 2px dashed rgba(168, 85, 247, 0.35);
+  border-radius: var(--radius-md);
+  background: rgba(168, 85, 247, 0.06);
+  transition: var(--transition-smooth);
+  cursor: pointer;
+}
+
+.file-upload-area:hover {
+  border-color: #c084fc;
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.file-upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  cursor: pointer;
+}
+
+.edit-img-tab {
+  transition: var(--transition-smooth);
+}
+
+.edit-img-tab.active {
+  background: rgba(168, 85, 247, 0.25) !important;
+  border-color: #c084fc !important;
+  color: #e9d5ff !important;
 }
 
 .stat-pills {

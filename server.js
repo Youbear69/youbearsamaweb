@@ -254,39 +254,27 @@ app.get('/api/zodiac-stats', (req, res) => {
     }
   });
 
-  let unknownApprovedCount = 0;
-
-  // Also include approved proposed vtubers
-  (db.proposals || []).forEach(prop => {
-    if (prop.approved) {
-      if (counts[prop.zodiacKey] !== undefined) {
-        counts[prop.zodiacKey]++;
-      } else if (prop.zodiacKey === 'unknown' || !prop.zodiacKey) {
-        unknownApprovedCount++;
-      }
-    }
-  });
+  const approvedProposals = (db.proposals || []).filter(p => p.approved);
 
   const list = ZODIAC_METADATA.map(z => ({
     ...z,
     count: counts[z.key] || 0
   }));
 
-  // Only include special 'unknown' card if admin HAS checked/approved at least 1 proposal with unknown zodiac
-  if (unknownApprovedCount > 0) {
+  if (approvedProposals.length > 0) {
     list.push({
-      key: 'unknown',
-      th: 'ไม่ทราบราศี',
-      en: 'Unknown',
-      dateRange: 'วีทูบเบอร์ที่ไม่ระบุราศี',
-      icon: 'unknown',
-      count: unknownApprovedCount,
-      isUnknown: true
+      key: 'proposed',
+      th: 'วีทูบเบอร์ที่เสนอชื่อ',
+      en: 'Proposed',
+      dateRange: 'วีทูบเบอร์ที่ถูกเสนอชื่อเข้าร่วม',
+      icon: null,
+      count: approvedProposals.length,
+      isProposed: true
     });
   }
 
   const totalRegistered = (db.registrations || []).length;
-  const totalApprovedProps = (db.proposals || []).filter(p => p.approved).length;
+  const totalApprovedProps = approvedProposals.length;
 
   res.json({
     success: true,
@@ -297,6 +285,41 @@ app.get('/api/zodiac-stats', (req, res) => {
 
 app.get('/api/zodiac/:sign', (req, res) => {
   const signKey = (req.params.sign || '').toLowerCase().trim();
+
+  if (signKey === 'proposed') {
+    const zodiacInfo = {
+      key: 'proposed',
+      th: 'วีทูบเบอร์ที่เสนอชื่อ',
+      en: 'Proposed',
+      dateRange: 'วีทูบเบอร์ที่ถูกเสนอชื่อเข้าร่วม',
+      icon: null,
+      isProposed: true
+    };
+
+    const db = readData();
+    const approvedProposals = (db.proposals || []).filter(p => p.approved).map(p => {
+      const zMeta = ZODIAC_METADATA.find(z => z.key === p.zodiacKey);
+      return {
+        id: p.id,
+        xAccount: p.xAccount,
+        displayName: p.displayName || p.xAccount.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '').replace(/^@/, '') || 'VTuber ที่ถูกเสนอ',
+        zodiacKey: p.zodiacKey || 'unknown',
+        zodiacNameTh: zMeta ? zMeta.th : 'ไม่ทราบราศี',
+        zodiacNameEn: zMeta ? zMeta.en : 'Unknown',
+        zodiacLabel: zMeta ? `ราศี${zMeta.th} (${zMeta.en})` : 'ไม่ทราบราศี',
+        imageUrl: p.imageUrl || null,
+        registeredAt: p.createdAt || p.registeredAt,
+        isProposal: true
+      };
+    });
+
+    return res.json({
+      success: true,
+      zodiac: zodiacInfo,
+      count: approvedProposals.length,
+      members: approvedProposals
+    });
+  }
 
   if (signKey === 'unknown') {
     const zodiacInfo = {
@@ -318,8 +341,10 @@ app.get('/api/zodiac/:sign', (req, res) => {
       zodiacKey: 'unknown',
       zodiacNameTh: 'ไม่ทราบราศี',
       zodiacNameEn: 'Unknown',
+      zodiacLabel: 'ไม่ทราบราศี',
+      imageUrl: p.imageUrl || null,
       registeredAt: p.createdAt || p.registeredAt,
-      isProposed: true
+      isProposal: true
     }));
 
     return res.json({
@@ -343,27 +368,11 @@ app.get('/api/zodiac/:sign', (req, res) => {
     r => (r.zodiacKey || '').toLowerCase() === zodiacInfo.key.toLowerCase()
   );
 
-  // Include approved proposed vtubers
-  const approvedProposals = (db.proposals || []).filter(
-    p => p.approved && (p.zodiacKey || '').toLowerCase() === zodiacInfo.key.toLowerCase()
-  ).map(p => ({
-    id: p.id,
-    xAccount: p.xAccount,
-    displayName: p.displayName || p.xAccount.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '').replace(/^@/, '') || 'VTuber ที่ถูกเสนอ',
-    zodiacKey: p.zodiacKey,
-    zodiacNameTh: p.zodiacNameTh,
-    zodiacNameEn: p.zodiacNameEn,
-    registeredAt: p.createdAt || p.registeredAt,
-    isProposed: true
-  }));
-
-  const combinedMembers = [...registeredMembers, ...approvedProposals];
-
   res.json({
     success: true,
     zodiac: zodiacInfo,
-    count: combinedMembers.length,
-    members: combinedMembers
+    count: registeredMembers.length,
+    members: registeredMembers
   });
 });
 
@@ -515,6 +524,38 @@ app.patch('/api/proposals/:id/toggle-approve', requireAdminAuth, (req, res) => {
   });
 });
 
+app.patch('/api/registrations/:id', requireAdminAuth, (req, res) => {
+  const { id } = req.params;
+  const { displayName, xAccount, zodiacKey, imageUrl } = req.body;
+  const db = readData();
+  db.registrations = db.registrations || [];
+
+  const reg = db.registrations.find(r => r.id === id);
+  if (!reg) {
+    return res.status(404).json({ success: false, message: 'ไม่พบรายการผู้ลงทะเบียนที่ต้องการแก้ไข' });
+  }
+
+  if (displayName !== undefined) reg.displayName = displayName.trim();
+  if (xAccount !== undefined) reg.xAccount = xAccount.trim();
+  if (imageUrl !== undefined) reg.imageUrl = imageUrl.trim();
+
+  if (zodiacKey !== undefined) {
+    const zodiacInfo = ZODIAC_METADATA.find(z => z.key.toLowerCase() === zodiacKey.toLowerCase());
+    if (zodiacInfo) {
+      reg.zodiacKey = zodiacInfo.key;
+      reg.zodiacNameTh = zodiacInfo.th;
+      reg.zodiacNameEn = zodiacInfo.en;
+    }
+  }
+
+  writeData(db);
+  res.json({
+    success: true,
+    message: 'อัปเดตข้อมูลผู้ลงทะเบียนเรียบร้อยแล้ว',
+    data: reg
+  });
+});
+
 app.patch('/api/registrations/:id/zodiac', requireAdminAuth, (req, res) => {
   const { id } = req.params;
   const { zodiacKey } = req.body;
@@ -540,6 +581,43 @@ app.patch('/api/registrations/:id/zodiac', requireAdminAuth, (req, res) => {
     success: true,
     message: `เปลี่ยนราศีของผู้ลงทะเบียนเป็น "${zodiacInfo.th}" เรียบร้อยแล้ว`,
     data: reg
+  });
+});
+
+app.patch('/api/proposals/:id', requireAdminAuth, (req, res) => {
+  const { id } = req.params;
+  const { displayName, xAccount, zodiacKey, imageUrl } = req.body;
+  const db = readData();
+  db.proposals = db.proposals || [];
+
+  const prop = db.proposals.find(p => p.id === id);
+  if (!prop) {
+    return res.status(404).json({ success: false, message: 'ไม่พบรายการเสนอวีทูบเบอร์ที่ต้องการแก้ไข' });
+  }
+
+  if (displayName !== undefined) prop.displayName = displayName.trim();
+  if (xAccount !== undefined) prop.xAccount = xAccount.trim();
+  if (imageUrl !== undefined) prop.imageUrl = imageUrl.trim();
+
+  if (zodiacKey !== undefined) {
+    let zKey = (zodiacKey || 'unknown').toLowerCase().trim();
+    let zodiacInfo = ZODIAC_METADATA.find(z => z.key.toLowerCase() === zKey);
+    if (zKey === 'unknown' || !zodiacInfo) {
+      prop.zodiacKey = 'unknown';
+      prop.zodiacNameTh = 'ไม่ทราบราศี';
+      prop.zodiacNameEn = 'Unknown';
+    } else {
+      prop.zodiacKey = zodiacInfo.key;
+      prop.zodiacNameTh = zodiacInfo.th;
+      prop.zodiacNameEn = zodiacInfo.en;
+    }
+  }
+
+  writeData(db);
+  res.json({
+    success: true,
+    message: 'อัปเดตข้อมูลการเสนอชื่อเรียบร้อยแล้ว',
+    data: prop
   });
 });
 
