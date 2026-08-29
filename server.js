@@ -114,30 +114,29 @@ async function resolveAvatarUrlServer(link, fallbackName) {
       .split('?')[0];
 
     if (handle) {
-      avatarUrl = `https://unavatar.io/x/${handle}`;
+      try {
+        const res = await fetch(`https://api.fxtwitter.com/${handle}`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          let avatar = data.user?.avatar_url;
+          if (avatar) {
+            avatarUrl = avatar.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          }
+        }
+      } catch (err) {
+        console.warn('FxTwitter fetch error:', err.message);
+      }
+
+      if (!avatarUrl) {
+        avatarUrl = `https://unavatar.io/x/${handle}`;
+      }
     }
   }
 
   if (!avatarUrl) {
     avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink)}`;
-  }
-
-  // Try to download image buffer and convert to base64 data URL for permanent storage
-  try {
-    const imgRes = await fetch(avatarUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    if (imgRes.ok) {
-      const buffer = Buffer.from(await imgRes.arrayBuffer());
-      const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
-      if (buffer.length > 0 && buffer.length < 5 * 1024 * 1024) {
-        return `data:${contentType};base64,${buffer.toString('base64')}`;
-      }
-    }
-  } catch (err) {
-    console.warn('Could not convert image to data URL, using direct URL:', err.message);
   }
 
   return avatarUrl;
