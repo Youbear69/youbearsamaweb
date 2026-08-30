@@ -47,7 +47,7 @@ async function initRegisterPage() {
     if (settings && modalLiveInfo) {
       modalLiveInfo.innerHTML = `
         <strong>กำหนดการไลฟ์:</strong> ${settings.liveDateDisplay || 'เร็วๆ นี้'}<br>
-        <p style="margin-top:0.4rem; color: #b8b3cf;">${settings.popupMessage || ''}</p>
+        <div style="margin-top:0.6rem; color: #b8b3cf; white-space: pre-wrap; word-break: break-word;">${settings.popupMessage || ''}</div>
       `;
     }
   } catch (e) {

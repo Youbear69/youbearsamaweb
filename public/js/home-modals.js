@@ -361,7 +361,7 @@ function setupPopupRegister() {
     if (modalLiveInfo && appSettings) {
       modalLiveInfo.innerHTML = `
         <strong>กำหนดการไลฟ์:</strong> ${appSettings.liveDateDisplay || '14/11/2026 เวลา 21:00 น.'}<br>
-        <p style="margin-top:0.4rem; color: #b8b3cf;">${appSettings.popupMessage || ''}</p>
+        <div style="margin-top:0.6rem; color: #b8b3cf; white-space: pre-wrap; word-break: break-word;">${appSettings.popupMessage || ''}</div>
       `;
     }
 
