@@ -148,7 +148,7 @@ async function initAdminPage() {
 
   function showDashboardView() {
     if (loginView) loginView.style.display = 'none';
-    if (dashboardView) dashboardView.style.display = 'block';
+    if (dashboardView) dashboardView.style.display = 'contents';
   }
 
   // Firebase Auth State Listener

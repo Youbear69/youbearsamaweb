@@ -837,20 +837,24 @@ app.get('/favicon.ico', (req, res) => {
 
 // Root landing page (yuubearsama.online)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  const landingPath = path.join(__dirname, 'public', 'landing.html');
+  const gamePath = path.join(__dirname, 'public', '12vtubergame.html');
+  if (fs.existsSync(landingPath)) {
+    res.sendFile(landingPath);
+  } else if (fs.existsSync(gamePath)) {
+    res.sendFile(gamePath);
+  } else {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
 });
 
 // 12 Vtuber Game subpath (yuubearsama.online/12vtubergame)
-app.get('/12vtubergame', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get(['/12vtubergame', '/12vtubergame/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', '12vtubergame.html'));
 });
 
 app.get('/12vtubergame/register', (req, res) => {
-  const filePath = path.join(__dirname, 'public', 'register.html');
-  console.log('Attempting to serve:', filePath);
-  res.sendFile(filePath, (err) => {
-    if (err) console.error('File error:', err);
-  });
+  res.sendFile(path.join(__dirname, 'public', 'register.html'));
 });
 
 app.get('/12vtubergame/allzodiac', (req, res) => {

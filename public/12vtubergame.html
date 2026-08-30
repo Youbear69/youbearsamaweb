@@ -19,9 +19,15 @@
   <!-- Main Content Locked to Viewport without scroll -->
   <main class="main-content home-content">
     <div class="home-top-section">
-      <!-- Slot Logo -->
-      <div class="logo-container">
-        <img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์ Logo" class="slot-logo">
+      <!-- Collab Logo Header (12 v x EasyDonate) -->
+      <div class="collab-logo-container">
+        <a href="https://www.youtube.com/live/P4Nx3iGJKfg?si=jdUw6k2UR24GbxwU" target="_blank" rel="noopener noreferrer" class="collab-logo-link" title="ชมไลฟ์ ศึก 12 วีทูบเบอร์ บน YouTube">
+          <img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์ Logo" class="slot-logo collab-slot-logo">
+        </a>
+        <div class="collab-cross" aria-hidden="true">✕</div>
+        <a href="https://easydonate.app/" target="_blank" rel="noopener noreferrer" class="collab-logo-link" title="ไปยังเว็บไซต์ EasyDonate">
+          <img src="/assets/images/easydonate-logo-bg-dark.png" alt="EasyDonate Logo" class="easydonate-logo">
+        </a>
       </div>
 
       <!-- Title -->
@@ -43,21 +49,38 @@
       <div class="time-badges-container">
         <!-- Close Date Badge -->
         <div class="countdown-badge badge-deadline">
-          <span class="badge-header" id="close-date-label">ปิดรับสมัคร : 1/10/2026</span>
+          <span class="badge-header" id="close-date-label">ปิดรับสมัคร : 15 ตุลาคม 2569 เวลา 00:00 น.</span>
           <span class="badge-timer" id="close-countdown">ปิดรับในอีก : -- เดือน -- วัน</span>
         </div>
 
         <!-- Live Date Badge -->
         <div class="countdown-badge">
-          <span class="badge-header" id="live-date-label">วันไลฟ์ : 14/11/2026 เวลา 21:00 น.</span>
+          <span class="badge-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</span>
           <span class="badge-timer" id="live-countdown">ไลฟ์ในอีก : -- เดือน -- วัน</span>
         </div>
       </div>
     </div>
 
-    <!-- Mascot Chibi (Larger & Grounded at Bottom) -->
-    <div class="mascot-container home-mascot-wrap">
-      <img src="/assets/images/art main.png" alt="Mascot Vtuber" class="mascot-img">
+
+    <!-- Mascot Chibi (Talk & Popup) -->
+    <div id="home-mascot-talk-section" class="home-mascot-talk-section">
+      <div class="home-mascot-inner">
+        <!-- Left Speech Bubble Popup Container -->
+        <div id="mascot-speech-bubble-container" class="mascot-speech-bubble-wrapper">
+          <img id="mascot-speech-bubble-img" 
+               src="/assets/images/popups/chat 1.png" 
+               alt="Yuubear Speech Bubble" 
+               class="mascot-speech-bubble-img" />
+        </div>
+
+        <!-- Chibi Character Link to X -->
+        <a href="https://x.com/bearuwu_001" target="_blank" rel="noopener noreferrer" class="home-mascot-chibi-link" title="ติดตาม YuuBear บน X (@bearuwu_001)">
+          <img id="home-chibi-img" 
+               src="/assets/images/mascot/not-speak.png" 
+               alt="Yuubear Chibi Mascot" 
+               class="mascot-img chibi-interactive" />
+        </a>
+      </div>
     </div>
   </main>
 

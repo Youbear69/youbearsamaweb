@@ -549,9 +549,91 @@ async function setupTimeBadges() {
   }
 }
 
+// ==========================================
+// Interactive Yuubear Mascot & Speech Popups
+// (Center Idle <-> Shift-Right Speak Sequence)
+// ==========================================
+function setupYuubearMascotTalk() {
+  const talkSection = document.getElementById('home-mascot-talk-section');
+  const chibiImg = document.getElementById('home-chibi-img');
+  const bubbleContainer = document.getElementById('mascot-speech-bubble-container');
+  const bubbleImg = document.getElementById('mascot-speech-bubble-img');
+
+  if (!talkSection || !chibiImg || !bubbleContainer || !bubbleImg) return;
+
+  const CHIBI_SPEAK = '/assets/images/mascot/speak.png';
+  const CHIBI_NOT_SPEAK = '/assets/images/mascot/not-speak.png';
+
+  const POPUP_CHATS = [
+    '/assets/images/popups/chat 1.png',
+    '/assets/images/popups/chat 2.png',
+    '/assets/images/popups/chat 3.png',
+    '/assets/images/popups/chat 4.png'
+  ];
+
+  // Preload all assets
+  [CHIBI_SPEAK, CHIBI_NOT_SPEAK, ...POPUP_CHATS].forEach((src) => {
+    const img = new Image();
+    img.src = src;
+  });
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  async function runTalkRoutine() {
+    while (true) {
+      // 1. Center Idle State (Not Speaking)
+      talkSection.classList.remove('speaking-mode');
+      chibiImg.src = CHIBI_NOT_SPEAK;
+      bubbleContainer.classList.remove('show');
+
+      // Rest in center for 7 seconds before starting speech cycle
+      await sleep(7000);
+
+      // 2. Start speaking: Shift Chibi smoothly to the right and change pose to speak.png
+      talkSection.classList.add('speaking-mode');
+      chibiImg.src = CHIBI_SPEAK;
+
+      // Small delay for slide transition before popup pops up
+      await sleep(400);
+
+      // 3. Cycle through all popups from chat 1 to chat 4
+      for (let i = 0; i < POPUP_CHATS.length; i++) {
+        bubbleImg.src = POPUP_CHATS[i];
+        chibiImg.src = CHIBI_SPEAK;
+        bubbleContainer.classList.add('show');
+
+        // Show this popup for 5.5 seconds
+        await sleep(5500);
+
+        // If there are more popups, smooth transition between them (1.5s gap, total 7s per chat)
+        if (i < POPUP_CHATS.length - 1) {
+          bubbleContainer.classList.remove('show');
+          await sleep(1500);
+        }
+      }
+
+      // 4. All speech texts completed: close bubble & return to center as not-speak
+      bubbleContainer.classList.remove('show');
+      await sleep(400);
+
+      chibiImg.src = CHIBI_NOT_SPEAK;
+      talkSection.classList.remove('speaking-mode'); // Slide back to center
+
+      // Rest interval after returning to center
+      await sleep(1000);
+    }
+  }
+
+  // Initial trigger after page load
+  setTimeout(() => {
+    runTalkRoutine().catch(console.error);
+  }, 1000);
+}
+
 // Initialise
 document.addEventListener('DOMContentLoaded', () => {
   setupPopupRegister();
   setupPopupPropose();
   setupTimeBadges();
+  setupYuubearMascotTalk();
 });
