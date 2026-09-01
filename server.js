@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -12,8 +13,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ensure avatars uploads directory exists
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads', 'avatars');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
 // Serve static assets from project root and public folder
 app.use('/assets/images', express.static(path.join(__dirname)));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Zodiac list metadata
@@ -52,44 +60,83 @@ function sortThaiEnglishServer(a, b, desc = false) {
   return desc ? -res : res;
 }
 
-// Fetch avatar from X, YouTube, TikTok and convert to data URL or URL
-async function resolveAvatarUrlServer(link, fallbackName) {
+// Parse social account URLs and handles
+function parseSocialLinkServer(raw) {
+  const text = (raw || '').trim();
+  if (!text) return { type: 'x', url: '', username: '' };
+
+  // 1. YouTube
+  if (/youtube\.com|youtu\.be/i.test(text)) {
+    let handle = text.replace(/^https?:\/\/(www\.)?youtube\.com\//i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0];
+    let fullUrl = text.startsWith('http') ? text : `https://${text}`;
+    return { type: 'youtube', url: fullUrl, username: handle || text };
+  }
+
+  // 2. TikTok
+  if (/tiktok\.com/i.test(text)) {
+    let handle = text.replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0];
+    let fullUrl = text.startsWith('http') ? text : `https://${text}`;
+    return { type: 'tiktok', url: fullUrl, username: handle || text };
+  }
+
+  // 3. X / Twitter
+  let username = text
+    .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
+    .replace(/^@/, '')
+    .split('/')[0]
+    .split('?')[0];
+
+  let fullUrl = text.startsWith('http') ? text : `https://x.com/${username}`;
+  return { type: 'x', url: fullUrl, username: username || text };
+}
+
+// Download profile avatar from X/YouTube/TikTok, cache permanently on disk & return clean URL
+async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '') {
   if (!link) return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || 'user')}`;
 
   const cleanLink = link.trim();
-  let avatarUrl = null;
+  const parsed = parseSocialLinkServer(cleanLink);
+  const safeKey = (parsed.username || fallbackName || 'user')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .toLowerCase();
+  const localFileName = `${safeKey}.jpg`;
+  const localFilePath = path.join(UPLOADS_DIR, localFileName);
+  const relativeUrl = `/uploads/avatars/${localFileName}`;
+
+  let remoteUrl = null;
 
   // 1. YouTube
-  if (/youtube\.com|youtu\.be/i.test(cleanLink)) {
+  if (parsed.type === 'youtube') {
     try {
-      let targetUrl = cleanLink;
-      if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+      let targetUrl = cleanLink.startsWith('http') ? cleanLink : 'https://' + cleanLink;
       const res = await fetch(targetUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept-Language': 'en-US,en;q=0.9'
-        }
+        },
+        signal: AbortSignal.timeout(6000)
       });
       if (res.ok) {
         const html = await res.text();
         const ogMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
         const yt3Match = html.match(/https:\/\/yt3\.googleusercontent\.com\/[a-zA-Z0-9_\-=]+/g);
-        avatarUrl = (ogMatch ? ogMatch[1] : null) || (yt3Match ? yt3Match[0] : null);
+        remoteUrl = (ogMatch ? ogMatch[1] : null) || (yt3Match ? yt3Match[0] : null);
       }
     } catch (e) {
       console.warn('YouTube avatar fetch failed:', e.message);
     }
   }
-
   // 2. TikTok
-  else if (/tiktok\.com/i.test(cleanLink)) {
+  else if (parsed.type === 'tiktok') {
     try {
-      let targetUrl = cleanLink;
-      if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+      let targetUrl = cleanLink.startsWith('http') ? cleanLink : 'https://' + cleanLink;
       const res = await fetch(targetUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'
-        }
+        },
+        signal: AbortSignal.timeout(6000)
       });
       if (res.ok) {
         const html = await res.text();
@@ -97,50 +144,150 @@ async function resolveAvatarUrlServer(link, fallbackName) {
                             html.match(/"avatarLarger":"([^"]+)"/) ||
                             html.match(/"avatarMedium":"([^"]+)"/);
         if (avatarMatch) {
-          avatarUrl = (avatarMatch[1] || avatarMatch[0]).replace(/\\u0026/g, '&').replace(/\\/g, '');
+          remoteUrl = (avatarMatch[1] || avatarMatch[0]).replace(/\\u0026/g, '&').replace(/\\/g, '');
         }
       }
     } catch (e) {
       console.warn('TikTok avatar fetch failed:', e.message);
     }
   }
-
   // 3. X / Twitter
   else {
-    const handle = cleanLink
-      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
-      .replace(/^@/, '')
-      .split('/')[0]
-      .split('?')[0];
-
+    const handle = parsed.username;
     if (handle) {
+      // 3.1 Try FxTwitter API
       try {
-        const res = await fetch(`https://api.fxtwitter.com/${handle}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+        const res = await fetch(`https://api.fxtwitter.com/${encodeURIComponent(handle)}`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
           const data = await res.json();
-          let avatar = data.user?.avatar_url;
-          if (avatar) {
-            avatarUrl = avatar.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          if (data.user && data.user.avatar_url) {
+            remoteUrl = data.user.avatar_url.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
           }
         }
       } catch (err) {
-        console.warn('FxTwitter fetch error:', err.message);
+        // ignore
       }
 
-      if (!avatarUrl) {
-        avatarUrl = `https://unavatar.io/x/${handle}`;
+      // 3.2 Try VxTwitter API
+      if (!remoteUrl) {
+        try {
+          const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(handle)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(5000)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            remoteUrl = data.user_profile_image_url || data.profile_image_url;
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      // 3.3 Try unavatar
+      if (!remoteUrl) {
+        remoteUrl = `https://unavatar.io/x/${encodeURIComponent(handle)}`;
       }
     }
   }
 
-  if (!avatarUrl) {
-    avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink)}`;
+  // Download image bytes and cache permanently on disk
+  if (remoteUrl) {
+    try {
+      const imgRes = await fetch(remoteUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(7000)
+      });
+      if (imgRes.ok) {
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        if (buffer.length > 300) {
+          fs.writeFileSync(localFilePath, buffer);
+          return `${relativeUrl}?v=${Date.now()}`;
+        }
+      }
+    } catch (err) {
+      console.warn(`Error downloading avatar bytes from ${remoteUrl}:`, err.message);
+    }
   }
 
-  return avatarUrl;
+  // If local file already exists from previous download, reuse it
+  if (fs.existsSync(localFilePath)) {
+    return relativeUrl;
+  }
+
+  if (existingImageUrl && !existingImageUrl.includes('twimg.com')) {
+    return existingImageUrl;
+  }
+
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink)}`;
 }
+
+// 24-Hour (1 Day) Avatar Sync Routine
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+let isSyncingAvatars = false;
+
+async function syncAllAvatars(force = false) {
+  if (isSyncingAvatars) return { updated: 0 };
+  isSyncingAvatars = true;
+
+  const db = readData();
+  let updatedCount = 0;
+  const now = Date.now();
+
+  try {
+    const processList = async (list, label) => {
+      for (const item of list) {
+        const lastUpdated = item.avatarFetchedAt ? new Date(item.avatarFetchedAt).getTime() : 0;
+        const isExpired = (now - lastUpdated) > ONE_DAY_MS;
+        const isMissingOrExternal = !item.imageUrl || item.imageUrl.includes('twimg.com') || !item.imageUrl.startsWith('/uploads/');
+
+        if (force || isExpired || isMissingOrExternal) {
+          console.log(`[Avatar 24h Sync] Updating avatar for ${label} "${item.displayName || item.xAccount}"...`);
+          try {
+            const newUrl = await downloadAndCacheAvatar(item.xAccount, item.displayName, item.imageUrl);
+            if (newUrl) {
+              item.imageUrl = newUrl;
+              item.avatarFetchedAt = new Date().toISOString();
+              updatedCount++;
+            }
+          } catch (err) {
+            console.warn(`[Avatar 24h Sync] Error for ${item.xAccount}:`, err.message);
+          }
+        }
+      }
+    };
+
+    if (Array.isArray(db.registrations)) {
+      await processList(db.registrations, 'Registration');
+    }
+    if (Array.isArray(db.proposals)) {
+      await processList(db.proposals, 'Proposal');
+    }
+
+    if (updatedCount > 0) {
+      writeData(db);
+      console.log(`[Avatar 24h Sync] Successfully refreshed ${updatedCount} avatars and synced to database!`);
+    }
+  } catch (err) {
+    console.error('[Avatar 24h Sync] Exception during sync:', err);
+  } finally {
+    isSyncingAvatars = false;
+  }
+
+  return { updated: updatedCount };
+}
+
+// Run initial avatar sync on startup and schedule every 30 minutes
+setTimeout(() => {
+  syncAllAvatars(false);
+}, 2000);
+
+setInterval(() => {
+  syncAllAvatars(false);
+}, 30 * 60 * 1000);
 
 // Active admin sessions Map (token -> user data)
 const activeAdminTokens = new Map();
@@ -540,13 +687,14 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'กรุณาเลือกรังสี/ราศีที่ถูกต้อง' });
   }
 
-  const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(xAccount, displayName);
+  const resolvedAvatar = imageUrl || await downloadAndCacheAvatar(xAccount, displayName);
 
   const newEntry = {
     id: 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: xAccount.trim(),
     displayName: displayName.trim(),
     imageUrl: resolvedAvatar,
+    avatarFetchedAt: new Date().toISOString(),
     zodiacKey: zodiacInfo.key,
     zodiacNameTh: zodiacInfo.th,
     zodiacNameEn: zodiacInfo.en,
@@ -585,6 +733,21 @@ app.delete('/api/registrations/:id', requireAdminAuth, (req, res) => {
 
   writeData(db);
   res.json({ success: true, message: 'ลบรายการสำเร็จ' });
+});
+
+// Admin Sync & Refresh All Avatars API
+app.post('/api/admin/sync-avatars', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await syncAllAvatars(true);
+    res.json({
+      success: true,
+      message: `อัปเดตและบันทึกรูปโปรไฟล์เรียบร้อยแล้ว (${result.updated} รายการ)`,
+      data: result
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการอัปเดตรูปโปรไฟล์' });
+  }
 });
 
 // ==========================================
@@ -630,7 +793,7 @@ app.post('/api/propose', async (req, res) => {
     .split('?')[0] || cleanX;
 
   let finalDisplayName = (displayName && displayName.trim()) ? displayName.trim() : autoDisplayName;
-  const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(cleanX, finalDisplayName);
+  const resolvedAvatar = imageUrl || await downloadAndCacheAvatar(cleanX, finalDisplayName);
 
   db.proposals = db.proposals || [];
 
@@ -639,6 +802,7 @@ app.post('/api/propose', async (req, res) => {
     xAccount: cleanX,
     displayName: finalDisplayName,
     imageUrl: resolvedAvatar,
+    avatarFetchedAt: new Date().toISOString(),
     zodiacKey: zKey,
     zodiacNameTh: zNameTh,
     zodiacNameEn: zNameEn,

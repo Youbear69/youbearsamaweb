@@ -73,7 +73,11 @@
               เข้าสู่ระบบในชื่อ: <span id="admin-user-email" style="color: #6ee7b7; font-weight: 600;">admin@vtubergame.com</span>
             </p>
           </div>
-          <div style="display: flex; gap: 0.8rem; align-items: center;">
+          <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+            <button id="btn-sync-avatars" type="button" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(168, 85, 247, 0.4); color: #c4b5fd;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              อัปเดตรูปโปรไฟล์ X
+            </button>
             <a id="btn-export-csv" href="/api/export-csv" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem;">ส่งออก CSV รวม</a>
             <button id="btn-refresh" class="btn-primary" style="font-size: 1rem; padding: 0.55rem 1.4rem;">รีเฟรชข้อมูล</button>
             <button id="btn-logout" class="btn-propose" style="font-size: 1rem; padding: 0.55rem 1.4rem; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; background: rgba(239, 68, 68, 0.15);">

@@ -613,6 +613,49 @@ async function initAdminPage() {
     };
   }
 
+  // Sync / Refresh All Avatars Button
+  const btnSyncAvatars = document.getElementById('btn-sync-avatars');
+  if (btnSyncAvatars) {
+    btnSyncAvatars.onclick = async () => {
+      btnSyncAvatars.disabled = true;
+      btnSyncAvatars.textContent = 'กำลังอัปเดตรูป...';
+      showToast('กำลังดาวน์โหลดและอัปเดตรูปโปรไฟล์ X ของทุกคน...', 'info');
+
+      try {
+        const user = fbAuth.currentUser;
+        let token = '';
+        if (user) {
+          token = await user.getIdToken();
+        }
+
+        const res = await fetch('/api/admin/sync-avatars', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'อัปเดตรูปโปรไฟล์ทั้งหมดเรียบร้อยแล้ว!', 'success');
+          loadAdminData();
+        } else {
+          showToast(data.message || 'เกิดข้อผิดพลาดในการอัปเดต', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+      } finally {
+        btnSyncAvatars.disabled = false;
+        btnSyncAvatars.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          อัปเดตรูปโปรไฟล์ X
+        `;
+      }
+    };
+  }
+
   // Registration Open/Close Form Save
   if (regStatusForm) {
     regStatusForm.onsubmit = async (e) => {
