@@ -197,14 +197,37 @@ app.post('/api/admin/login', async (req, res) => {
     const fbData = await fbRes.json();
 
     if (!fbRes.ok || fbData.error) {
-      console.error('[Firebase Auth Login Failed]:', fbData.error ? fbData.error.message : 'Unknown error');
-      let errMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้องตามระบบ Firebase Authentication';
+      console.warn('[Firebase Auth Login Failed]:', fbData.error ? fbData.error.message : 'Unknown error');
+      
+      // Local fallback credentials check from database
+      const db = readData();
+      const localAdmin = (db.settings && db.settings.adminAuth) ? db.settings.adminAuth : null;
+      if (localAdmin && localAdmin.email && localAdmin.email.toLowerCase() === cleanEmail && localAdmin.password === cleanPassword) {
+        const token = 'token_admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const sessionData = {
+          email: cleanEmail,
+          uid: 'local_admin_uid',
+          loginAt: new Date().toISOString()
+        };
+        activeAdminTokens.set(token, sessionData);
+        return res.json({
+          success: true,
+          message: 'เข้าสู่ระบบสำเร็จ (Local Authentication)',
+          token,
+          admin: {
+            email: cleanEmail,
+            uid: 'local_admin_uid'
+          }
+        });
+      }
+
+      let errMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
       if (fbData.error && fbData.error.message === 'EMAIL_NOT_FOUND') {
-        errMsg = 'ไม่พบบัญชีอีเมลนี้ในระบบ Firebase Authentication';
-      } else if (fbData.error && fbData.error.message === 'INVALID_PASSWORD' || fbData.error && fbData.error.message === 'INVALID_LOGIN_CREDENTIALS') {
+        errMsg = 'ไม่พบบัญชีอีเมลนี้ในระบบ';
+      } else if (fbData.error && (fbData.error.message === 'INVALID_PASSWORD' || fbData.error.message === 'INVALID_LOGIN_CREDENTIALS')) {
         errMsg = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
       } else if (fbData.error && fbData.error.message === 'USER_DISABLED') {
-        errMsg = 'บัญชีผู้ใช้นี้ถูกปิดการใช้งานในระบบ Firebase Authentication';
+        errMsg = 'บัญชีผู้ใช้นี้ถูกปิดการใช้งาน';
       }
       return res.status(401).json({ success: false, message: errMsg });
     }
@@ -331,21 +354,27 @@ app.get('/api/zodiac-list', (req, res) => {
 
 app.get('/api/settings', (req, res) => {
   const db = readData();
-  const safeSettings = { ...db.settings };
+  const safeSettings = {
+    ...db.settings,
+    isRegistrationOpen: db.settings.isRegistrationOpen !== undefined ? db.settings.isRegistrationOpen : true,
+    registrationClosedMessage: db.settings.registrationClosedMessage || "ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย"
+  };
   delete safeSettings.adminAuth;
   res.json({ success: true, data: safeSettings });
 });
 
 app.post('/api/settings', requireAdminAuth, (req, res) => {
-  const { liveDate, liveDateDisplay, closeDate, closeDateDisplay, popupMessage } = req.body;
+  const { liveDate, liveDateDisplay, closeDate, closeDateDisplay, popupMessage, isRegistrationOpen, registrationClosedMessage } = req.body;
   const db = readData();
   db.settings = {
     ...db.settings,
-    ...(liveDate && { liveDate }),
-    ...(liveDateDisplay && { liveDateDisplay }),
-    ...(closeDate && { closeDate }),
-    ...(closeDateDisplay && { closeDateDisplay }),
-    ...(popupMessage && { popupMessage })
+    ...(liveDate !== undefined && { liveDate }),
+    ...(liveDateDisplay !== undefined && { liveDateDisplay }),
+    ...(closeDate !== undefined && { closeDate }),
+    ...(closeDateDisplay !== undefined && { closeDateDisplay }),
+    ...(popupMessage !== undefined && { popupMessage }),
+    ...(isRegistrationOpen !== undefined && { isRegistrationOpen: Boolean(isRegistrationOpen) }),
+    ...(registrationClosedMessage !== undefined && { registrationClosedMessage })
   };
   writeData(db);
   const safeSettings = { ...db.settings };
@@ -491,6 +520,15 @@ app.get('/api/zodiac/:sign', (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
+  const db = readData();
+  const settings = db.settings || {};
+  if (settings.isRegistrationOpen === false) {
+    return res.status(403).json({
+      success: false,
+      message: settings.registrationClosedMessage || 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย'
+    });
+  }
+
   const { xAccount, displayName, zodiacKey, imageUrl } = req.body;
 
   if (!xAccount || !displayName || !zodiacKey) {
@@ -504,7 +542,6 @@ app.post('/api/register', async (req, res) => {
 
   const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(xAccount, displayName);
 
-  const db = readData();
   const newEntry = {
     id: 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: xAccount.trim(),
@@ -555,6 +592,15 @@ app.delete('/api/registrations/:id', requireAdminAuth, (req, res) => {
 // ==========================================
 
 app.post('/api/propose', async (req, res) => {
+  const db = readData();
+  const settings = db.settings || {};
+  if (settings.isRegistrationOpen === false) {
+    return res.status(403).json({
+      success: false,
+      message: settings.registrationClosedMessage || 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย'
+    });
+  }
+
   const { xAccount, displayName, zodiacKey, imageUrl } = req.body;
 
   if (!xAccount || !xAccount.trim()) {
@@ -586,7 +632,6 @@ app.post('/api/propose', async (req, res) => {
   let finalDisplayName = (displayName && displayName.trim()) ? displayName.trim() : autoDisplayName;
   const resolvedAvatar = imageUrl || await resolveAvatarUrlServer(cleanX, finalDisplayName);
 
-  const db = readData();
   db.proposals = db.proposals || [];
 
   const newProposal = {

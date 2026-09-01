@@ -41,9 +41,25 @@ async function initRegisterPage() {
     });
   }
 
-  // Fetch live date details from settings for the modal
+  // Fetch settings for closed status & modal live date
   try {
     const settings = await fbGetSettings();
+    const isRegOpen = settings ? (settings.isRegistrationOpen !== false) : true;
+    const formContainer = document.getElementById('register-form-container');
+    const closedBox = document.getElementById('register-closed-box');
+    const closedText = document.getElementById('register-closed-msg-text');
+
+    if (!isRegOpen) {
+      if (formContainer) formContainer.style.display = 'none';
+      if (closedBox) {
+        closedBox.style.display = 'block';
+        if (closedText) closedText.textContent = settings.registrationClosedMessage || 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย';
+      }
+    } else {
+      if (formContainer) formContainer.style.display = 'block';
+      if (closedBox) closedBox.style.display = 'none';
+    }
+
     if (settings && modalLiveInfo) {
       modalLiveInfo.innerHTML = `
         <strong>กำหนดการไลฟ์:</strong> ${settings.liveDateDisplay || 'เร็วๆ นี้'}<br>

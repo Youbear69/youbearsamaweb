@@ -2,6 +2,10 @@ async function initAllZodiacPage() {
   initLiveCountdown('live-countdown');
 
   const grid = document.getElementById('zodiac-grid');
+  const bottomCta = document.getElementById('allzodiac-bottom-cta');
+  const closedBox = document.getElementById('allzodiac-closed-box');
+  const closedText = document.getElementById('allzodiac-closed-msg-text');
+
   if (!grid) return;
   
   // Show skeletons while loading
@@ -10,7 +14,25 @@ async function initAllZodiacPage() {
   `).join('');
 
   try {
-    const data = await fbGetZodiacStats();
+    const [data, settings] = await Promise.all([
+      fbGetZodiacStats(),
+      fbGetSettings()
+    ]);
+
+    // Handle registration open/closed status
+    const isRegOpen = settings ? (settings.isRegistrationOpen !== false) : true;
+    const closedMsg = (settings && settings.registrationClosedMessage) ? settings.registrationClosedMessage : 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย';
+
+    if (!isRegOpen) {
+      if (bottomCta) bottomCta.style.display = 'none';
+      if (closedBox) {
+        closedBox.style.display = 'inline-flex';
+        if (closedText) closedText.textContent = closedMsg;
+      }
+    } else {
+      if (bottomCta) bottomCta.style.display = 'block';
+      if (closedBox) closedBox.style.display = 'none';
+    }
 
     if (data) {
       grid.innerHTML = '';

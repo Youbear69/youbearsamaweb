@@ -1,9 +1,13 @@
+let cachedZodiacProposedMembers = [];
+
 async function initZodiacPage() {
   // Extract sign from pathname or query param
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   let signKey = '';
   if (pathParts.length >= 2 && pathParts[0] === 'zodiac') {
     signKey = decodeURIComponent(pathParts[1]);
+  } else if (pathParts.length >= 3 && pathParts[1] === 'zodiac') {
+    signKey = decodeURIComponent(pathParts[2]);
   } else {
     const urlParams = new URLSearchParams(window.location.search);
     signKey = urlParams.get('sign') || 'pisces';
@@ -13,6 +17,11 @@ async function initZodiacPage() {
   const titleText = document.getElementById('zodiac-title-text');
   const dateText = document.getElementById('zodiac-date-text');
   const grid = document.getElementById('participants-grid');
+  const filterBar = document.getElementById('proposed-filter-bar');
+  const filterSelect = document.getElementById('proposed-zodiac-select');
+  const bottomCta = document.getElementById('zodiac-bottom-cta');
+  const closedBox = document.getElementById('zodiac-closed-box');
+  const closedText = document.getElementById('zodiac-closed-msg-text');
 
   if (!grid || !titleText) return;
 
@@ -22,7 +31,25 @@ async function initZodiacPage() {
   `).join('');
 
   try {
-    const result = await fbGetZodiacDetail(signKey);
+    const [result, settings] = await Promise.all([
+      fbGetZodiacDetail(signKey),
+      fbGetSettings()
+    ]);
+
+    // Handle Registration open/closed status
+    const isRegOpen = settings ? (settings.isRegistrationOpen !== false) : true;
+    const closedMsg = (settings && settings.registrationClosedMessage) ? settings.registrationClosedMessage : 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย';
+
+    if (!isRegOpen) {
+      if (bottomCta) bottomCta.style.display = 'none';
+      if (closedBox) {
+        closedBox.style.display = 'inline-flex';
+        if (closedText) closedText.textContent = closedMsg;
+      }
+    } else {
+      if (bottomCta) bottomCta.style.display = 'block';
+      if (closedBox) closedBox.style.display = 'none';
+    }
 
     if (!result || !result.zodiac) {
       titleText.textContent = 'ไม่พบข้อมูลราศี';
@@ -32,6 +59,7 @@ async function initZodiacPage() {
           <p>กรุณากลับไปเลือกราศีใหม่ที่หน้าโควต้ารวม</p>
         </div>
       `;
+      if (filterBar) filterBar.style.display = 'none';
       return;
     }
 
@@ -67,59 +95,145 @@ async function initZodiacPage() {
       members.sort(sortThaiEnglish);
     }
 
-    if (members.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <h3>${isProposed ? 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ' : 'ยังไม่มีผู้ลงทะเบียนในราศีนี้'}</h3>
-          <p>${isProposed ? 'ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วมกิจกรรมนี้!' : `คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})`}</p>
-          <div style="margin-top: 2rem;">
-            <a href="/12vtubergame/register" class="btn-primary">ลงทะเบียน</a>
-          </div>
-        </div>
-      `;
+    if (isProposed) {
+      cachedZodiacProposedMembers = members;
+      if (filterBar && filterSelect) {
+        filterBar.style.display = 'flex';
+        // Populate dropdown
+        const countByZodiac = { unknown: 0 };
+        ZODIAC_LIST.forEach(z => { countByZodiac[z.key] = 0; });
+        members.forEach(m => {
+          const k = m.zodiacKey || 'unknown';
+          countByZodiac[k] = (countByZodiac[k] || 0) + 1;
+        });
+
+        let opts = `<option value="">ทุกราศี (ทั้งหมด) (${members.length} คน)</option>`;
+        opts += `<option value="unknown">ไม่ทราบราศี (Unknown) (${countByZodiac.unknown || 0} คน)</option>`;
+        ZODIAC_LIST.forEach(z => {
+          opts += `<option value="${z.key}">ราศี${z.th} (${z.en}) (${countByZodiac[z.key] || 0} คน)</option>`;
+        });
+        filterSelect.innerHTML = opts;
+        filterSelect.value = '';
+
+        filterSelect.onchange = () => {
+          renderZodiacProposedFiltered(filterSelect.value, grid);
+        };
+      }
+      renderZodiacProposedCards(members, grid);
     } else {
-      grid.innerHTML = '';
-      members.forEach((m) => {
-        const card = document.createElement('div');
-        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
-
-        const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
-        const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
-        const clickUrl = parsedSocial.url || m.xAccount || '#';
-
-        // Build zodiac label for the line below the name
-        let zodiacLabelHtml = '';
-        if (isProposed) {
-          // For proposed VTubers, show their individual zodiac
-          const label = m.zodiacLabel || 'ไม่ทราบราศี';
-          zodiacLabelHtml = `<div class="participant-meta">${escapeHtml(label)}</div>`;
-        } else {
-          zodiacLabelHtml = `<div class="participant-meta">ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})</div>`;
-        }
-
-        card.innerHTML = `
-          <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-            <img src="${escapeHtml(avatarUrl)}" 
-                 alt="${escapeHtml(m.displayName)}" 
-                 class="participant-bg-img"
-                 loading="lazy"
-                 onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
-            <div class="participant-fade-overlay"></div>
-            <div class="participant-content">
-              <div class="participant-name" title="${escapeHtml(m.displayName)}">
-                ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
-              </div>
-              ${zodiacLabelHtml}
-            </div>
-          </a>
-        `;
-        grid.appendChild(card);
-      });
+      if (filterBar) filterBar.style.display = 'none';
+      renderStandardZodiacCards(members, grid, zodiac);
     }
   } catch (err) {
     console.error(err);
     showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
   }
+}
+
+function renderZodiacProposedFiltered(filterKey, grid) {
+  let filtered = cachedZodiacProposedMembers;
+  if (filterKey) {
+    if (filterKey === 'unknown') {
+      filtered = cachedZodiacProposedMembers.filter(m => m.zodiacKey === 'unknown' || !m.zodiacKey);
+    } else {
+      filtered = cachedZodiacProposedMembers.filter(m => m.zodiacKey === filterKey);
+    }
+  }
+  renderZodiacProposedCards(filtered, grid, filterKey);
+}
+
+function renderZodiacProposedCards(members, grid, filterKey = '') {
+  if (members.length === 0) {
+    let emptyMsg = 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ';
+    if (filterKey) {
+      const zMeta = ZODIAC_LIST.find(z => z.key === filterKey);
+      emptyMsg = filterKey === 'unknown' 
+        ? 'ไม่พบวีทูบเบอร์ที่เสนอชื่อในหมวด "ไม่ทราบราศี"' 
+        : `ไม่พบวีทูบเบอร์ที่เสนอชื่อในราศี${zMeta ? zMeta.th : filterKey}`;
+    }
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>${emptyMsg}</h3>
+        <p>ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วมกิจกรรมนี้!</p>
+        <div style="margin-top: 2rem;">
+          <a href="/12vtubergame" class="btn-propose" style="margin: 0 auto; display: inline-flex;">เสนอวีทูบเบอร์</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = '';
+  members.forEach((m) => {
+    const card = document.createElement('div');
+    card.className = 'participant-card proposal-card';
+
+    const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
+    const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
+    const clickUrl = parsedSocial.url || m.xAccount || '#';
+    const label = m.zodiacLabel || (m.zodiacKey === 'unknown' ? 'ไม่ทราบราศี' : (m.zodiacNameTh ? `ราศี${m.zodiacNameTh}` : 'ไม่ทราบราศี'));
+
+    card.innerHTML = `
+      <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+        <img src="${escapeHtml(avatarUrl)}" 
+             alt="${escapeHtml(m.displayName)}" 
+             class="participant-bg-img"
+             loading="lazy"
+             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+        <div class="participant-fade-overlay"></div>
+        <div class="participant-content">
+          <div class="participant-name" title="${escapeHtml(m.displayName)}">
+            ⭐ ${escapeHtml(m.displayName)}
+          </div>
+          <div class="participant-meta">${escapeHtml(label)}</div>
+        </div>
+      </a>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderStandardZodiacCards(members, grid, zodiac) {
+  if (members.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
+        <p>คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})</p>
+        <div style="margin-top: 2rem;">
+          <a href="/12vtubergame/register" class="btn-primary">ลงทะเบียน</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = '';
+  members.forEach((m) => {
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+
+    const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
+    const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
+    const clickUrl = parsedSocial.url || m.xAccount || '#';
+
+    card.innerHTML = `
+      <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+        <img src="${escapeHtml(avatarUrl)}" 
+             alt="${escapeHtml(m.displayName)}" 
+             class="participant-bg-img"
+             loading="lazy"
+             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+        <div class="participant-fade-overlay"></div>
+        <div class="participant-content">
+          <div class="participant-name" title="${escapeHtml(m.displayName)}">
+            ${escapeHtml(m.displayName)}
+          </div>
+          <div class="participant-meta">ลงทะเบียนราศี ${escapeHtml(zodiac.th)} (${escapeHtml(zodiac.en)})</div>
+        </div>
+      </a>
+    `;
+    grid.appendChild(card);
+  });
 }
 
 if (document.readyState === 'loading') {

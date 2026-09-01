@@ -39,12 +39,15 @@ const ZODIAC_METADATA = [
 // Read settings from RTDB
 async function fbGetSettings() {
   const snap = await rtdb.ref('settings').once('value');
-  return snap.val() || {
-    liveDate: "2026-11-14T14:00:00.000Z",
-    liveDateDisplay: "14/11/2026 เวลา 21:00 น.",
-    closeDate: "2026-10-01T16:59:59.000Z",
-    closeDateDisplay: "1/10/2026",
-    popupMessage: ""
+  const val = snap.val() || {};
+  return {
+    isRegistrationOpen: val.isRegistrationOpen !== undefined ? val.isRegistrationOpen : true,
+    registrationClosedMessage: val.registrationClosedMessage || "ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย",
+    liveDate: val.liveDate || "2026-11-14T14:00:00.000Z",
+    liveDateDisplay: val.liveDateDisplay || "14/11/2026 เวลา 21:00 น.",
+    closeDate: val.closeDate || "2026-10-01T16:59:59.000Z",
+    closeDateDisplay: val.closeDateDisplay || "1/10/2026",
+    popupMessage: val.popupMessage || ""
   };
 }
 
@@ -64,6 +67,11 @@ async function fbGetRegistrations() {
 
 // Add a registration
 async function fbAddRegistration(data) {
+  const settings = await fbGetSettings();
+  if (settings.isRegistrationOpen === false) {
+    throw new Error(settings.registrationClosedMessage || 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย');
+  }
+
   const id = 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiac = ZODIAC_METADATA.find(z => z.key === data.zodiacKey);
   const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: data.displayName }) : '');
@@ -138,6 +146,11 @@ async function fbGetProposals() {
 
 // Add a proposal (auto-approved by default)
 async function fbAddProposal(data) {
+  const settings = await fbGetSettings();
+  if (settings && settings.isRegistrationOpen === false) {
+    throw new Error(settings.registrationClosedMessage || 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย');
+  }
+
   const id = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiacKey = data.zodiacKey || 'unknown';
   const zodiac = ZODIAC_METADATA.find(z => z.key === zodiacKey);

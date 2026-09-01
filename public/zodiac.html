@@ -35,14 +35,29 @@
       </div>
     </div>
 
+    <!-- Filter Dropdown Toolbar for Proposed VTubers -->
+    <div id="proposed-filter-bar" class="proposed-filter-bar" style="display: none; max-width: 1140px; margin-top: 1rem;">
+      <label for="proposed-zodiac-select">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <span>แยกดูตามราศี:</span>
+      </label>
+      <select id="proposed-zodiac-select" class="form-select" style="min-width: 220px;">
+        <option value="">ทุกราศี (ทั้งหมด)</option>
+      </select>
+    </div>
+
     <!-- Participants Grid -->
     <div id="participants-grid" class="registrants-grid">
       <!-- Injected by JS -->
     </div>
 
-    <!-- Register Button at Bottom -->
-    <div style="text-align: center; margin-top: 1.5rem;">
+    <!-- Register Button at Bottom or Closed Notice -->
+    <div id="zodiac-bottom-cta" style="text-align: center; margin-top: 1.5rem;">
       <a href="/12vtubergame/register" class="btn-primary" style="padding: 0.75rem 3.2rem; font-size: 1.15rem;">ลงทะเบียน</a>
+    </div>
+    <div id="zodiac-closed-box" class="registration-closed-box" style="display: none; margin: 1.5rem auto;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span id="zodiac-closed-msg-text">ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย</span>
     </div>
   </main>
 

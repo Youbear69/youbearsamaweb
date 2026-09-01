@@ -227,6 +227,9 @@ function renderQuotaGrid(data) {
   });
 }
 
+// Cached proposed members for instant dropdown filtering
+let cachedProposedMembers = [];
+
 // Show Participants of a Single Zodiac
 async function showZodiacDetail(signKey) {
   const gridView = document.getElementById('quota-view-grid');
@@ -235,6 +238,8 @@ async function showZodiacDetail(signKey) {
   const titleText = document.getElementById('pop-detail-title-text');
   const dateText = document.getElementById('pop-detail-date-text');
   const grid = document.getElementById('pop-participants-grid');
+  const proposedFilterBar = document.getElementById('pop-proposed-filter-bar');
+  const proposedSelect = document.getElementById('pop-proposed-zodiac-select');
 
   if (gridView) gridView.style.display = 'none';
   if (detailView) detailView.style.display = 'block';
@@ -249,6 +254,7 @@ async function showZodiacDetail(signKey) {
     if (!result || !result.zodiac) {
       titleText.textContent = 'ไม่พบข้อมูลราศี';
       grid.innerHTML = `<div class="empty-state"><h3>ไม่พบข้อมูลราศี</h3></div>`;
+      if (proposedFilterBar) proposedFilterBar.style.display = 'none';
       return;
     }
 
@@ -272,56 +278,150 @@ async function showZodiacDetail(signKey) {
       members.sort(sortThaiEnglish);
     }
 
-    if (members.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <h3>${isProposed ? 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ' : 'ยังไม่มีผู้ลงทะเบียนในราศีนี้'}</h3>
-          <p>${isProposed ? 'ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วม!' : `คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})`}</p>
-          <div style="margin-top: 1.5rem;">
-            <button type="button" class="btn-primary" onclick="openRegisterFromQuota()">ลงทะเบียน</button>
-          </div>
-        </div>
-      `;
+    if (isProposed) {
+      cachedProposedMembers = members;
+      if (proposedFilterBar && proposedSelect) {
+        proposedFilterBar.style.display = 'flex';
+        // Populate dropdown with zodiac options and counts
+        const countByZodiac = { unknown: 0 };
+        ZODIAC_LIST.forEach(z => { countByZodiac[z.key] = 0; });
+        members.forEach(m => {
+          const k = m.zodiacKey || 'unknown';
+          countByZodiac[k] = (countByZodiac[k] || 0) + 1;
+        });
+
+        let opts = `<option value="">ทุกราศี (ทั้งหมด) (${members.length} คน)</option>`;
+        opts += `<option value="unknown">ไม่ทราบราศี (Unknown) (${countByZodiac.unknown || 0} คน)</option>`;
+        ZODIAC_LIST.forEach(z => {
+          opts += `<option value="${z.key}">ราศี${z.th} (${z.en}) (${countByZodiac[z.key] || 0} คน)</option>`;
+        });
+        proposedSelect.innerHTML = opts;
+        proposedSelect.value = '';
+
+        proposedSelect.onchange = () => {
+          filterAndRenderProposedModal(proposedSelect.value);
+        };
+      }
+      renderProposedGridCards(members, grid);
     } else {
-      grid.innerHTML = '';
-      members.forEach((m) => {
-        const card = document.createElement('div');
-        card.className = 'participant-card' + (m.isProposal ? ' proposal-card' : '');
-
-        const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
-        const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
-        const clickUrl = parsedSocial.url || m.xAccount || '#';
-
-        // Build zodiac label
-        let zodiacLabelHtml = '';
-        if (isProposed) {
-          const label = m.zodiacLabel || 'ไม่ทราบราศี';
-          zodiacLabelHtml = `<div class="participant-meta">${escapeHtml(label)}</div>`;
-        }
-
-        card.innerHTML = `
-          <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
-            <img src="${escapeHtml(avatarUrl)}" 
-                 alt="${escapeHtml(m.displayName)}" 
-                 class="participant-bg-img"
-                 loading="lazy"
-                 onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
-            <div class="participant-fade-overlay"></div>
-            <div class="participant-content">
-              <div class="participant-name" title="${escapeHtml(m.displayName)}">
-                ${m.isProposal ? '⭐ ' : ''}${escapeHtml(m.displayName)}
-              </div>
-              ${zodiacLabelHtml}
-            </div>
-          </a>
-        `;
-        grid.appendChild(card);
-      });
+      if (proposedFilterBar) proposedFilterBar.style.display = 'none';
+      renderStandardZodiacGridCards(members, grid, zodiac);
     }
   } catch (err) {
     console.error('Failed to load zodiac members:', err);
     showToast('เกิดข้อผิดพลาดในการโหลดรายชื่อ', 'error');
   }
+}
+
+function filterAndRenderProposedModal(filterZodiacKey) {
+  const grid = document.getElementById('pop-participants-grid');
+  if (!grid) return;
+
+  let filtered = cachedProposedMembers;
+  if (filterZodiacKey) {
+    if (filterZodiacKey === 'unknown') {
+      filtered = cachedProposedMembers.filter(m => m.zodiacKey === 'unknown' || !m.zodiacKey);
+    } else {
+      filtered = cachedProposedMembers.filter(m => m.zodiacKey === filterZodiacKey);
+    }
+  }
+
+  renderProposedGridCards(filtered, grid, filterZodiacKey);
+}
+
+function renderProposedGridCards(members, grid, filterKey = '') {
+  if (members.length === 0) {
+    let emptyMsg = 'ยังไม่มีวีทูบเบอร์ที่เสนอชื่อ';
+    if (filterKey) {
+      const zMeta = ZODIAC_LIST.find(z => z.key === filterKey);
+      emptyMsg = filterKey === 'unknown' 
+        ? 'ไม่พบวีทูบเบอร์ที่เสนอชื่อในหมวด "ไม่ทราบราศี"' 
+        : `ไม่พบวีทูบเบอร์ที่เสนอชื่อในราศี${zMeta ? zMeta.th : filterKey}`;
+    }
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>${emptyMsg}</h3>
+        <p>ลองเสนอชื่อวีทูบเบอร์ที่คุณอยากให้มาร่วมศึก 12 วีทูบเบอร์!</p>
+        <div style="margin-top: 1.5rem;">
+          <button type="button" class="btn-propose" onclick="openProposeModal()" style="margin: 0 auto;">
+            เสนอวีทูบเบอร์
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = '';
+  members.forEach((m) => {
+    const card = document.createElement('div');
+    card.className = 'participant-card proposal-card';
+
+    const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
+    const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
+    const clickUrl = parsedSocial.url || m.xAccount || '#';
+    const label = m.zodiacLabel || (m.zodiacKey === 'unknown' ? 'ไม่ทราบราศี' : (m.zodiacNameTh ? `ราศี${m.zodiacNameTh}` : 'ไม่ทราบราศี'));
+
+    card.innerHTML = `
+      <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+        <img src="${escapeHtml(avatarUrl)}" 
+             alt="${escapeHtml(m.displayName)}" 
+             class="participant-bg-img"
+             loading="lazy"
+             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+        <div class="participant-fade-overlay"></div>
+        <div class="participant-content">
+          <div class="participant-name" title="${escapeHtml(m.displayName)}">
+            ⭐ ${escapeHtml(m.displayName)}
+          </div>
+          <div class="participant-meta">${escapeHtml(label)}</div>
+        </div>
+      </a>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderStandardZodiacGridCards(members, grid, zodiac) {
+  if (members.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>ยังไม่มีผู้ลงทะเบียนในราศีนี้</h3>
+        <p>คุณอาจจะเป็นคนแรกที่ได้ร่วมเป็นตัวแทนของราศี ${zodiac.th} (${zodiac.en})</p>
+        <div style="margin-top: 1.5rem;" class="empty-register-cta">
+          <button type="button" class="btn-primary" onclick="openRegisterFromQuota()">ลงทะเบียน</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = '';
+  members.forEach((m) => {
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+
+    const parsedSocial = typeof parseSocialLink === 'function' ? parseSocialLink(m.xAccount) : { url: m.xAccount || '#', type: 'x' };
+    const avatarUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl(m) : (m.imageUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=user');
+    const clickUrl = parsedSocial.url || m.xAccount || '#';
+
+    card.innerHTML = `
+      <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" class="participant-card-link">
+        <img src="${escapeHtml(avatarUrl)}" 
+             alt="${escapeHtml(m.displayName)}" 
+             class="participant-bg-img"
+             loading="lazy"
+             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+        <div class="participant-fade-overlay"></div>
+        <div class="participant-content">
+          <div class="participant-name" title="${escapeHtml(m.displayName)}">
+            ${escapeHtml(m.displayName)}
+          </div>
+        </div>
+      </a>
+    `;
+    grid.appendChild(card);
+  });
 }
 
 // Setup Form Handlers
@@ -487,6 +587,36 @@ function setupPopupPropose() {
 }
 
 // Setup Time Badges & Countdown
+function applyRegistrationOpenState(settings) {
+  const btnRegister = document.getElementById('btn-register-home');
+  const btnPropose = document.getElementById('btn-propose-home');
+  const closedBox = document.getElementById('home-registration-closed-box');
+  const closedText = document.getElementById('home-closed-msg-text');
+  const quotaCta = document.getElementById('quota-cta-container');
+  const quotaDetailCta = document.getElementById('quota-detail-cta-container');
+
+  const isOpen = settings ? (settings.isRegistrationOpen !== false) : true;
+  const msg = (settings && settings.registrationClosedMessage) ? settings.registrationClosedMessage : 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย';
+
+  if (isOpen) {
+    if (btnRegister) btnRegister.style.display = 'inline-flex';
+    if (btnPropose) btnPropose.style.display = 'inline-flex';
+    if (closedBox) closedBox.style.display = 'none';
+    if (quotaCta) quotaCta.style.display = 'block';
+    if (quotaDetailCta) quotaDetailCta.style.display = 'block';
+  } else {
+    if (btnRegister) btnRegister.style.display = 'none';
+    if (btnPropose) btnPropose.style.display = 'none';
+    if (closedBox) {
+      closedBox.style.display = 'inline-flex';
+      if (closedText) closedText.textContent = msg;
+    }
+    if (quotaCta) quotaCta.style.display = 'none';
+    if (quotaDetailCta) quotaDetailCta.style.display = 'none';
+  }
+}
+
+// Setup Time Badges & Countdown
 async function setupTimeBadges() {
   const closeLabel = document.getElementById('close-date-label');
   const closeCountdown = document.getElementById('close-countdown');
@@ -497,6 +627,7 @@ async function setupTimeBadges() {
   try {
     appSettings = await fbGetSettings();
     if (appSettings) {
+      applyRegistrationOpenState(appSettings);
 
       const closeDate = new Date(appSettings.closeDate || "2026-10-01T23:59:59.000Z");
       const liveDate = new Date(appSettings.liveDate || "2026-11-14T14:00:00.000Z");
@@ -546,6 +677,17 @@ async function setupTimeBadges() {
     }
   } catch (err) {
     console.error('Failed to load settings timers:', err);
+  }
+
+  // Realtime settings listener
+  if (typeof rtdb !== 'undefined' && rtdb) {
+    rtdb.ref('settings').on('value', (snap) => {
+      const val = snap.val();
+      if (val) {
+        appSettings = { ...appSettings, ...val };
+        applyRegistrationOpenState(appSettings);
+      }
+    });
   }
 }
 

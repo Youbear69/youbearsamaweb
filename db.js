@@ -16,6 +16,8 @@ if (!fs.existsSync(DB_DIR)) {
 // Initial fallback structure
 const initialData = {
   settings: {
+    isRegistrationOpen: true,
+    registrationClosedMessage: "ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย",
     liveDate: "2026-11-14T14:00:00.000Z",
     liveDateDisplay: "14/11/2026 เวลา 21:00 น.",
     closeDate: "2026-10-01T16:59:59.000Z",
@@ -63,6 +65,12 @@ function loadLocalFile() {
     if (!parsed.proposals) parsed.proposals = [];
     if (!parsed.registrations) parsed.registrations = [];
     if (!parsed.settings) parsed.settings = initialData.settings;
+    if (parsed.settings.isRegistrationOpen === undefined) {
+      parsed.settings.isRegistrationOpen = true;
+    }
+    if (!parsed.settings.registrationClosedMessage) {
+      parsed.settings.registrationClosedMessage = "ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย";
+    }
     if (!parsed.settings.adminAuth) parsed.settings.adminAuth = initialData.settings.adminAuth;
     return parsed;
   } catch (err) {

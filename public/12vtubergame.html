@@ -33,8 +33,8 @@
       <!-- Title -->
       <div class="page-title">ลงทะเบียนเล่น “ศึก 12 วีทูบเบอร์”</div>
 
-      <!-- Action Buttons (Open Popups) -->
-      <div class="btn-group">
+      <!-- Action Buttons (Open Popups) & Registration Closed Box -->
+      <div class="btn-group" id="home-btn-group">
         <button type="button" class="btn-propose" id="btn-propose-home" onclick="openProposeModal()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
           เสนอวีทูบเบอร์
@@ -42,6 +42,10 @@
         <button type="button" class="btn-primary btn-primary-featured" id="btn-register-home" onclick="openRegisterModal()">
           ลงทะเบียน
         </button>
+        <div id="home-registration-closed-box" class="registration-closed-box" style="display: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="home-closed-msg-text">ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย</span>
+        </div>
         <button type="button" class="btn-secondary" id="btn-allzodiac-home" onclick="openQuotaModal()">ดูโควต้าราศี</button>
       </div>
 
@@ -234,7 +238,7 @@
           <!-- Injected via JavaScript -->
         </div>
 
-        <div style="text-align: center; margin-top: 0.8rem;">
+        <div id="quota-cta-container" style="text-align: center; margin-top: 0.8rem;">
           <p style="font-size: 1.2rem; color: #ffffff; margin-bottom: 0.8rem; font-weight: 600;">อยากร่วมไลฟ์ครั้งนี้ ?</p>
           <button type="button" class="btn-primary" onclick="openRegisterFromQuota()" style="padding: 0.75rem 3rem;">ลงทะเบียน</button>
         </div>
@@ -255,11 +259,22 @@
           </div>
         </div>
 
+        <!-- Filter Dropdown Toolbar for Proposed VTubers -->
+        <div id="pop-proposed-filter-bar" class="proposed-filter-bar" style="display: none;">
+          <label for="pop-proposed-zodiac-select">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <span>แยกดูตามราศี:</span>
+          </label>
+          <select id="pop-proposed-zodiac-select" class="form-select" style="min-width: 220px;">
+            <option value="">ทุกราศี (ทั้งหมด)</option>
+          </select>
+        </div>
+
         <div id="pop-participants-grid" class="registrants-grid" style="margin-bottom: 2rem;">
           <!-- Injected via JavaScript -->
         </div>
 
-        <div style="text-align: center;">
+        <div id="quota-detail-cta-container" style="text-align: center;">
           <button type="button" class="btn-primary" onclick="openRegisterFromQuota()" style="padding: 0.75rem 3.2rem; font-size: 1.15rem;">ลงทะเบียน</button>
         </div>
       </div>

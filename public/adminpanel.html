@@ -84,13 +84,17 @@
         </div>
       </div>
 
-      <!-- Registration Section -->
+      <!-- Registration & Members Section -->
       <div class="admin-card">
         <!-- Stats Summary -->
         <div class="stat-pills">
           <div class="stat-pill">
+            <span class="stat-pill-label">ยอดรวมทั้งหมด</span>
+            <span class="stat-pill-value" id="stat-combined" style="color: #38bdf8;">0</span>
+          </div>
+          <div class="stat-pill">
             <span class="stat-pill-label">ยอดผู้ลงทะเบียนตรง</span>
-            <span class="stat-pill-value" id="stat-total">0</span>
+            <span class="stat-pill-value" id="stat-total" style="color: #c084fc;">0</span>
           </div>
           <div class="stat-pill">
             <span class="stat-pill-label">ยอดเสนอวีทูบเบอร์</span>
@@ -102,14 +106,35 @@
           </div>
           <div class="stat-pill">
             <span class="stat-pill-label">ราศีที่มีผู้สมัครสูงสุด</span>
-            <span class="stat-pill-value" id="stat-top" style="color: #c084fc;">-</span>
+            <span class="stat-pill-value" id="stat-top" style="color: #f472b6;">-</span>
           </div>
         </div>
 
-        <!-- Search and Filter Toolbar for Registrations -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
-          <h2 style="font-size: 1.35rem; font-weight: 700; color: #ffffff;">รายชื่อผู้ลงทะเบียนตรง (Direct Registrations)</h2>
+        <!-- Member Type View Switcher Tabs -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 id="admin-view-title" style="font-size: 1.45rem; font-weight: 700; color: #ffffff;">รายชื่อทั้งหมด (All Members)</h2>
+            <p id="admin-view-desc" style="color: var(--text-muted); font-size: 0.95rem;">แสดงรายชื่อทั้งผู้ลงทะเบียนตรงและวีทูบเบอร์ที่ถูกเสนอชื่อ</p>
+          </div>
+
+          <!-- View Tabs (ทั้งหมด / ลงทะเบียนตรง / คนเสนอ) -->
+          <div class="admin-tab-group" id="admin-view-tabs">
+            <button type="button" class="admin-tab-btn active" data-view="all" id="tab-view-all">
+              <span>🌟 ทั้งหมด</span>
+              <span class="admin-tab-count" id="count-tab-all">0</span>
+            </button>
+            <button type="button" class="admin-tab-btn" data-view="direct" id="tab-view-direct">
+              <span>👤 ลงทะเบียนตรง</span>
+              <span class="admin-tab-count" id="count-tab-direct">0</span>
+            </button>
+            <button type="button" class="admin-tab-btn" data-view="proposed" id="tab-view-proposed">
+              <span>💡 คนเสนอ</span>
+              <span class="admin-tab-count" id="count-tab-proposed">0</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Filter & Search Toolbar -->
         <div class="admin-toolbar">
           <div class="admin-search-box">
             <input type="text" id="admin-search" class="form-input" placeholder="ค้นหาชื่อ หรือบัญชี X...">
@@ -120,8 +145,15 @@
               <!-- Injected by JS -->
             </select>
           </div>
+          <div id="admin-filter-status-box" style="min-width: 180px; display: none;">
+            <select id="admin-filter-status" class="form-select">
+              <option value="">ทุกสถานะ (ทั้งหมด)</option>
+              <option value="approved">เฉพาะที่อนุมัติแล้ว (โชว์หน้าแรก)</option>
+              <option value="pending">เฉพาะที่ยังไม่อนุมัติ (ซ่อนอยู่)</option>
+            </select>
+          </div>
           <div style="min-width: 210px;">
-            <select id="admin-sort-registrations" class="form-select">
+            <select id="admin-sort" class="form-select">
               <option value="date-desc">📅 วันที่: ใหม่ ➔ เก่า (ล่าสุด)</option>
               <option value="date-asc">📅 วันที่: เก่า ➔ ใหม่ (ก่อนหน้า)</option>
               <option value="name-asc">🔤 ชื่อ: ก-ฮ / A-Z</option>
@@ -130,16 +162,17 @@
           </div>
         </div>
 
-        <!-- Registrations Table -->
+        <!-- Unified Members Table -->
         <div style="overflow-x: auto;">
           <table class="admin-table">
             <thead>
-              <tr>
+              <tr id="admin-table-headers">
                 <th>ลำดับ</th>
-                <th>ชื่อสำหรับเรียกในไลฟ์</th>
-                <th>บัญชี / ลิงก์</th>
+                <th>ชื่อสำหรับเรียกในไลฟ์ / ชื่อที่เสนอ</th>
+                <th>บัญชี / ลิงก์ X</th>
                 <th>ราศี</th>
-                <th>วันที่ลงทะเบียน</th>
+                <th>วันที่บันทึก</th>
+                <th>แสดงหน้าแรก</th>
                 <th>จัดการ</th>
               </tr>
             </thead>
@@ -150,55 +183,38 @@
         </div>
       </div>
 
-      <!-- Proposed VTubers Section -->
+      <!-- Registration Open/Close System Card -->
       <div class="admin-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
-          <div>
-            <h2 style="font-size: 1.35rem; font-weight: 700; color: #ffffff;">รายการเสนอวีทูบเบอร์ (Proposed VTubers)</h2>
-            <p style="color: var(--text-muted); font-size: 0.95rem;">ข้อมูลจากการเสนอผ่านปุ่ม "เสนอวีทูบเบอร์" ที่หน้าแรก (ระบบเปิดแสดงผลอัตโนมัติ)</p>
-          </div>
-        </div>
+        <h2 style="font-size: 1.45rem; font-weight: 700; color: #ffffff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.6rem;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          ระบบเปิด-ปิดรับสมัคร (Registration Status)
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.2rem;">
+          เมื่อเปิดรับสมัคร ผู้ใช้จะสามารถลงทะเบียนได้ตามปกติ หากกดปิดรับสมัคร ปุ่มลงทะเบียนที่หน้าแรกจะหายไป และแสดงข้อความแจ้งเตือนปิดรับสมัครแทน
+        </p>
 
-        <div class="admin-toolbar">
-          <div class="admin-search-box">
-            <input type="text" id="proposal-search" class="form-input" placeholder="ค้นหาลิงก์ X หรือชื่อ...">
+        <form id="reg-status-form">
+          <div class="admin-switch-container">
+            <label class="toggle-switch-wrapper" for="toggle-reg-status">
+              <input type="checkbox" id="toggle-reg-status" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <div id="admin-reg-status-indicator" class="admin-status-indicator status-open">
+              <span>🟢 กำลังเปิดรับสมัคร (Open)</span>
+            </div>
           </div>
-          <div style="min-width: 180px;">
-            <select id="proposal-filter-status" class="form-select">
-              <option value="">ทุกสถานะ (ทั้งหมด)</option>
-              <option value="approved">เฉพาะที่อนุมัติแล้ว (โชว์หน้าแรก)</option>
-              <option value="pending">เฉพาะที่รออนุมัติ (ยังไม่โชว์)</option>
-            </select>
-          </div>
-          <div style="min-width: 210px;">
-            <select id="proposal-sort" class="form-select">
-              <option value="date-desc">📅 วันที่: ใหม่ ➔ เก่า (ล่าสุด)</option>
-              <option value="date-asc">📅 วันที่: เก่า ➔ ใหม่ (ก่อนหน้า)</option>
-              <option value="name-asc">🔤 ชื่อ: ก-ฮ / A-Z</option>
-              <option value="name-desc">🔤 ชื่อ: ฮ-ก / Z-A</option>
-            </select>
-          </div>
-        </div>
 
-        <!-- Proposals Table -->
-        <div style="overflow-x: auto;">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>ลำดับ</th>
-                <th>ชื่อ</th>
-                <th>ลิงก์ X วีทูบเบอร์</th>
-                <th>ราศีที่ระบุ</th>
-                <th>วันที่เสนอ</th>
-                <th>แสดงหน้าแรก (อนุมัติ)</th>
-                <th>จัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="proposals-table-body">
-              <!-- Injected by JS -->
-            </tbody>
-          </table>
-        </div>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label" for="settingClosedMessage">ข้อความแสดงเมื่อปิดรับสมัคร (แก้ไขได้)</label>
+            <input type="text" id="settingClosedMessage" class="form-input" placeholder="ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย" value="ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย">
+          </div>
+
+          <div style="margin-top: 1.2rem;">
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 2.5rem;">
+              บันทึกสถานะการเปิด-ปิดรับสมัคร
+            </button>
+          </div>
+        </form>
       </div>
 
       <!-- Event Settings Card -->
