@@ -94,6 +94,37 @@ async function fbAddRegistration(data) {
   }
   arr.push(registration);
   await rtdb.ref('registrations').set(arr);
+
+  // =========================================================================
+  // หากวีที่ถูกเสนอชื่อมา แล้วมาลงทะเบียนเอง: ให้ปิดชื่อออกจากระบบเสนอ แล้วเข้าลงทะเบียนแทน
+  // =========================================================================
+  try {
+    const propSnap = await rtdb.ref('proposals').once('value');
+    const propVal = propSnap.val();
+    if (propVal) {
+      const propsArr = Array.isArray(propVal) ? propVal.filter(Boolean) : Object.values(propVal);
+      let updatedProps = false;
+      propsArr.forEach(p => {
+        const isSim = typeof checkDuplicateOrSimilar === 'function'
+          ? checkDuplicateOrSimilar(p, registration).isMatch
+          : (p.xAccount && registration.xAccount && p.xAccount.toLowerCase().trim() === registration.xAccount.toLowerCase().trim());
+
+        if (isSim) {
+          p.approved = false; // ปิดชื่อออกจากระบบเสนอ
+          p.convertedToRegId = registration.id;
+          p.convertedAt = new Date().toISOString();
+          p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+          updatedProps = true;
+        }
+      });
+      if (updatedProps) {
+        await rtdb.ref('proposals').set(propsArr);
+      }
+    }
+  } catch (err) {
+    console.error('Error closing matching proposals on registration:', err);
+  }
+
   return registration;
 }
 
@@ -144,7 +175,7 @@ async function fbGetProposals() {
   return Object.values(val);
 }
 
-// Add a proposal (auto-approved by default)
+// Add a proposal (auto-checks duplicate & hides from proposed page if duplicate or already registered)
 async function fbAddProposal(data) {
   const settings = await fbGetSettings();
   if (settings && settings.isRegistrationOpen === false) {
@@ -166,6 +197,50 @@ async function fbAddProposal(data) {
 
   const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: displayName }) : '');
 
+  // Check duplicates against:
+  // 1) Registered VTubers (if already registered, auto-hide from proposed)
+  // 2) Existing Proposals (if already proposed, auto-hide subsequent duplicates)
+  let isDuplicate = false;
+  let duplicateReason = null;
+  let matchedDetail = null;
+
+  try {
+    const regs = await fbGetRegistrations();
+    const existingProps = await fbGetProposals();
+
+    const candidate = {
+      xAccount: data.xAccount,
+      displayName: displayName
+    };
+
+    // Check against registrations first
+    const regMatch = typeof findDuplicateOrSimilar === 'function'
+      ? findDuplicateOrSimilar(candidate, regs)
+      : null;
+
+    if (regMatch) {
+      isDuplicate = true;
+      duplicateReason = 'registered';
+      matchedDetail = regMatch.detail || regMatch.matchItem.displayName;
+    } else {
+      // Check against proposals that are either approved or already recorded
+      const propMatch = typeof findDuplicateOrSimilar === 'function'
+        ? findDuplicateOrSimilar(candidate, existingProps)
+        : null;
+
+      if (propMatch) {
+        isDuplicate = true;
+        duplicateReason = 'already_proposed';
+        matchedDetail = propMatch.detail || propMatch.matchItem.displayName;
+      }
+    }
+  } catch (checkErr) {
+    console.warn('Error during duplicate check:', checkErr);
+  }
+
+  // หากลงทะเบียนชื่อเดิมหรือคล้ายกัน ให้ลงชื่อได้ปกติ แต่ระบบจะปิดชื่อไว้ไม่โชว์เข้าหน้าเสนอวี
+  const shouldApprove = !isDuplicate;
+
   const proposal = {
     id: id,
     xAccount: data.xAccount,
@@ -174,9 +249,14 @@ async function fbAddProposal(data) {
     zodiacKey: zodiacKey,
     zodiacNameTh: zodiac ? zodiac.th : (zodiacKey === 'unknown' ? 'ไม่ทราบ' : zodiacKey),
     zodiacNameEn: zodiac ? zodiac.en : (zodiacKey === 'unknown' ? 'Unknown' : zodiacKey),
-    approved: true, // Auto-approve so it shows on the website immediately
+    approved: shouldApprove, // Auto-hide if duplicate
+    isDuplicate: isDuplicate,
+    duplicateReason: duplicateReason,
+    matchedTarget: matchedDetail,
+    statusNote: isDuplicate ? (duplicateReason === 'registered' ? 'ลงทะเบียนแล้ว (ปิดชื่ออัตโนมัติ)' : 'ชื่อซ้ำ (ปิดชื่ออัตโนมัติ)') : null,
     proposedAt: new Date().toISOString()
   };
+
   const snap = await rtdb.ref('proposals').once('value');
   const existing = snap.val();
   let arr = [];
@@ -187,6 +267,61 @@ async function fbAddProposal(data) {
   await rtdb.ref('proposals').set(arr);
   return proposal;
 }
+
+// Batch scan and clean duplicates in database
+async function fbBatchCleanDuplicates() {
+  const regs = await fbGetRegistrations();
+  const snap = await rtdb.ref('proposals').once('value');
+  const propVal = snap.val();
+  if (!propVal) return { convertedCount: 0, duplicateCount: 0, totalProposals: 0 };
+
+  const propsArr = Array.isArray(propVal) ? propVal.filter(Boolean) : Object.values(propVal);
+  let convertedCount = 0;
+  let duplicateCount = 0;
+
+  // 1. Check against registrations: any proposed member who is also in registrations -> close from proposals
+  for (const p of propsArr) {
+    const regMatch = typeof findDuplicateOrSimilar === 'function'
+      ? findDuplicateOrSimilar(p, regs)
+      : null;
+
+    if (regMatch) {
+      if (p.approved || !p.convertedToRegId) {
+        p.approved = false;
+        p.convertedToRegId = regMatch.matchItem.id;
+        p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+        convertedCount++;
+      }
+    }
+  }
+
+  // 2. Check among proposals: keep earliest approved, hide subsequent duplicates
+  const seen = [];
+  for (const p of propsArr) {
+    if (p.convertedToRegId || p.statusNote === 'ย้ายไปลงทะเบียนแล้ว') continue;
+
+    const propMatch = typeof findDuplicateOrSimilar === 'function'
+      ? findDuplicateOrSimilar(p, seen)
+      : null;
+
+    if (propMatch) {
+      if (p.approved || !p.isDuplicate) {
+        p.approved = false;
+        p.isDuplicate = true;
+        p.duplicateReason = 'already_proposed';
+        p.matchedTarget = propMatch.detail || propMatch.matchItem.displayName;
+        p.statusNote = 'ชื่อซ้ำ (ปิดชื่ออัตโนมัติ)';
+        duplicateCount++;
+      }
+    } else {
+      seen.push(p);
+    }
+  }
+
+  await rtdb.ref('proposals').set(propsArr);
+  return { convertedCount, duplicateCount, totalProposals: propsArr.length };
+}
+
 
 // Toggle proposal approval
 async function fbToggleProposalApproval(id) {
@@ -345,12 +480,14 @@ async function fbUploadImage(file, folder) {
 
 // Export registrations and proposals as CSV
 function fbExportCSV(registrations, proposals) {
-  let csv = 'ประเภท,ID,X Account,ชื่อ,ราศี (TH),ราศี (EN),วันที่สมัคร,สถานะ\n';
+  let csv = 'ประเภท,ID,X Account,ชื่อ,ราศี (TH),ราศี (EN),วันที่สมัคร,สถานะ,หมายเหตุ\n';
   registrations.forEach(r => {
-    csv += `ลงทะเบียน,${r.id},"${r.xAccount}","${r.displayName || ''}",${r.zodiacNameTh || ''},${r.zodiacNameEn || ''},${r.registeredAt || ''},-\n`;
+    csv += `ลงทะเบียนตรง,${r.id},"${r.xAccount}","${r.displayName || ''}",${r.zodiacNameTh || ''},${r.zodiacNameEn || ''},${r.registeredAt || ''},ผ่านเข้าร่วม,-\n`;
   });
   proposals.forEach(p => {
-    csv += `เสนอชื่อ,${p.id},"${p.xAccount}","${p.displayName || ''}",${p.zodiacNameTh || ''},${p.zodiacNameEn || ''},${p.proposedAt || ''},${p.approved ? 'อนุมัติ' : 'รอพิจารณา'}\n`;
+    const status = p.approved ? 'อนุมัติ (โชว์หน้าแรก)' : 'ซ่อนอยู่';
+    const note = p.convertedToRegId ? 'ย้ายไปลงทะเบียนแล้ว' : (p.isDuplicate ? 'ชื่อซ้ำ' : '-');
+    csv += `เสนอชื่อ,${p.id},"${p.xAccount}","${p.displayName || ''}",${p.zodiacNameTh || ''},${p.zodiacNameEn || ''},${p.proposedAt || ''},${status},${note}\n`;
   });
 
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });

@@ -445,6 +445,8 @@ async function initAdminPage() {
       if (currentViewMode === 'proposed' && statusF) {
         if (statusF === 'approved') matchStatus = Boolean(item.approved);
         if (statusF === 'pending') matchStatus = !item.approved;
+        if (statusF === 'converted') matchStatus = Boolean(item.convertedToRegId || item.statusNote === 'ย้ายไปลงทะเบียนแล้ว');
+        if (statusF === 'duplicate') matchStatus = Boolean(item.isDuplicate && !item.convertedToRegId);
       }
 
       return matchSearch && matchZodiac && matchStatus;
@@ -497,6 +499,13 @@ async function initAdminPage() {
       // Status / Approve Column
       let statusHtml = '';
       if (isProp) {
+        let noteBadge = '';
+        if (item.convertedToRegId || item.statusNote === 'ย้ายไปลงทะเบียนแล้ว') {
+          noteBadge = `<div style="margin-top: 4px;"><span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 4px; padding: 2px 6px; display: inline-block;">👤 ย้ายไปลงทะเบียนแล้ว</span></div>`;
+        } else if (item.isDuplicate) {
+          noteBadge = `<div style="margin-top: 4px;"><span style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; padding: 2px 6px; display: inline-block;">⚠️ ชื่อซ้ำ (ปิดอัตโนมัติ)</span></div>`;
+        }
+
         statusHtml = `
           <label class="admin-checkbox-label">
             <input type="checkbox" class="admin-toggle-checkbox prop-approve-checkbox" data-id="${item.id}" ${item.approved ? 'checked' : ''}>
@@ -504,6 +513,7 @@ async function initAdminPage() {
               ${item.approved ? 'โชว์หน้าแรก' : 'ซ่อนอยู่'}
             </span>
           </label>
+          ${noteBadge}
         `;
       } else {
         statusHtml = `
@@ -610,6 +620,51 @@ async function initAdminPage() {
     btnRefresh.onclick = () => {
       showToast('กำลังรีเฟรชข้อมูล...');
       loadAdminData();
+    };
+  }
+
+  // Batch Clean Duplicates & Migrate Registered VTubers Button
+  const btnCleanDuplicates = document.getElementById('btn-clean-duplicates');
+  if (btnCleanDuplicates) {
+    btnCleanDuplicates.onclick = async () => {
+      btnCleanDuplicates.disabled = true;
+      btnCleanDuplicates.innerHTML = '<span>กำลังสแกน...</span>';
+      showToast('กำลังสแกนและตรวจสอบรายชื่อซ้ำ / ย้ายไปลงทะเบียน...', 'info');
+
+      try {
+        let result = null;
+        if (typeof fbBatchCleanDuplicates === 'function') {
+          result = await fbBatchCleanDuplicates();
+        } else {
+          const user = fbAuth.currentUser;
+          let token = '';
+          if (user) token = await user.getIdToken();
+          const res = await fetch('/api/admin/clean-duplicates', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+          });
+          const json = await res.json();
+          result = json.data;
+        }
+
+        const msg = result
+          ? `สแกนเรียบร้อย: ปิดชื่อที่ย้ายไปลงทะเบียน ${result.convertedCount} รายการ, ปิดชื่อซ้ำ ${result.duplicateCount} รายการ`
+          : 'สแกนและปรับปรุงข้อมูลชื่อซ้ำเรียบร้อยแล้ว!';
+        showToast(msg, 'success');
+        await loadAdminData();
+      } catch (err) {
+        console.error(err);
+        showToast('เกิดข้อผิดพลาดในการสแกนข้อมูลชื่อซ้ำ', 'error');
+      } finally {
+        btnCleanDuplicates.disabled = false;
+        btnCleanDuplicates.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>สแกนชื่อซ้ำ / ย้ายไปลงทะเบียน</span>
+        `;
+      }
     };
   }
 

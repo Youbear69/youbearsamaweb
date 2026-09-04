@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="254" height="362" viewBox="0 0 254 362" fill="none">
+<title>EasyDonate symbol bg-brand</title>
+<defs>
+<linearGradient id="ezdn-symbol-bg-brand-a" x1="84.3006" y1="0" x2="84.3006" y2="289.91" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CACACA"/></linearGradient>
+<linearGradient id="ezdn-symbol-bg-brand-b" x1="84.3006" y1="0" x2="84.3006" y2="289.91" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CACACA"/></linearGradient>
+<linearGradient id="ezdn-symbol-bg-brand-c" x1="169.699" y1="72.0899" x2="169.699" y2="362" gradientUnits="userSpaceOnUse"><stop stop-color="#CACACA"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+<linearGradient id="ezdn-symbol-bg-brand-d" x1="169.699" y1="72.0899" x2="169.699" y2="362" gradientUnits="userSpaceOnUse"><stop stop-color="#CACACA"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+</defs>
+<g id="symbol">
+<path d="M168.601 0L148.828 73.8377C136.547 119.695 103.516 146.66 42.0624 158.508C11.3358 164.432 -0.773449 153.688 3.80573 136.589C12.9641 102.39 36.9784 78.0058 65.5419 61.5055L168.601 0Z" fill="url(#ezdn-symbol-bg-brand-a)"/>
+<path d="M3.80573 136.589C-5.35263 170.787 2.69028 202.933 20.7351 231.929C38.0031 260.717 61.861 280.442 90.9633 289.91C101.579 250.271 94.5765 214.239 71.0941 183.785C59.8174 169.932 49.6224 161.368 42.0624 158.508C18.7991 161.434 -1.39788 156.02 3.80573 136.589Z" fill="url(#ezdn-symbol-bg-brand-b)"/>
+<path d="M85.3988 362L105.173 288.162C117.453 242.305 150.484 215.34 211.938 203.492C242.664 197.568 254.773 208.312 250.194 225.411C241.036 259.61 217.022 283.994 188.458 300.495L85.3988 362Z" fill="url(#ezdn-symbol-bg-brand-c)"/>
+<path d="M250.194 225.411C259.353 191.213 251.31 159.067 233.265 130.071C215.997 101.283 192.139 81.5583 163.037 72.0899C152.421 111.729 159.424 147.761 182.906 178.215C194.183 192.068 204.378 200.632 211.938 203.492C235.201 200.566 255.398 205.98 250.194 225.411Z" fill="url(#ezdn-symbol-bg-brand-d)"/>
+</g>
+</svg>

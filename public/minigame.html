@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>มินิเกม 12 ราศี - ศึก 12 วีทูบเบอร์</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body class="page-minigame" style="background: var(--bg-main); color: var(--text-primary); overflow-x: hidden; min-height: 100vh;">
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Universal Top Navigation Bar & Social Pill -->
+  <header class="top-nav-bar">
+    <!-- Centered Nav Pills -->
+    <nav class="nav-pill-group">
+      <a href="https://yuubearsama.online/" class="nav-pill-link">Home</a>
+      <a href="/12vtubergame" class="nav-pill-link">ศึก 12 วีทูบเบอร์</a>
+      <a href="/12vtubergame/minigame" class="nav-pill-link active">Mini Game</a>
+    </nav>
+
+    <!-- Top Right Social & Sponsor Pills -->
+    <div class="top-social-group">
+      <!-- YouTube Link -->
+      <a href="https://www.youtube.com/@yuubeargame" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="YouTube: @yuubeargame">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      </a>
+
+      <!-- X / Twitter Link -->
+      <a href="https://x.com/bearuwu_001" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="X: @bearuwu_001">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      </a>
+
+      <!-- EasyDonate Link -->
+      <a href="https://ezdn.app/youbear" target="_blank" rel="noopener noreferrer" class="social-pill-btn social-pill-ezdn" title="EasyDonate: @youbear">
+        <img src="/easydonate-symbol-bg-brand.svg" alt="EasyDonate" class="ezdn-nav-icon">
+      </a>
+    </div>
+  </header>
+
+  <!-- Minigame Main Content -->
+  <main class="minigame-wrapper">
+    <!-- Minigame Mode Switcher Tabs (เลือกมินิเกม) -->
+    <div class="minigame-mode-nav">
+      <div class="minigame-mode-tabs">
+        <button type="button" id="mode-btn-find" class="minigame-mode-btn active">
+          🔍 เกมหาราศี (14 ป้าย)
+        </button>
+        <button type="button" id="mode-btn-match" class="minigame-mode-btn">
+          🃏 เกมจับคู่ราศี (24 ใบ)
+        </button>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         MODE 1: เกมหาราศี 14 ป้าย
+    ========================================== -->
+    <div id="game-section-find" style="width: 100%; text-align: center;">
+      <!-- Header Title & Subtitle -->
+      <div class="minigame-header">
+        <h1 class="minigame-title">หาราศีให้ครบ 12 ราศี</h1>
+        <div class="minigame-subtitle">หาไปเรื่อย ๆ เจอ “X” เท่ากับจบ!</div>
+      </div>
+
+      <!-- 14-Card Board Layout (1:1 Ratio) -->
+      <div class="minigame-board-layout">
+        <!-- Left Wing (1 card) -->
+        <div class="minigame-wing" id="wing-left"></div>
+
+        <!-- Center Matrix (12 cards in 6x2 grid) -->
+        <div class="minigame-center-matrix" id="center-matrix"></div>
+
+        <!-- Right Wing (1 card) -->
+        <div class="minigame-wing" id="wing-right"></div>
+      </div>
+
+      <!-- Controls & Score Bar -->
+      <div class="minigame-controls">
+        <div class="minigame-score-pill">
+          <span>คะแนน :</span>
+          <span id="find-game-score" class="score-num">0</span>
+        </div>
+        <div class="minigame-score-pill">
+          <span>คะแนนสูงสุด :</span>
+          <span id="find-game-highscore" class="score-num">0</span>
+        </div>
+        <button type="button" id="btn-reset-find" class="btn-reset-game">เริ่มใหม่</button>
+      </div>
+
+      <!-- Result Banner Message -->
+      <div id="find-result-banner" class="minigame-result-banner"></div>
+    </div>
+
+    <!-- ==========================================
+         MODE 2: เกมจับคู่ 12 ราศี (24 ใบ)
+    ========================================== -->
+    <div id="game-section-match" style="width: 100%; text-align: center; display: none;">
+      <!-- Header Title & Subtitle -->
+      <div class="minigame-header">
+        <h1 class="minigame-title">เกมจับคู่ 12 ราศี</h1>
+        <div class="minigame-subtitle">เปิดป้ายจับคู่ราศีที่เหมือนกันให้ครบ 12 คู่!</div>
+      </div>
+
+      <!-- 24-Card Matching Grid (6 cols x 4 rows) -->
+      <div class="matching-board-layout" id="matching-board-grid"></div>
+
+      <!-- Controls & Score Bar -->
+      <div class="minigame-controls">
+        <div class="minigame-score-pill">
+          <span>คู่ที่จับได้ :</span>
+          <span id="matching-pairs" class="score-num" style="color: #6ee7b7;">0</span>
+          <span>/ 12</span>
+        </div>
+        <div class="minigame-score-pill">
+          <span>รอบที่เปิด :</span>
+          <span id="matching-turns" class="score-num" style="color: #fbbf24;">0</span>
+        </div>
+        <div class="minigame-score-pill">
+          <span>สถิติดีที่สุด :</span>
+          <span id="matching-best-turns" class="score-num" style="color: #c4b5fd;">--</span>
+          <span>รอบ</span>
+        </div>
+        <button type="button" id="btn-reset-match" class="btn-reset-game">เริ่มใหม่</button>
+      </div>
+
+      <!-- Result Banner Message -->
+      <div id="match-result-banner" class="minigame-result-banner"></div>
+    </div>
+  </main>
+
+  <script src="/js/minigame.js"></script>
+</body>
+</html>

@@ -3,8 +3,17 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { readData, writeData, getFirebaseAuth } = require('./db');
+const {
+  extractCleanHandle,
+  cleanName,
+  compactName,
+  diceSimilarity,
+  checkDuplicateOrSimilar,
+  findDuplicateOrSimilar
+} = require('./public/js/common');
 
 const app = express();
+
 const PORT = 3000;
 
 const FIREBASE_WEB_API_KEY = 'AIzaSyBXj1EXxKUnk6TTvOFukF92PZitC5NqT8o';
@@ -703,6 +712,20 @@ app.post('/api/register', async (req, res) => {
 
   db.registrations = db.registrations || [];
   db.registrations.unshift(newEntry);
+
+  // หากวีที่ถูกเสนอชื่อมา แล้วมาลงทะเบียนเอง: ให้ปิดชื่อออกจากระบบเสนอ แล้วเข้าลงทะเบียนแทน
+  if (Array.isArray(db.proposals)) {
+    db.proposals.forEach(p => {
+      const match = checkDuplicateOrSimilar(p, newEntry);
+      if (match.isMatch) {
+        p.approved = false;
+        p.convertedToRegId = newEntry.id;
+        p.convertedAt = new Date().toISOString();
+        p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+      }
+    });
+  }
+
   writeData(db);
 
   res.json({
@@ -797,6 +820,35 @@ app.post('/api/propose', async (req, res) => {
 
   db.proposals = db.proposals || [];
 
+  // ตรวจสอบชื่อซ้ำ:
+  // 1) หากซ้ำกับผู้ลงทะเบียน -> ปิดชื่อไว้
+  // 2) หากซ้ำกับข้อเสนอที่มีอยู่แล้ว -> ปิดชื่อไว้
+  let isDuplicate = false;
+  let duplicateReason = null;
+  let matchedDetail = null;
+
+  const candidate = {
+    xAccount: cleanX,
+    displayName: finalDisplayName
+  };
+
+  const regMatch = findDuplicateOrSimilar(candidate, db.registrations || []);
+  if (regMatch) {
+    isDuplicate = true;
+    duplicateReason = 'registered';
+    matchedDetail = regMatch.detail || regMatch.matchItem.displayName;
+  } else {
+    const propMatch = findDuplicateOrSimilar(candidate, db.proposals || []);
+    if (propMatch) {
+      isDuplicate = true;
+      duplicateReason = 'already_proposed';
+      matchedDetail = propMatch.detail || propMatch.matchItem.displayName;
+    }
+  }
+
+  // หากลงทะเบียนชื่อเดิมหรือคล้ายกัน ให้ลงชื่อได้ปกติ แต่ระบบจะปิดชื่อไว้ไม่โชว์เข้าหน้าเสนอวี
+  const shouldApprove = !isDuplicate;
+
   const newProposal = {
     id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     xAccount: cleanX,
@@ -806,7 +858,11 @@ app.post('/api/propose', async (req, res) => {
     zodiacKey: zKey,
     zodiacNameTh: zNameTh,
     zodiacNameEn: zNameEn,
-    approved: true, // Auto-approved by default so it shows on the website immediately
+    approved: shouldApprove, // ปิดชื่อไว้ไม่โชว์เข้าหน้าเสนอวีหากซ้ำ
+    isDuplicate: isDuplicate,
+    duplicateReason: duplicateReason,
+    matchedTarget: matchedDetail,
+    statusNote: isDuplicate ? (duplicateReason === 'registered' ? 'ลงทะเบียนแล้ว (ปิดชื่ออัตโนมัติ)' : 'ชื่อซ้ำ (ปิดชื่ออัตโนมัติ)') : null,
     createdAt: new Date().toISOString()
   };
 
@@ -819,6 +875,58 @@ app.post('/api/propose', async (req, res) => {
     data: newProposal
   });
 });
+
+// Admin Batch Clean & Migrate Duplicates API
+app.post('/api/admin/clean-duplicates', requireAdminAuth, (req, res) => {
+  const db = readData();
+  db.registrations = db.registrations || [];
+  db.proposals = db.proposals || [];
+
+  let convertedCount = 0;
+  let duplicateCount = 0;
+
+  // 1. Check against registrations: any proposed member who is also in registrations -> close from proposals
+  db.proposals.forEach(p => {
+    const regMatch = findDuplicateOrSimilar(p, db.registrations);
+    if (regMatch) {
+      if (p.approved || !p.convertedToRegId) {
+        p.approved = false;
+        p.convertedToRegId = regMatch.matchItem.id;
+        p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+        convertedCount++;
+      }
+    }
+  });
+
+  // 2. Check among proposals: keep earliest approved, hide subsequent duplicates
+  const seen = [];
+  db.proposals.forEach(p => {
+    if (p.convertedToRegId || p.statusNote === 'ย้ายไปลงทะเบียนแล้ว') return;
+
+    const propMatch = findDuplicateOrSimilar(p, seen);
+    if (propMatch) {
+      if (p.approved || !p.isDuplicate) {
+        p.approved = false;
+        p.isDuplicate = true;
+        p.duplicateReason = 'already_proposed';
+        p.matchedTarget = propMatch.detail || propMatch.matchItem.displayName;
+        p.statusNote = 'ชื่อซ้ำ (ปิดชื่ออัตโนมัติ)';
+        duplicateCount++;
+      }
+    } else {
+      seen.push(p);
+    }
+  });
+
+  writeData(db);
+
+  res.json({
+    success: true,
+    message: `สแกนสำเร็จ: ปิดชื่อที่ย้ายไปลงทะเบียน ${convertedCount} รายการ, ปิดชื่อที่ซ้ำซ้อน ${duplicateCount} รายการ`,
+    data: { convertedCount, duplicateCount, totalProposals: db.proposals.length }
+  });
+});
+
 
 app.get('/api/proposals', requireAdminAuth, (req, res) => {
   const db = readData();
@@ -999,7 +1107,7 @@ app.delete('/api/proposals/:id', requireAdminAuth, (req, res) => {
 
 app.get('/api/export-csv', requireAdminAuth, (req, res) => {
   const db = readData();
-  const rows = ['ID,ประเภท,ชื่อบัญชี X,ชื่อสำหรับเรียกในไลฟ์,ราศี (ไทย),ราศี (อังกฤษ),สถานะอนุมัติ,วันที่บันทึก'];
+  const rows = ['ID,ประเภท,ชื่อบัญชี X,ชื่อสำหรับเรียกในไลฟ์,ราศี (ไทย),ราศี (อังกฤษ),สถานะอนุมัติ,หมายเหตุ,วันที่บันทึก'];
   
   (db.registrations || []).forEach(r => {
     const sanitize = (str) => `"${(str || '').replace(/"/g, '""')}"`;
@@ -1011,12 +1119,15 @@ app.get('/api/export-csv', requireAdminAuth, (req, res) => {
       sanitize(r.zodiacNameTh),
       sanitize(r.zodiacNameEn),
       sanitize('ผ่านเข้าร่วม'),
+      sanitize('-'),
       sanitize(new Date(r.registeredAt).toLocaleString('th-TH'))
     ].join(','));
   });
 
   (db.proposals || []).forEach(p => {
     const sanitize = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+    const statusStr = p.approved ? 'อนุมัติแสดงหน้าแรก' : 'ซ่อนอยู่';
+    const noteStr = p.convertedToRegId ? 'ย้ายไปลงทะเบียนแล้ว' : (p.isDuplicate ? 'ชื่อซ้ำ' : '-');
     rows.push([
       sanitize(p.id),
       sanitize('เสนอชื่อ'),
@@ -1024,8 +1135,9 @@ app.get('/api/export-csv', requireAdminAuth, (req, res) => {
       sanitize(p.displayName || '-'),
       sanitize(p.zodiacNameTh),
       sanitize(p.zodiacNameEn),
-      sanitize(p.approved ? 'อนุมัติแสดงหน้าแรก' : 'รอตรวจสอบ'),
-      sanitize(new Date(p.createdAt).toLocaleString('th-TH'))
+      sanitize(statusStr),
+      sanitize(noteStr),
+      sanitize(new Date(p.createdAt || p.proposedAt || Date.now()).toLocaleString('th-TH'))
     ].join(','));
   });
 
@@ -1082,6 +1194,10 @@ app.get('/12vtubergame/adminpanel', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'adminpanel.html'));
 });
 
+app.get(['/12vtubergame/minigame', '/12vtubergame/minigame/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'minigame.html'));
+});
+
 // Keep old paths working too (backward compatibility)
 app.get('/register', (req, res) => {
   res.redirect('/12vtubergame/register');
@@ -1097,6 +1213,10 @@ app.get('/zodiac/:sign', (req, res) => {
 
 app.get('/adminpanel', (req, res) => {
   res.redirect('/12vtubergame/adminpanel');
+});
+
+app.get(['/minigame', '/minigame/'], (req, res) => {
+  res.redirect('/12vtubergame/minigame');
 });
 
 // Start Server

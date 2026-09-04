@@ -126,6 +126,118 @@ function resolveAvatarUrl(item) {
   }
 }
 
+// ==========================================
+// Duplicate & Similarity Checking Utilities
+// ==========================================
+
+function extractCleanHandle(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  const urlMatch = s.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/i);
+  if (urlMatch) return urlMatch[1].toLowerCase();
+
+  const handleMatch = s.match(/@([a-zA-Z0-9_]+)/);
+  if (handleMatch) return handleMatch[1].toLowerCase();
+
+  let clean = s.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  clean = clean.split('/')[0].split('?')[0].replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '');
+  return clean.toLowerCase();
+}
+
+function cleanName(raw) {
+  if (!raw) return '';
+  let s = String(raw);
+  s = s.normalize('NFKD');
+
+  const withoutBrackets = s.replace(/[\(\[\{【『].*?[\)\]\}】』]/g, ' ').trim();
+  if (withoutBrackets.length >= 2) {
+    s = withoutBrackets;
+  }
+
+  s = s.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+  s = s.replace(/[\|\\\/\_\-\~\★\🐸\🐻\✨\⭐\•\*\+\#\:\;\"\']/g, ' ');
+
+  s = s.replace(/\b(ch|channel|vtuber|vt|official|vth|th|arp|vtg|epr|slr)\b/gi, ' ');
+  s = s.replace(/(ชาแนล|แชแนล|วีทูบเบอร์|แชนแนล)/gi, ' ');
+
+  s = s.toLowerCase().replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+function compactName(raw) {
+  return cleanName(raw).replace(/\s+/g, '');
+}
+
+function getBigrams(str) {
+  const bigrams = new Set();
+  for (let i = 0; i < str.length - 1; i++) {
+    bigrams.add(str.substring(i, i + 2));
+  }
+  return bigrams;
+}
+
+function diceSimilarity(s1, s2) {
+  if (s1 === s2) return 1.0;
+  if (s1.length < 2 || s2.length < 2) return 0.0;
+  const b1 = getBigrams(s1);
+  const b2 = getBigrams(s2);
+  let intersection = 0;
+  for (const b of b1) {
+    if (b2.has(b)) intersection++;
+  }
+  return (2 * intersection) / (b1.size + b2.size);
+}
+
+function checkDuplicateOrSimilar(itemA, itemB) {
+  if (!itemA || !itemB) return { isMatch: false };
+
+  // 1. Account handle match
+  const hA = extractCleanHandle(itemA.xAccount || itemA.account);
+  const hB = extractCleanHandle(itemB.xAccount || itemB.account);
+  if (hA && hB && hA === hB) {
+    return { isMatch: true, reason: 'account_match', detail: `@${hA}` };
+  }
+
+  const cNameA = compactName(itemA.displayName || itemA.name);
+  const cNameB = compactName(itemB.displayName || itemB.name);
+
+  // Cross match: Handle vs Name
+  if (hA && cNameB && hA === cNameB && hA.length >= 3) {
+    return { isMatch: true, reason: 'account_name_match', detail: `${hA} == ${cNameB}` };
+  }
+  if (hB && cNameA && hB === cNameA && hB.length >= 3) {
+    return { isMatch: true, reason: 'account_name_match', detail: `${hB} == ${cNameA}` };
+  }
+
+  // 2. Exact compact name match
+  if (cNameA && cNameB && cNameA === cNameB && cNameA.length >= 2) {
+    return { isMatch: true, reason: 'exact_name', detail: cNameA };
+  }
+
+  // 3. Similar name (Dice coefficient >= 0.82 on strings of length >= 4)
+  if (cNameA.length >= 4 && cNameB.length >= 4) {
+    const sim = diceSimilarity(cNameA, cNameB);
+    if (sim >= 0.82) {
+      return { isMatch: true, reason: 'similar_name', detail: `${cNameA} ~ ${cNameB} (${Math.round(sim * 100)}%)` };
+    }
+  }
+
+  return { isMatch: false };
+}
+
+function findDuplicateOrSimilar(target, list) {
+  if (!target || !Array.isArray(list)) return null;
+  for (const item of list) {
+    if (item.id && target.id && item.id === target.id) continue;
+    const res = checkDuplicateOrSimilar(target, item);
+    if (res.isMatch) {
+      return { matchItem: item, ...res };
+    }
+  }
+  return null;
+}
+
+
 // Calculate countdown to live date & close date from settings
 async function initLiveCountdown() {
   const liveEl = document.getElementById('live-countdown');
@@ -394,7 +506,24 @@ function loadScript(src) {
 }
 
 // Initialize on DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
-  initBGM();
-  initSeamlessNavigation();
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initBGM();
+    initSeamlessNavigation();
+  });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ZODIAC_LIST,
+    parseSocialLink,
+    resolveAvatarUrl,
+    extractCleanHandle,
+    cleanName,
+    compactName,
+    diceSimilarity,
+    checkDuplicateOrSimilar,
+    findDuplicateOrSimilar
+  };
+}
+

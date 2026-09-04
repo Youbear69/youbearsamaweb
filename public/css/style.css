@@ -2891,4 +2891,522 @@ input:checked + .toggle-slider:before {
 .proposed-filter-bar select:focus {
   border-color: #fbbf24;
   box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+}
+
+/* ==========================================
+   Universal Top Navigation Bar & Social Pill
+========================================== */
+.top-nav-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.2rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.nav-pill-group {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
+  background: rgba(30, 20, 60, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.nav-pill-link {
+  color: #c4b5fd;
+  text-decoration: none;
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  padding: 0.28rem 1.15rem;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.nav-pill-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-pill-link.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.22);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.top-social-group {
+  position: absolute;
+  right: 2.5rem;
+  top: 1.2rem;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.4rem 1.1rem;
+  background: rgba(30, 20, 60, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.social-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: var(--transition-smooth);
+  padding: 2px;
+}
+
+.social-pill-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.ezdn-nav-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@media (max-width: 860px) {
+  .top-nav-bar {
+    position: relative;
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .top-social-group {
+    position: relative;
+    right: auto;
+    top: auto;
+  }
+}
+
+/* ==========================================
+   Minigame Board & Full-Frame Card Styles (1:1 Ratio)
+========================================== */
+.minigame-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4.5rem 1rem 1.5rem 1rem;
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+/* Minigame Mode Switcher (Select Game 1 or Game 2) */
+.minigame-mode-nav {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+
+.minigame-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(30, 20, 60, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+.minigame-mode-btn {
+  background: transparent;
+  color: #c4b5fd;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 1.4rem;
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.minigame-mode-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.minigame-mode-btn.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.5);
+  font-weight: 700;
+}
+
+.minigame-header {
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.minigame-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 25px rgba(168, 85, 247, 0.6), 0 4px 10px rgba(0, 0, 0, 0.8);
+  margin-bottom: 0.2rem;
+  letter-spacing: 0.5px;
+}
+
+.minigame-subtitle {
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: #fbbf24;
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+}
+
+/* Game 1: 14 Cards Layout (1:1 Ratio) */
+.minigame-board-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0.8rem auto 1.5rem auto;
+}
+
+.minigame-wing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.minigame-center-matrix {
+  display: grid;
+  grid-template-columns: repeat(6, 120px);
+  grid-template-rows: repeat(2, 120px);
+  gap: 12px;
+  justify-content: center;
+}
+
+.minigame-card {
+  width: 120px;
+  height: 120px;
+  aspect-ratio: 1 / 1;
+  perspective: 1000px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.minigame-card:hover:not(.flipped):not(.disabled) {
+  transform: translateY(-4px) scale(1.05);
+}
+
+.minigame-card.disabled {
+  cursor: default;
+}
+
+/* Game 2: Matching Game Layout (6 cols x 4 rows = 24 cards 1:1) */
+.matching-board-layout {
+  display: grid;
+  grid-template-columns: repeat(6, 110px);
+  grid-template-rows: repeat(4, 110px);
+  gap: 12px;
+  justify-content: center;
+  margin: 0.8rem auto 1.5rem auto;
+  width: 100%;
+  max-width: 820px;
+}
+
+.matching-card {
+  width: 110px;
+  height: 110px;
+  aspect-ratio: 1 / 1;
+  perspective: 1000px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.matching-card:hover:not(.flipped):not(.matched) {
+  transform: translateY(-4px) scale(1.05);
+}
+
+.matching-card.matched .card-back {
+  border: 2px solid #10b981;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.65);
+  animation: matchPulse 0.5s ease;
+}
+
+.matching-card.matched {
+  cursor: default;
+}
+
+@keyframes matchPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+  border-radius: 12px;
+}
+
+.minigame-card.flipped .card-inner,
+.matching-card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.minigame-card.shake,
+.matching-card.shake {
+  animation: cardShake 0.5s ease-in-out;
+}
+
+@keyframes cardShake {
+  0%, 100% { transform: translateX(0) scale(1.04); }
+  20%, 60% { transform: translateX(-8px) scale(1.04); }
+  40%, 80% { transform: translateX(8px) scale(1.04); }
+}
+
+.card-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Front Cover - Banner (1:1 Ratio Full Cover) */
+.card-front {
+  background: linear-gradient(180deg, #261752 0%, #140b2e 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+}
+
+.card-front-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+/* Back Face - Zodiac (Solid Dark Background with centered White Icon) */
+.card-back.card-zodiac {
+  transform: rotateY(180deg);
+  background: radial-gradient(circle at center, #1a1638 0%, #0c091d 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+  padding: 10px;
+}
+
+.card-zodiac-icon {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 20px rgba(168, 85, 247, 0.6));
+  pointer-events: none;
+}
+
+/* Back Face - Bomb X (Full Frame end.png, matching Screenshot 2) */
+.card-back.card-bomb {
+  transform: rotateY(180deg);
+  background: #0d2818;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+  padding: 0;
+  margin: 0;
+}
+
+.card-bomb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 11px;
+  display: block;
+  pointer-events: none;
+}
+
+/* Bottom Control & Score Bar */
+.minigame-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 1.6rem;
+  background: rgba(30, 20, 60, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
+}
+
+.minigame-score-pill {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.score-num {
+  font-weight: 700;
+  color: #fbbf24;
+  font-size: 1.4rem;
+}
+
+.btn-reset-game {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 1.35rem;
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  transition: var(--transition-smooth);
+}
+
+.btn-reset-game:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+  filter: brightness(1.1);
+}
+
+.btn-reset-game:active {
+  transform: translateY(0);
+}
+
+/* Result Banner */
+.minigame-result-banner {
+  margin-top: 1rem;
+  padding: 0.75rem 1.8rem;
+  border-radius: var(--radius-md);
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  display: none;
+  animation: fadeInPop 0.4s ease;
+}
+
+.minigame-result-banner.win {
+  display: block;
+  background: rgba(16, 185, 129, 0.25);
+  border: 1.5px solid #10b981;
+  color: #6ee7b7;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+}
+
+.minigame-result-banner.lose {
+  display: block;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1.5px solid #ef4444;
+  color: #fca5a5;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 1040px) {
+  .minigame-center-matrix {
+    grid-template-columns: repeat(4, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 10px;
+  }
+  .minigame-card {
+    width: 100px;
+    height: 100px;
+  }
+  .matching-board-layout {
+    grid-template-columns: repeat(6, 95px);
+    grid-template-rows: repeat(4, 95px);
+    gap: 10px;
+  }
+  .matching-card {
+    width: 95px;
+    height: 95px;
+  }
+  .card-zodiac-icon {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+@media (max-width: 720px) {
+  .minigame-board-layout {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .minigame-wing {
+    flex-direction: row;
+    gap: 10px;
+  }
+  .minigame-center-matrix {
+    grid-template-columns: repeat(3, 85px);
+    grid-template-rows: auto;
+    gap: 8px;
+  }
+  .minigame-card {
+    width: 85px;
+    height: 85px;
+  }
+  .matching-board-layout {
+    grid-template-columns: repeat(4, 75px);
+    grid-template-rows: repeat(6, 75px);
+    gap: 8px;
+  }
+  .matching-card {
+    width: 75px;
+    height: 75px;
+  }
+  .card-zodiac-icon {
+    width: 42px;
+    height: 42px;
+  }
 }
