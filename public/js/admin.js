@@ -493,7 +493,7 @@ async function initAdminPage() {
 
       // Thumbnail preview
       const thumbHtml = avatarUrl 
-        ? `<img src="${escapeHtml(avatarUrl)}" alt="thumb" style="width: 34px; height: 34px; border-radius: 8px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1.5px solid ${isProp ? 'rgba(251,191,36,0.45)' : 'rgba(168,85,247,0.45)'};" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(item.displayName || 'user')}';">`
+        ? `<img src="${escapeHtml(avatarUrl)}" alt="thumb" style="width: 34px; height: 34px; border-radius: 8px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1.5px solid ${isProp ? 'rgba(251,191,36,0.45)' : 'rgba(168,85,247,0.45)'};" onerror="if(typeof handleAvatarError==='function'){handleAvatarError(this, '${escapeHtml(item.xAccount||'')}', '${escapeHtml(item.displayName||'')}');}else{this.onerror=null;this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(item.displayName || 'user')}';}">`
         : '';
 
       // Status / Approve Column

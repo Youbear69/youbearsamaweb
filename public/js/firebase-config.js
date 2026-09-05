@@ -74,7 +74,31 @@ async function fbAddRegistration(data) {
 
   const id = 'reg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   const zodiac = ZODIAC_METADATA.find(z => z.key === data.zodiacKey);
-  const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: data.displayName }) : '');
+
+  let imageUrl = data.imageUrl;
+  if (!imageUrl && data.xAccount) {
+    const parsed = typeof parseSocialLink === 'function' ? parseSocialLink(data.xAccount) : { username: '' };
+    if (parsed.username) {
+      imageUrl = `/uploads/avatars/${parsed.username.toLowerCase()}.jpg`;
+      try {
+        const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(parsed.username)}`, {
+          signal: AbortSignal.timeout(2500)
+        });
+        if (res.ok) {
+          const vData = await res.json();
+          const pUrl = vData.user_profile_image_url || vData.profile_image_url;
+          if (pUrl) {
+            imageUrl = pUrl.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          }
+        }
+      } catch (e) {
+        // Fall back to local path
+      }
+    }
+  }
+  if (!imageUrl) {
+    imageUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: data.displayName }) : '';
+  }
 
   const registration = {
     id: id,
@@ -86,17 +110,10 @@ async function fbAddRegistration(data) {
     zodiacNameEn: zodiac ? zodiac.en : data.zodiacKey,
     registeredAt: new Date().toISOString()
   };
-  const snap = await rtdb.ref('registrations').once('value');
-  const existing = snap.val();
-  let arr = [];
-  if (existing) {
-    arr = Array.isArray(existing) ? existing.filter(Boolean) : Object.values(existing);
-  }
-  arr.push(registration);
-  await rtdb.ref('registrations').set(arr);
 
   // =========================================================================
   // หากวีที่ถูกเสนอชื่อมา แล้วมาลงทะเบียนเอง: ให้ปิดชื่อออกจากระบบเสนอ แล้วเข้าลงทะเบียนแทน
+  // และคงรูปภาพเดิมที่เคยมีไว้
   // =========================================================================
   try {
     const propSnap = await rtdb.ref('proposals').once('value');
@@ -114,6 +131,9 @@ async function fbAddRegistration(data) {
           p.convertedToRegId = registration.id;
           p.convertedAt = new Date().toISOString();
           p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+          if (p.imageUrl && (!registration.imageUrl || registration.imageUrl.includes('dicebear'))) {
+            registration.imageUrl = p.imageUrl;
+          }
           updatedProps = true;
         }
       });
@@ -124,6 +144,15 @@ async function fbAddRegistration(data) {
   } catch (err) {
     console.error('Error closing matching proposals on registration:', err);
   }
+
+  const snap = await rtdb.ref('registrations').once('value');
+  const existing = snap.val();
+  let arr = [];
+  if (existing) {
+    arr = Array.isArray(existing) ? existing.filter(Boolean) : Object.values(existing);
+  }
+  arr.push(registration);
+  await rtdb.ref('registrations').set(arr);
 
   return registration;
 }
@@ -195,7 +224,30 @@ async function fbAddProposal(data) {
       .split('?')[0] || data.xAccount;
   }
 
-  const imageUrl = data.imageUrl || (typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: displayName }) : '');
+  let imageUrl = data.imageUrl;
+  if (!imageUrl && data.xAccount) {
+    const parsed = typeof parseSocialLink === 'function' ? parseSocialLink(data.xAccount) : { username: '' };
+    if (parsed.username) {
+      imageUrl = `/uploads/avatars/${parsed.username.toLowerCase()}.jpg`;
+      try {
+        const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(parsed.username)}`, {
+          signal: AbortSignal.timeout(2500)
+        });
+        if (res.ok) {
+          const vData = await res.json();
+          const pUrl = vData.user_profile_image_url || vData.profile_image_url;
+          if (pUrl) {
+            imageUrl = pUrl.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          }
+        }
+      } catch (e) {
+        // Fall back to local path
+      }
+    }
+  }
+  if (!imageUrl) {
+    imageUrl = typeof resolveAvatarUrl === 'function' ? resolveAvatarUrl({ xAccount: data.xAccount, displayName: displayName }) : '';
+  }
 
   // Check duplicates against:
   // 1) Registered VTubers (if already registered, auto-hide from proposed)

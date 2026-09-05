@@ -179,7 +179,7 @@ function renderZodiacProposedCards(members, grid, filterKey = '') {
              alt="${escapeHtml(m.displayName)}" 
              class="participant-bg-img"
              loading="lazy"
-             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+             onerror="if(typeof handleAvatarError==='function'){handleAvatarError(this, '${escapeHtml(m.xAccount||'')}', '${escapeHtml(m.displayName||'')}');}else{this.onerror=null;this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';}">
         <div class="participant-fade-overlay"></div>
         <div class="participant-content">
           <div class="participant-name" title="${escapeHtml(m.displayName)}">
@@ -222,7 +222,7 @@ function renderStandardZodiacCards(members, grid, zodiac) {
              alt="${escapeHtml(m.displayName)}" 
              class="participant-bg-img"
              loading="lazy"
-             onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';">
+             onerror="if(typeof handleAvatarError==='function'){handleAvatarError(this, '${escapeHtml(m.xAccount||'')}', '${escapeHtml(m.displayName||'')}');}else{this.onerror=null;this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(m.displayName || 'user')}';}">
         <div class="participant-fade-overlay"></div>
         <div class="participant-content">
           <div class="participant-name" title="${escapeHtml(m.displayName)}">

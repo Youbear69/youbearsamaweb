@@ -73,43 +73,51 @@ function sortDate(a, b, desc = true) {
 
 // Parse social links (X, YouTube, TikTok)
 function parseSocialLink(raw) {
-  const text = (raw || '').trim();
+  let text = (raw || '').trim();
   if (!text) return { type: 'x', url: '', username: '' };
 
   // 1. YouTube
   if (/youtube\.com|youtu\.be/i.test(text)) {
-    let handle = text.replace(/^https?:\/\/(www\.)?youtube\.com\//i, '').replace(/^@/, '');
-    handle = handle.split('/')[0].split('?')[0];
+    let handle = text.replace(/^(https?:\/\/)?(www\.)?youtube\.com\//i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0].split('&')[0];
     let fullUrl = text.startsWith('http') ? text : `https://${text}`;
     return { type: 'youtube', url: fullUrl, username: handle || text };
   }
 
   // 2. TikTok
   if (/tiktok\.com/i.test(text)) {
-    let handle = text.replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
-    handle = handle.split('/')[0].split('?')[0];
+    let handle = text.replace(/^(https?:\/\/)?(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0].split('&')[0];
     let fullUrl = text.startsWith('http') ? text : `https://${text}`;
     return { type: 'tiktok', url: fullUrl, username: handle || text };
   }
 
   // 3. X / Twitter
   let username = text
-    .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
-    .replace(/^@/, '')
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/^(twitter|x)\.com\//i, '')
+    .replace(/^@+/, '')
     .split('/')[0]
-    .split('?')[0];
+    .split('?')[0]
+    .split('&')[0]
+    .split('#')[0]
+    .trim();
 
-  let fullUrl = text.startsWith('http') ? text : `https://x.com/${username}`;
-  return { type: 'x', url: fullUrl, username: username || text };
+  let fullUrl = username ? `https://x.com/${username}` : (text.startsWith('http') ? text : `https://${text}`);
+  return { type: 'x', url: fullUrl, username: username };
 }
 
 // Resolve profile picture avatar URL
 function resolveAvatarUrl(item) {
   if (!item) return 'https://api.dicebear.com/7.x/bottts/svg?seed=user';
 
-  // 1. Custom Image URL or Firebase Data URL
+  // 1. Custom Image URL or Firebase Storage / Data URL
   if (item.imageUrl && item.imageUrl.trim()) {
-    return item.imageUrl.trim();
+    const cleanImg = item.imageUrl.trim();
+    if (!cleanImg.includes('unavatar.io')) {
+      return cleanImg;
+    }
   }
 
   const rawLink = item.xAccount || '';
@@ -117,13 +125,56 @@ function resolveAvatarUrl(item) {
   const fallbackSeed = encodeURIComponent(item.displayName || parsed.username || 'user');
   const fallbackDicebear = `https://api.dicebear.com/7.x/bottts/svg?seed=${fallbackSeed}`;
 
-  if (parsed.type === 'youtube') {
-    return parsed.username ? `https://unavatar.io/youtube/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
-  } else if (parsed.type === 'tiktok') {
-    return parsed.username ? `https://unavatar.io/tiktok/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
-  } else {
-    return parsed.username ? `https://unavatar.io/x/${encodeURIComponent(parsed.username)}?fallback=${encodeURIComponent(fallbackDicebear)}` : fallbackDicebear;
+  // If Twitter handle exists, generate safe local path if known, or fallback to dicebear
+  if (parsed.username) {
+    const safeKey = parsed.username.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    if (safeKey) {
+      return `/uploads/avatars/${safeKey}.jpg`;
+    }
   }
+
+  return fallbackDicebear;
+}
+
+// Smart fallback handler for avatar images when <img> fails to load
+async function handleAvatarError(imgElem, xAccount, displayName) {
+  if (!imgElem || imgElem.dataset.errorHandled) return;
+  imgElem.dataset.errorHandled = 'true';
+
+  const parsed = typeof parseSocialLink === 'function' ? parseSocialLink(xAccount) : { username: '' };
+  const fallbackSeed = encodeURIComponent(displayName || parsed.username || 'user');
+  const dicebearUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${fallbackSeed}`;
+
+  if (parsed.username) {
+    try {
+      // Try resolving live high-res image from VxTwitter API (CORS supported!)
+      const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(parsed.username)}`, {
+        signal: AbortSignal.timeout(3500)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const pUrl = data.user_profile_image_url || data.profile_image_url;
+        if (pUrl) {
+          const highRes = pUrl.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          imgElem.onerror = () => {
+            imgElem.onerror = null;
+            imgElem.src = dicebearUrl;
+          };
+          imgElem.src = highRes;
+          return;
+        }
+      }
+    } catch (e) {
+      // Fall through to dicebear
+    }
+  }
+
+  imgElem.onerror = null;
+  imgElem.src = dicebearUrl;
+}
+
+if (typeof window !== 'undefined') {
+  window.handleAvatarError = handleAvatarError;
 }
 
 // ==========================================

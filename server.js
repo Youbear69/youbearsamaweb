@@ -71,48 +71,75 @@ function sortThaiEnglishServer(a, b, desc = false) {
 
 // Parse social account URLs and handles
 function parseSocialLinkServer(raw) {
-  const text = (raw || '').trim();
+  let text = (raw || '').trim();
   if (!text) return { type: 'x', url: '', username: '' };
 
   // 1. YouTube
   if (/youtube\.com|youtu\.be/i.test(text)) {
-    let handle = text.replace(/^https?:\/\/(www\.)?youtube\.com\//i, '').replace(/^@/, '');
-    handle = handle.split('/')[0].split('?')[0];
+    let handle = text.replace(/^(https?:\/\/)?(www\.)?youtube\.com\//i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0].split('&')[0];
     let fullUrl = text.startsWith('http') ? text : `https://${text}`;
     return { type: 'youtube', url: fullUrl, username: handle || text };
   }
 
   // 2. TikTok
   if (/tiktok\.com/i.test(text)) {
-    let handle = text.replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
-    handle = handle.split('/')[0].split('?')[0];
+    let handle = text.replace(/^(https?:\/\/)?(www\.)?tiktok\.com\/@?/i, '').replace(/^@/, '');
+    handle = handle.split('/')[0].split('?')[0].split('&')[0];
     let fullUrl = text.startsWith('http') ? text : `https://${text}`;
     return { type: 'tiktok', url: fullUrl, username: handle || text };
   }
 
   // 3. X / Twitter
   let username = text
-    .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
-    .replace(/^@/, '')
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/^(twitter|x)\.com\//i, '')
+    .replace(/^@+/, '')
     .split('/')[0]
-    .split('?')[0];
+    .split('?')[0]
+    .split('&')[0]
+    .split('#')[0]
+    .trim();
 
-  let fullUrl = text.startsWith('http') ? text : `https://x.com/${username}`;
-  return { type: 'x', url: fullUrl, username: username || text };
+  let fullUrl = username ? `https://x.com/${username}` : (text.startsWith('http') ? text : `https://${text}`);
+  return { type: 'x', url: fullUrl, username: username };
 }
 
 // Download profile avatar from X/YouTube/TikTok, cache permanently on disk & return clean URL
-async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '') {
-  if (!link) return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || 'user')}`;
+async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '', itemId = '') {
+  // If user has a Firebase Storage URL (e.g. uploaded by admin), preserve it 100%!
+  if (existingImageUrl && (existingImageUrl.includes('firebasestorage.googleapis.com') || existingImageUrl.startsWith('data:image'))) {
+    return existingImageUrl;
+  }
 
-  const cleanLink = link.trim();
+  const cleanLink = (link || '').trim();
   const parsed = parseSocialLinkServer(cleanLink);
-  const safeKey = (parsed.username || fallbackName || 'user')
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
-    .toLowerCase();
+
+  // Generate a safe, collision-resistant key
+  let safeKey = (parsed.username || '').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+  if (!safeKey || safeKey.length < 2) {
+    const rawFallback = (fallbackName || '').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    safeKey = rawFallback.length >= 2 ? rawFallback : (itemId ? String(itemId).replace(/[^a-zA-Z0-9_-]/g, '_') : `user_${Date.now()}`);
+  }
+
   const localFileName = `${safeKey}.jpg`;
   const localFilePath = path.join(UPLOADS_DIR, localFileName);
   const relativeUrl = `/uploads/avatars/${localFileName}`;
+
+  // Check if existing file on disk is already a valid image (> 1KB, not SVG)
+  const isLocalFileValid = () => {
+    if (!fs.existsSync(localFilePath)) return false;
+    try {
+      const stats = fs.statSync(localFilePath);
+      if (stats.size < 1000) return false;
+      const head = fs.readFileSync(localFilePath, 'utf-8').slice(0, 100);
+      if (head.includes('<svg') || head.includes('unavatar') || head.includes('<!DOCTYPE')) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
 
   let remoteUrl = null;
 
@@ -164,41 +191,39 @@ async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '')
   else {
     const handle = parsed.username;
     if (handle) {
-      // 3.1 Try FxTwitter API
+      // 3.1 Try VxTwitter API (fast & returns direct pbs.twimg CDN)
       try {
-        const res = await fetch(`https://api.fxtwitter.com/${encodeURIComponent(handle)}`, {
+        const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(handle)}`, {
           headers: { 'User-Agent': 'Mozilla/5.0' },
           signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.user && data.user.avatar_url) {
-            remoteUrl = data.user.avatar_url.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+          const pUrl = data.user_profile_image_url || data.profile_image_url;
+          if (pUrl) {
+            remoteUrl = pUrl.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
           }
         }
       } catch (err) {
         // ignore
       }
 
-      // 3.2 Try VxTwitter API
+      // 3.2 Try FxTwitter API
       if (!remoteUrl) {
         try {
-          const res = await fetch(`https://api.vxtwitter.com/${encodeURIComponent(handle)}`, {
+          const res = await fetch(`https://api.fxtwitter.com/${encodeURIComponent(handle)}`, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
             signal: AbortSignal.timeout(5000)
           });
           if (res.ok) {
             const data = await res.json();
-            remoteUrl = data.user_profile_image_url || data.profile_image_url;
+            if (data.user && data.user.avatar_url) {
+              remoteUrl = data.user.avatar_url.replace('_normal.', '_400x400.').replace('_bigger.', '_400x400.');
+            }
           }
         } catch (err) {
           // ignore
         }
-      }
-
-      // 3.3 Try unavatar
-      if (!remoteUrl) {
-        remoteUrl = `https://unavatar.io/x/${encodeURIComponent(handle)}`;
       }
     }
   }
@@ -212,7 +237,9 @@ async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '')
       });
       if (imgRes.ok) {
         const buffer = Buffer.from(await imgRes.arrayBuffer());
-        if (buffer.length > 300) {
+        const head = buffer.slice(0, 100).toString();
+        // Strictly reject SVGs, dummy HTML or tiny buffers
+        if (buffer.length > 1000 && !head.includes('<svg') && !head.includes('unavatar') && !head.includes('<!DOCTYPE')) {
           fs.writeFileSync(localFilePath, buffer);
           return `${relativeUrl}?v=${Date.now()}`;
         }
@@ -222,16 +249,18 @@ async function downloadAndCacheAvatar(link, fallbackName, existingImageUrl = '')
     }
   }
 
-  // If local file already exists from previous download, reuse it
-  if (fs.existsSync(localFilePath)) {
+  // If local file already exists from previous valid download, NEVER delete or overwrite it!
+  if (isLocalFileValid()) {
     return relativeUrl;
   }
 
-  if (existingImageUrl && !existingImageUrl.includes('twimg.com')) {
+  // If existing image URL is a valid remote image (not twimg or unavatar), preserve it
+  if (existingImageUrl && !existingImageUrl.includes('unavatar.io')) {
     return existingImageUrl;
   }
 
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink)}`;
+  // Final fallback: Dicebear bot
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName || cleanLink || 'user')}`;
 }
 
 // 24-Hour (1 Day) Avatar Sync Routine
@@ -249,22 +278,44 @@ async function syncAllAvatars(force = false) {
   try {
     const processList = async (list, label) => {
       for (const item of list) {
+        // NEVER overwrite custom admin uploaded Firebase Storage images
+        if (item.imageUrl && (item.imageUrl.includes('firebasestorage.googleapis.com') || item.imageUrl.startsWith('data:image'))) {
+          continue;
+        }
+
         const lastUpdated = item.avatarFetchedAt ? new Date(item.avatarFetchedAt).getTime() : 0;
         const isExpired = (now - lastUpdated) > ONE_DAY_MS;
-        const isMissingOrExternal = !item.imageUrl || item.imageUrl.includes('twimg.com') || !item.imageUrl.startsWith('/uploads/');
 
-        if (force || isExpired || isMissingOrExternal) {
-          console.log(`[Avatar 24h Sync] Updating avatar for ${label} "${item.displayName || item.xAccount}"...`);
+        // Check if file on disk exists and is valid
+        let fileValidOnDisk = false;
+        if (item.imageUrl && item.imageUrl.startsWith('/uploads/avatars/')) {
+          const fname = item.imageUrl.replace('/uploads/avatars/', '').split('?')[0];
+          const fpath = path.join(UPLOADS_DIR, fname);
+          if (fs.existsSync(fpath)) {
+            const size = fs.statSync(fpath).size;
+            const head = fs.readFileSync(fpath, 'utf-8').slice(0, 100);
+            if (size >= 1000 && !head.includes('<svg') && !head.includes('unavatar')) {
+              fileValidOnDisk = true;
+            }
+          }
+        }
+
+        const needsSync = force || (!fileValidOnDisk) || (isExpired && !fileValidOnDisk);
+
+        if (needsSync) {
+          console.log(`[Avatar Sync] Checking avatar for ${label} "${item.displayName || item.xAccount}"...`);
           try {
-            const newUrl = await downloadAndCacheAvatar(item.xAccount, item.displayName, item.imageUrl);
-            if (newUrl) {
+            const newUrl = await downloadAndCacheAvatar(item.xAccount, item.displayName, item.imageUrl, item.id);
+            if (newUrl && !newUrl.includes('dicebear') && newUrl !== item.imageUrl) {
               item.imageUrl = newUrl;
               item.avatarFetchedAt = new Date().toISOString();
               updatedCount++;
             }
           } catch (err) {
-            console.warn(`[Avatar 24h Sync] Error for ${item.xAccount}:`, err.message);
+            console.warn(`[Avatar Sync] Error for ${item.xAccount}:`, err.message);
           }
+          // Throttle 400ms to avoid hitting rate limits
+          await new Promise(r => setTimeout(r, 400));
         }
       }
     };
@@ -278,10 +329,10 @@ async function syncAllAvatars(force = false) {
 
     if (updatedCount > 0) {
       writeData(db);
-      console.log(`[Avatar 24h Sync] Successfully refreshed ${updatedCount} avatars and synced to database!`);
+      console.log(`[Avatar Sync] Successfully refreshed ${updatedCount} avatars and synced to database!`);
     }
   } catch (err) {
-    console.error('[Avatar 24h Sync] Exception during sync:', err);
+    console.error('[Avatar Sync] Exception during sync:', err);
   } finally {
     isSyncingAvatars = false;
   }
@@ -722,6 +773,9 @@ app.post('/api/register', async (req, res) => {
         p.convertedToRegId = newEntry.id;
         p.convertedAt = new Date().toISOString();
         p.statusNote = 'ย้ายไปลงทะเบียนแล้ว';
+        if (p.imageUrl && (!newEntry.imageUrl || newEntry.imageUrl.includes('dicebear'))) {
+          newEntry.imageUrl = p.imageUrl;
+        }
       }
     });
   }
