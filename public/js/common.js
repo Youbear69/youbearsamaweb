@@ -560,6 +560,72 @@ function loadScript(src) {
   document.body.appendChild(script);
 }
 
+// ==========================================
+// Profanity Filter System (คำที่กรองโดยระบบ)
+// ==========================================
+
+const PROFANITY_WORDS = [
+  'เงี่ยน', 'เย็ด', 'ควย', 'เหี้ย', 'หี', 'ชิบหาย', 'กะหรี่', 'ชิหาย', 'หำ',
+  'เชี่ย', 'เหยด', 'เวร', 'ตาย', 'เจี๊ยว', 'พ่อง', 'แม่ง', 'ควาย', 'สัส',
+  'ดอกทอง', 'ส้นตีน', 'มึง', 'กู', 'กุ', 'ไอ', 'เยี่ยว', 'แตด', 'กวนตีน'
+];
+
+function containsProfanity(text) {
+  if (!text || typeof text !== 'string') return null;
+  const clean = text.trim();
+  if (!clean) return null;
+
+  // Normalized version without spaces between characters
+  const normalized = clean.replace(/\s+/g, '');
+
+  // 1. Direct match for key Thai vulgarities & phonetic variations
+  const directList = [
+    'เงี่ยน', 'เย็ด', 'เยด', 'ควย', 'เหี้ย', 'เหีย', 'ชิบหาย', 'ฉิบหาย',
+    'กะหรี่', 'กระหรี่', 'ชิหาย', 'ฉิหาย', 'หำ', 'เชี่ย', 'เชี้ย', 'เหยด',
+    'เจี๊ยว', 'พ่อง', 'แม่ง', 'ควาย', 'สัส', 'สัด', 'ดอกทอง', 'ส้นตีน',
+    'มึง', 'กู', 'เยี่ยว', 'แตด', 'กวนตีน'
+  ];
+
+  for (const w of directList) {
+    if (normalized.includes(w) || clean.includes(w)) {
+      return w;
+    }
+  }
+
+  // 2. Word "หี" (exclude legitimate words like "หีบ" - chest/box)
+  if (/หี(?![บ])/.test(clean)) {
+    return 'หี';
+  }
+
+  // 3. Word "ตาย"
+  if (clean.includes('ตาย')) {
+    return 'ตาย';
+  }
+
+  // 4. Word "เวร"
+  if (clean.includes('เวร')) {
+    return 'เวร';
+  }
+
+  // 5. Word "กุ" (slang pronoun for กู, avoid matching กุมภ์, กุ้ง, กุหลาบ, มงกุฎ, สนุก)
+  if (/(?:^|[^\u0E00-\u0E7F]|\s)กุ(?=[^\u0E00-\u0E7F]|\s|$|[ว่ากูไปชอบไม่คือทำบอกดูคิดลอง])/i.test(clean)) {
+    return 'กุ';
+  }
+
+  // 6. Word "ไอ" (as slang for ไอ้, before insult or standalone, avoid matching ไอคอน, ไอติม, ไอดอล, ไอเดีย, ไอโฟน)
+  if (/ไอ[้]?\s*(เหี้ย|สัส|สัด|ควาย|เชี่ย|เวร|ห่า|บ้า|กาก|กวนตีน|ดอกทอง|เปรต|ส้นตีน|มึง|หมา|สัตว์|ตาย)/.test(clean) ||
+      /(?:^|\s)ไอ[้]?(?:$|\s|[!?,.])/i.test(clean)) {
+    return 'ไอ';
+  }
+
+  return null;
+}
+
+if (typeof window !== 'undefined') {
+  window.PROFANITY_WORDS = PROFANITY_WORDS;
+  window.containsProfanity = containsProfanity;
+}
+
 // Initialize on DOM Ready
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -578,7 +644,9 @@ if (typeof module !== 'undefined' && module.exports) {
     compactName,
     diceSimilarity,
     checkDuplicateOrSimilar,
-    findDuplicateOrSimilar
+    findDuplicateOrSimilar,
+    PROFANITY_WORDS,
+    containsProfanity
   };
 }
 

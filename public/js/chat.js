@@ -445,6 +445,15 @@ function sendChatMessage() {
     return;
   }
 
+  // Auto-delete profanity: check if message contains vulgar words
+  const profaneWord = typeof containsProfanity === 'function' ? containsProfanity(message) : null;
+  if (profaneWord) {
+    messageInput.value = '';
+    messageInput.focus();
+    showToast(`⚠️ ข้อความมีคำไม่สุภาพ ("${profaneWord}") ระบบได้ลบข้อความออกอัตโนมัติ`, 'error');
+    return;
+  }
+
   // 5-second cooldown check: only apply to non-admin users
   const isSenderAdmin = isAdminUser(username);
   if (!isSenderAdmin) {
@@ -552,8 +561,27 @@ function loadChatMessages() {
         return;
       }
       
-      const messages = Object.values(data).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-      
+      const messages = [];
+      Object.entries(data).forEach(([key, msg]) => {
+        if (!msg || !msg.message) return;
+
+        // Auto-delete from Firebase RTDB if contains profanity
+        const badWord = typeof containsProfanity === 'function' ? containsProfanity(msg.message) : null;
+        if (badWord) {
+          rtdb.ref('chat').child(key).remove().catch(() => {});
+          return;
+        }
+
+        messages.push({ ...msg, _key: key });
+      });
+
+      messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+      if (messages.length === 0) {
+        container.innerHTML = '<div class="chat-empty">ยังไม่มีข้อความ เริ่มพูดคุยกันเลย!</div>';
+        return;
+      }
+
       messages.forEach(msg => {
         const msgEl = createChatMessageElement(msg);
         container.appendChild(msgEl);

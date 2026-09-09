@@ -886,9 +886,18 @@ async function initAdminPage() {
         allChatList = [];
         if (data) {
           Object.keys(data).forEach(key => {
+            const item = data[key];
+            if (item && item.message) {
+              const badWord = typeof containsProfanity === 'function' ? containsProfanity(item.message) : null;
+              if (badWord) {
+                // Auto-delete from Firebase RTDB
+                rtdb.ref('chat/' + key).remove().catch(() => {});
+                return;
+              }
+            }
             allChatList.push({
               key: key,
-              ...data[key]
+              ...item
             });
           });
           // Sort newest first
@@ -1045,6 +1054,19 @@ async function initAdminPage() {
     });
   }
   window.switchAdminMainTab = switchAdminMainTab;
+
+  // Toggle Profanity Filter List accordion
+  window.toggleProfanityList = function() {
+    const container = document.getElementById('profanity-chips-container');
+    const chevron = document.getElementById('profanity-toggle-icon');
+    if (!container) return;
+
+    const isHidden = container.style.display === 'none';
+    container.style.display = isHidden ? 'flex' : 'none';
+    if (chevron) {
+      chevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+  };
 }
 
 if (document.readyState === 'loading') {
