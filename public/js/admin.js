@@ -229,7 +229,12 @@ async function initAdminPage() {
       }
       showDashboardView();
       loadAdminData();
+      initChatManagement();
     } else {
+      if (chatListenerRef && typeof rtdb !== 'undefined') {
+        rtdb.ref('chat').off('value', chatListenerRef);
+        chatListenerRef = null;
+      }
       showLoginView();
     }
   });
@@ -350,6 +355,10 @@ async function initAdminPage() {
       if (countTabAll) countTabAll.textContent = totalCombined;
       if (countTabDirect) countTabDirect.textContent = totalDirect;
       if (countTabProposed) countTabProposed.textContent = totalProposed;
+
+      // Update main nav tab badge
+      const tabBadgeMembers = document.getElementById('tab-badge-members');
+      if (tabBadgeMembers) tabBadgeMembers.textContent = totalCombined;
 
       if (stats && statTop) {
         let maxCount = 0;
@@ -853,6 +862,189 @@ async function initAdminPage() {
       if (e.target === editModal) closeEditModal();
     });
   }
+
+  // ==========================================
+  // Live Chat Management Logic (Admin Log & Deletion)
+  // ==========================================
+  const chatTableBody = document.getElementById('admin-chat-table-body');
+  const chatCountEl = document.getElementById('admin-chat-count');
+  const chatSearchInput = document.getElementById('admin-chat-search');
+  const chatFilterRole = document.getElementById('admin-chat-filter-role');
+  const btnClearAllChat = document.getElementById('btn-clear-all-chat');
+  
+  let allChatList = [];
+  let chatListenerRef = null;
+
+  function initChatManagement() {
+    if (chatListenerRef && typeof rtdb !== 'undefined') {
+      rtdb.ref('chat').off('value', chatListenerRef);
+    }
+
+    if (typeof rtdb !== 'undefined' && rtdb) {
+      chatListenerRef = rtdb.ref('chat').orderByChild('timestamp').limitToLast(300).on('value', (snap) => {
+        const data = snap.val();
+        allChatList = [];
+        if (data) {
+          Object.keys(data).forEach(key => {
+            allChatList.push({
+              key: key,
+              ...data[key]
+            });
+          });
+          // Sort newest first
+          allChatList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
+        const tabBadgeChat = document.getElementById('tab-badge-chat');
+        if (tabBadgeChat) tabBadgeChat.textContent = allChatList.length;
+        renderChatTable();
+      }, (err) => {
+        console.error('Chat sync error:', err);
+        if (chatTableBody) {
+          chatTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #f87171; padding: 2rem;">เกิดข้อผิดพลาดในการโหลดแชท: ${err.message}</td></tr>`;
+        }
+      });
+    }
+  }
+
+  function renderChatTable() {
+    if (!chatTableBody) return;
+
+    const query = (chatSearchInput ? chatSearchInput.value : '').toLowerCase().trim();
+    const roleFilter = chatFilterRole ? chatFilterRole.value : '';
+
+    const filtered = allChatList.filter(item => {
+      // Search by message, username, or display name
+      const matchSearch = !query ||
+        (item.message && item.message.toLowerCase().includes(query)) ||
+        (item.username && item.username.toLowerCase().includes(query)) ||
+        (item.displayName && item.displayName.toLowerCase().includes(query));
+
+      // Role filter
+      let matchRole = true;
+      if (roleFilter === 'admin') matchRole = Boolean(item.isAdmin);
+      else if (roleFilter === 'vtuber') matchRole = Boolean(item.isVtuber && !item.isAdmin);
+      else if (roleFilter === 'normal') matchRole = !item.isAdmin && !item.isVtuber;
+
+      return matchSearch && matchRole;
+    });
+
+    if (chatCountEl) chatCountEl.textContent = filtered.length;
+
+    if (filtered.length === 0) {
+      chatTableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+            ${allChatList.length === 0 ? 'ยังไม่มีข้อความแชทในระบบ' : 'ไม่พบข้อความแชทตามเงื่อนไขที่ค้นหา'}
+          </td>
+        </tr>`;
+      return;
+    }
+
+    chatTableBody.innerHTML = filtered.map(msg => {
+      // Timestamp
+      let timeStr = '-';
+      if (msg.timestamp) {
+        const d = new Date(msg.timestamp);
+        const pad = (n) => String(n).padStart(2, '0');
+        timeStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      // Role badge
+      let roleBadge = '<span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; background: rgba(59, 130, 246, 0.18); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3);">💬 ผู้ใช้ทั่วไป</span>';
+      let nameColor = '#ede9fe';
+
+      if (msg.isAdmin) {
+        roleBadge = '<span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.45); font-weight: 700;">👑 แอดมิน</span>';
+        nameColor = '#facc15';
+      } else if (msg.isVtuber) {
+        roleBadge = '<span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 700;">✨ วีทูบเบอร์</span>';
+        nameColor = '#4ade80';
+      }
+
+      const displayName = escapeHtml(msg.displayName || msg.username || '-');
+      const username = escapeHtml(msg.username || '-');
+      const messageText = escapeHtml(msg.message || '');
+
+      return `
+        <tr>
+          <td style="color: #94a3b8; font-size: 0.88rem; white-space: nowrap;">${timeStr}</td>
+          <td>
+            <div style="font-weight: 700; color: ${nameColor}; font-size: 0.98rem;">${displayName}</div>
+            ${username !== displayName ? `<div style="font-size: 0.82rem; color: #94a3b8;">@${username}</div>` : ''}
+          </td>
+          <td>${roleBadge}</td>
+          <td style="word-break: break-word; color: #ffffff; font-size: 0.96rem; max-width: 340px; line-height: 1.4;">${messageText}</td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-action-delete" onclick="window.adminDeleteChatMessage('${msg.key}')" title="ลบข้อความนี้" style="padding: 0.4rem 0.7rem; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; transition: all 0.2s ease;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>ลบ</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Delete single chat message
+  window.adminDeleteChatMessage = async function(key) {
+    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อความนี้?')) return;
+    try {
+      await rtdb.ref('chat/' + key).remove();
+      showToast('ลบข้อความสำเร็จ', 'success');
+    } catch (err) {
+      console.error('Delete chat message failed:', err);
+      showToast('เกิดข้อผิดพลาดในการลบ: ' + err.message, 'error');
+    }
+  };
+
+  // Clear all chat messages
+  if (btnClearAllChat) {
+    btnClearAllChat.onclick = async () => {
+      if (!confirm('⚠️ คำเตือน: คุณต้องการล้างข้อความแชททั้งหมดใช่หรือไม่?\\n(การกระทำนี้ไม่สามารถย้อนกลับได้)')) return;
+      try {
+        await rtdb.ref('chat').remove();
+        showToast('ล้างข้อความแชททั้งหมดเรียบร้อยแล้ว', 'success');
+      } catch (err) {
+        console.error('Clear chat messages failed:', err);
+        showToast('เกิดข้อผิดพลาดในการล้างแชท: ' + err.message, 'error');
+      }
+    };
+  }
+
+  // Search & filter event listeners
+  if (chatSearchInput) {
+    chatSearchInput.addEventListener('input', renderChatTable);
+  }
+  if (chatFilterRole) {
+    chatFilterRole.addEventListener('change', renderChatTable);
+  }
+
+  // ==========================================
+  // Admin Main Navigation Tabs Switching
+  // ==========================================
+  function switchAdminMainTab(tabKey) {
+    const tabs = document.querySelectorAll('.admin-main-tab-btn');
+    const panes = document.querySelectorAll('.admin-tab-pane');
+
+    tabs.forEach(btn => {
+      if (btn.getAttribute('data-tab') === tabKey) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    panes.forEach(pane => {
+      if (pane.id === `admin-pane-${tabKey}`) {
+        pane.style.display = 'block';
+        pane.classList.add('active');
+      } else {
+        pane.style.display = 'none';
+        pane.classList.remove('active');
+      }
+    });
+  }
+  window.switchAdminMainTab = switchAdminMainTab;
 }
 
 if (document.readyState === 'loading') {

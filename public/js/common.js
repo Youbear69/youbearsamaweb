@@ -319,11 +319,13 @@ async function initLiveCountdown() {
         if (diffLive <= 0) {
           liveEl.textContent = 'ไลฟ์ในอีก : 00 เดือน 00 วัน';
         } else {
-          const daysTotal = Math.floor(diffLive / (1000 * 60 * 60 * 24));
-          const months = Math.floor(daysTotal / 30);
-          const days = daysTotal % 30;
+          const totalHours = Math.floor(diffLive / (1000 * 60 * 60));
+          const totalDays = Math.floor(totalHours / 24);
+          const months = Math.floor(totalDays / 30);
+          const days = totalDays % 30;
+          const hours = totalHours % 24;
           const pad = (n) => String(n).padStart(2, '0');
-          liveEl.textContent = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน`;
+          liveEl.textContent = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง`;
         }
       }
 
@@ -333,11 +335,13 @@ async function initLiveCountdown() {
         if (diffClose <= 0) {
           closeEl.textContent = 'ปิดรับสมัครแล้ว';
         } else {
-          const daysTotal = Math.floor(diffClose / (1000 * 60 * 60 * 24));
-          const months = Math.floor(daysTotal / 30);
-          const days = daysTotal % 30;
+          const totalHours = Math.floor(diffClose / (1000 * 60 * 60));
+          const totalDays = Math.floor(totalHours / 24);
+          const months = Math.floor(totalDays / 30);
+          const days = totalDays % 30;
+          const hours = totalHours % 24;
           const pad = (n) => String(n).padStart(2, '0');
-          closeEl.textContent = `ปิดรับในอีก : ${pad(months)} เดือน ${pad(days)} วัน`;
+          closeEl.textContent = `ปิดรับในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง`;
         }
       }
     }

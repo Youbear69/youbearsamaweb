@@ -599,8 +599,8 @@ function applyRegistrationOpenState(settings) {
   const msg = (settings && settings.registrationClosedMessage) ? settings.registrationClosedMessage : 'ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย';
 
   if (isOpen) {
-    if (btnRegister) btnRegister.style.display = 'inline-flex';
-    if (btnPropose) btnPropose.style.display = 'inline-flex';
+    if (btnRegister) btnRegister.style.display = 'flex';
+    if (btnPropose) btnPropose.style.display = 'flex';
     if (closedBox) closedBox.style.display = 'none';
     if (quotaCta) quotaCta.style.display = 'block';
     if (quotaDetailCta) quotaDetailCta.style.display = 'block';
@@ -649,10 +649,14 @@ async function setupTimeBadges() {
           if (diffClose <= 0) {
             closeCountdown.textContent = 'ปิดรับสมัครเรียบร้อยแล้ว';
           } else {
-            const totalDays = Math.floor(diffClose / (1000 * 60 * 60 * 24));
+            const totalSeconds = Math.floor(diffClose / 1000);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const totalHours = Math.floor(totalMinutes / 60);
+            const totalDays = Math.floor(totalHours / 24);
             const months = Math.floor(totalDays / 30);
             const days = totalDays % 30;
-            closeCountdown.textContent = `ปิดรับในอีก : ${pad(months)} เดือน ${pad(days)} วัน`;
+            const hours = totalHours % 24;
+            closeCountdown.textContent = `ปิดรับในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง`;
           }
         }
 
@@ -663,17 +667,22 @@ async function setupTimeBadges() {
           if (liveCountdown) liveCountdown.textContent = finishedText;
           if (quotaModalCountdown) quotaModalCountdown.textContent = finishedText;
         } else {
-          const totalDays = Math.floor(diffLive / (1000 * 60 * 60 * 24));
+          const totalSeconds = Math.floor(diffLive / 1000);
+          const totalMinutes = Math.floor(totalSeconds / 60);
+          const totalHours = Math.floor(totalMinutes / 60);
+          const totalDays = Math.floor(totalHours / 24);
           const months = Math.floor(totalDays / 30);
           const days = totalDays % 30;
-          const text = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน`;
+          const hours = totalHours % 24;
+          const text = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง`;
           if (liveCountdown) liveCountdown.textContent = text;
           if (quotaModalCountdown) quotaModalCountdown.textContent = text;
         }
       }
 
       updateAllTimers();
-      setInterval(updateAllTimers, 60000);
+      setInterval(updateAllTimers, 1000);
+
     }
   } catch (err) {
     console.error('Failed to load settings timers:', err);

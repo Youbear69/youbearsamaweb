@@ -62,39 +62,44 @@
         </a>
       </div>
 
-      <!-- Title -->
-      <div class="page-title">ลงทะเบียนเล่น “ศึก 12 วีทูบเบอร์”</div>
-
-      <!-- Action Buttons (Open Popups) & Registration Closed Box -->
-      <div class="btn-group" id="home-btn-group">
-        <button type="button" class="btn-propose" id="btn-propose-home" onclick="openProposeModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
-          เสนอวีทูบเบอร์
+      <!-- Action Buttons (4-button redesigned bar) -->
+      <div class="btn-group-4" id="home-btn-group">
+        <button type="button" class="btn-dark-action" id="btn-chat-home" onclick="openChatModal()">
+          <span class="btn-main-text">💬 แชทสด / เสนอ-คุยเล่น</span>
         </button>
-        <button type="button" class="btn-primary btn-primary-featured" id="btn-register-home" onclick="openRegisterModal()">
-          ลงทะเบียน
+        <button type="button" class="btn-primary-featured" id="btn-register-home" onclick="openRegisterModal()">
+          <span class="btn-main-text">ลงทะเบียน</span>
+          <span class="btn-sub-text">ลงทะเบียนสำหรับเล่นเอง</span>
+        </button>
+        <button type="button" class="btn-propose-featured" id="btn-propose-home" onclick="openProposeModal()">
+          <span class="btn-main-text">เสนอวีทูบเบอร์</span>
+          <span class="btn-sub-text">เสนอวีทูบเบอร์ แนะนำให้ทางทีมงาน</span>
+        </button>
+        <button type="button" class="btn-dark-action" id="btn-allzodiac-home" onclick="openQuotaModal()">
+          <span class="btn-main-text">ผู้ลงสมัคร / ลงทะเบียนราศีทั้งหมด</span>
         </button>
         <div id="home-registration-closed-box" class="registration-closed-box" style="display: none;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           <span id="home-closed-msg-text">ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย</span>
         </div>
-        <button type="button" class="btn-secondary" id="btn-allzodiac-home" onclick="openQuotaModal()">ดูโควต้าราศี</button>
       </div>
+
 
       <!-- Two Countdown / Time Badges -->
       <div class="time-badges-container">
         <!-- Close Date Badge -->
         <div class="countdown-badge badge-deadline">
           <span class="badge-header" id="close-date-label">ปิดรับสมัคร : 15 ตุลาคม 2569 เวลา 00:00 น.</span>
-          <span class="badge-timer" id="close-countdown">ปิดรับในอีก : -- เดือน -- วัน</span>
+          <span class="badge-timer" id="close-countdown">ปิดรับในอีก : xx เดือน xx วัน xx ชั่วโมง</span>
         </div>
 
         <!-- Live Date Badge -->
         <div class="countdown-badge">
           <span class="badge-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</span>
-          <span class="badge-timer" id="live-countdown">ไลฟ์ในอีก : -- เดือน -- วัน</span>
+          <span class="badge-timer" id="live-countdown">ไลฟ์ในอีก : xx เดือน xx วัน xx ชั่วโมง</span>
         </div>
       </div>
+
     </div>
 
 
@@ -403,13 +408,69 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       POPUP 5: Live Chat Modal
+  ========================================== -->
+  <div id="modal-chat" class="app-modal-backdrop">
+    <div class="app-modal-box chat-modal-box">
+      <button type="button" class="btn-close-modal" aria-label="Close" onclick="closeChatModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="chat-container">
+        <div class="chat-header">
+          <h2 class="chat-title">Live Chat!</h2>
+          <p class="chat-subtitle">โปรดคุยกันอย่างสุภาพ และไม่รบกวนผู้อื่น</p>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <!-- Chat messages injected by JavaScript -->
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-username-row">
+            <input type="text" id="chat-username" class="chat-username-input" placeholder="username" maxlength="30" autocomplete="off">
+            <div id="chat-username-status" class="chat-username-status"></div>
+          </div>
+          <div class="chat-send-row">
+            <input type="text" id="chat-message-input" class="chat-message-input" placeholder="ข้อความ" maxlength="200" autocomplete="off">
+            <button type="button" id="btn-send-chat" class="btn-chat-send" onclick="sendChatMessage()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       POPUP 6: VTuber Zodiac Verification Modal
+  ========================================== -->
+  <div id="modal-vtuber-verify" class="app-modal-backdrop" style="z-index: 10010;">
+    <div class="app-modal-box vtuber-verify-modal-box">
+      <button type="button" class="btn-close-modal" aria-label="Close" onclick="closeVtuberVerifyModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="modal-inner-content" style="text-align: center; padding: 2rem;">
+        <h2 style="font-size: 1.8rem; margin-bottom: 0.8rem; color: #fff;">ยืนยันตัวตนวีทูบเบอร์</h2>
+        <p id="vtuber-verify-text" style="font-size: 1.2rem; color: #c4b5fd; margin-bottom: 1.5rem;">กรุณายืนยันราศีของคุณ</p>
+        <div id="vtuber-verify-zodiac-grid" class="zodiac-selector-grid" style="max-height: 320px; overflow-y: auto; margin-bottom: 1.2rem;">
+          <!-- Zodiac options injected by JS -->
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <button type="button" class="btn-modal-cancel" onclick="closeVtuberVerifyModal()">ยกเลิก</button>
+          <button type="button" id="btn-vtuber-verify-confirm" class="btn-modal-confirm" onclick="confirmVtuberZodiac()">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="/js/firebase-config.js"></script>
   <script src="/js/common.js"></script>
   <script src="/js/home-modals.js"></script>
+  <script src="/js/chat.js"></script>
   <script src="/js/minigame.js"></script>
+
   <script>
     function switchMainTab(tab, event) {
       if (event) event.preventDefault();
