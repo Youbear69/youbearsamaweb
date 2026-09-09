@@ -3998,6 +3998,210 @@ input:checked + .toggle-slider:before {
   transform: scale(0.95);
 }
 
+.btn-chat-attach {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fbbf24;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-chat-attach:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+}
+
+.chat-attachment-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: rgba(25, 20, 50, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 12px;
+  padding: 0.5rem 0.8rem;
+  animation: chatMsgFadeIn 0.2s ease-out;
+}
+
+.chat-attachment-thumb-box {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.chat-attachment-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-remove-attachment {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.btn-remove-attachment:hover {
+  transform: scale(1.15);
+}
+
+.chat-attachment-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-attachment-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.chat-attachment-size {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.chat-drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px dashed #60a5fa;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: chatPulseBorder 1.5s infinite ease-in-out;
+}
+
+.chat-drag-overlay-content {
+  text-align: center;
+}
+
+@keyframes chatPulseBorder {
+  0%, 100% { border-color: #60a5fa; box-shadow: 0 0 15px rgba(96, 165, 250, 0.3); }
+  50% { border-color: #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.45); }
+}
+
+.chat-media-container {
+  margin-top: 0.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 320px;
+  max-height: 240px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-media-container:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(99, 102, 241, 0.3);
+}
+
+.chat-media-img {
+  width: 100%;
+  height: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  display: block;
+}
+
+.chat-lightbox-backdrop {
+  background: rgba(0, 0, 0, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.chat-lightbox-backdrop.show {
+  display: flex;
+}
+
+.chat-lightbox-box {
+  position: relative;
+  max-width: 90vw;
+  max-height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: chatLightboxZoom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes chatLightboxZoom {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.chat-lightbox-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 255, 255, 0.1);
+  object-fit: contain;
+}
+
+.chat-lightbox-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(30, 25, 60, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.chat-lightbox-close:hover {
+  background: #ef4444;
+  transform: scale(1.1);
+}
+
 .btn-chat-send.btn-chat-cooldown {
   opacity: 0.7;
   cursor: not-allowed !important;

@@ -974,6 +974,18 @@ async function initAdminPage() {
       const username = escapeHtml(msg.username || '-');
       const messageText = escapeHtml(msg.message || '');
 
+      let mediaPreviewHtml = '';
+      if (msg.imageUrl) {
+        mediaPreviewHtml = `
+          <div style="margin-top: 6px;">
+            <a href="${escapeHtml(msg.imageUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all 0.2s ease;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span>🖼️ ดูรูปภาพแนบ</span>
+            </a>
+          </div>
+        `;
+      }
+
       return `
         <tr>
           <td style="color: #94a3b8; font-size: 0.88rem; white-space: nowrap;">${timeStr}</td>
@@ -982,7 +994,10 @@ async function initAdminPage() {
             ${username !== displayName ? `<div style="font-size: 0.82rem; color: #94a3b8;">@${username}</div>` : ''}
           </td>
           <td>${roleBadge}</td>
-          <td style="word-break: break-word; color: #ffffff; font-size: 0.96rem; max-width: 340px; line-height: 1.4;">${messageText}</td>
+          <td style="word-break: break-word; color: #ffffff; font-size: 0.96rem; max-width: 340px; line-height: 1.4;">
+            ${messageText ? `<div>${messageText}</div>` : ''}
+            ${mediaPreviewHtml}
+          </td>
           <td style="text-align: center;">
             <button type="button" class="btn-action-delete" onclick="window.adminDeleteChatMessage('${msg.key}')" title="ลบข้อความนี้" style="padding: 0.4rem 0.7rem; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; transition: all 0.2s ease;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>

@@ -7,6 +7,12 @@ const ADMIN_USERS = {
   'yuubear67': { displayName: 'Yuubear', isAdmin: true }
 };
 
+// Maximum allowed media attachment file size: 10MB
+const MAX_MEDIA_SIZE = 10 * 1024 * 1024;
+
+// Current attached media for admin
+let currentChatAttachment = null;
+
 // Pre-configured test VTuber (ensures Miyuu433 works immediately without waiting for DB sync)
 const INITIAL_KNOWN_VTUBERS = {
   'miyuu433': {
@@ -127,18 +133,27 @@ function isAdminUser(username) {
 function updateChatUsernameStatus() {
   const usernameInput = document.getElementById('chat-username');
   const statusEl = document.getElementById('chat-username-status');
+  const attachBtn = document.getElementById('btn-chat-attach');
+
   if (!usernameInput || !statusEl) return;
 
   const username = usernameInput.value.trim();
   if (!username) {
     statusEl.innerHTML = '';
+    if (attachBtn) attachBtn.style.display = 'none';
+    if (currentChatAttachment) removeChatAttachment();
     return;
   }
 
   // 1. Admin Check
   if (isAdminUser(username)) {
-    statusEl.innerHTML = '<span class="chat-status-admin">👑 แอดมิน (ไม่มีดีเลย์)</span>';
+    statusEl.innerHTML = '<span class="chat-status-admin">👑 แอดมิน (ไม่มีดีเลย์ / แนบสื่อได้)</span>';
+    if (attachBtn) attachBtn.style.display = 'flex';
     return;
+  } else {
+    // Non-admin: hide attach button and clear any attached files
+    if (attachBtn) attachBtn.style.display = 'none';
+    if (currentChatAttachment) removeChatAttachment();
   }
 
   // 2. Known VTuber Check
@@ -391,6 +406,152 @@ function getChatUserInfo(username) {
   };
 }
 
+// ==========================================
+// Admin Media Attachment Handling (Max 10MB)
+// ==========================================
+
+// Trigger file input dialog (admin only)
+function triggerChatFileSelect() {
+  const username = (document.getElementById('chat-username')?.value || '').trim();
+  if (!isAdminUser(username)) {
+    showToast('⚠️ การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น', 'warning');
+    return;
+  }
+  const fileInput = document.getElementById('chat-file-input');
+  if (fileInput) fileInput.click();
+}
+
+// File input selection event
+function handleChatFileSelect(input) {
+  if (input && input.files && input.files[0]) {
+    processChatMediaFile(input.files[0]);
+  }
+}
+
+// Process media file from picker, drag & drop, or clipboard paste
+function processChatMediaFile(file) {
+  if (!file) return;
+
+  const username = (document.getElementById('chat-username')?.value || '').trim();
+  if (!isAdminUser(username)) {
+    showToast('⚠️ การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น', 'warning');
+    return;
+  }
+
+  // Size limit: 10MB
+  if (file.size > MAX_MEDIA_SIZE) {
+    showToast('❌ ขนาดไฟล์เกินกำหนด (สูงสุดไม่เกิน 10MB)', 'error');
+    return;
+  }
+
+  // MIME type validation
+  if (!file.type || !file.type.startsWith('image/')) {
+    showToast('⚠️ กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, GIF, WebP)', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentChatAttachment = {
+      file: file,
+      dataUrl: e.target.result,
+      name: file.name || 'image.png',
+      size: file.size
+    };
+    showChatAttachmentPreview();
+    showToast('แนบรูปภาพเรียบร้อยแล้ว', 'success');
+  };
+  reader.onerror = () => {
+    showToast('ไม่สามารถอ่านไฟล์รูปภาพได้', 'error');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Render preview box of attached image
+function showChatAttachmentPreview() {
+  const previewBox = document.getElementById('chat-attachment-preview');
+  const img = document.getElementById('chat-attachment-img');
+  const nameEl = document.getElementById('chat-attachment-name');
+  const sizeEl = document.getElementById('chat-attachment-size');
+  if (!previewBox || !currentChatAttachment) return;
+
+  if (img) img.src = currentChatAttachment.dataUrl;
+  if (nameEl) nameEl.textContent = currentChatAttachment.name || 'image.png';
+  if (sizeEl) {
+    const sizeKb = Math.round(currentChatAttachment.size / 1024);
+    sizeEl.textContent = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+  }
+  previewBox.style.display = 'flex';
+}
+
+// Cancel / remove current attached image
+function removeChatAttachment() {
+  currentChatAttachment = null;
+  const previewBox = document.getElementById('chat-attachment-preview');
+  if (previewBox) previewBox.style.display = 'none';
+  const fileInput = document.getElementById('chat-file-input');
+  if (fileInput) fileInput.value = '';
+}
+
+// Upload attached image to Firebase Storage or server endpoint
+async function uploadChatAttachment(attachment, username) {
+  if (!attachment) return null;
+
+  // 1. Try Firebase Storage if available
+  try {
+    if (typeof fbUploadImage === 'function' && typeof fbStorage !== 'undefined' && fbStorage) {
+      const url = await fbUploadImage(attachment.file, 'chat-media');
+      if (url) return url;
+    }
+  } catch (err) {
+    console.warn('Firebase Storage upload failed, falling back to server API:', err);
+  }
+
+  // 2. Try Server API /api/chat/upload
+  try {
+    const res = await fetch('/api/chat/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl: attachment.dataUrl,
+        username: username
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && data.url) return data.url;
+    }
+  } catch (err) {
+    console.warn('Server chat upload failed:', err);
+  }
+
+  // 3. Fallback to dataUrl directly if small enough (< 1.5MB)
+  if (attachment.dataUrl && attachment.size < 1.5 * 1024 * 1024) {
+    return attachment.dataUrl;
+  }
+
+  throw new Error('ไม่สามารถบันทึกรูปภาพได้ กรุณาลองใหม่อีกครั้ง');
+}
+
+// Lightbox Modal functions
+function openChatImageLightbox(src) {
+  const modal = document.getElementById('modal-chat-lightbox');
+  const img = document.getElementById('chat-lightbox-img');
+  if (modal && img && src) {
+    img.src = src;
+    modal.classList.add('show');
+  }
+}
+
+function closeChatImageLightbox() {
+  const modal = document.getElementById('modal-chat-lightbox');
+  if (modal) {
+    modal.classList.remove('show');
+    const img = document.getElementById('chat-lightbox-img');
+    if (img) img.src = '';
+  }
+}
+
 // Chat cooldown management
 let chatCooldownTimer = null;
 let chatCooldownEnd = 0;
@@ -424,9 +585,10 @@ function startChatCooldown(seconds) {
 }
 
 // Send chat message
-function sendChatMessage() {
+async function sendChatMessage() {
   const usernameInput = document.getElementById('chat-username');
   const messageInput = document.getElementById('chat-message-input');
+  const sendBtn = document.getElementById('btn-send-chat');
   
   if (!usernameInput || !messageInput) return;
   
@@ -439,19 +601,22 @@ function sendChatMessage() {
     return;
   }
   
-  if (!message) {
-    showToast('กรุณาพิมพ์ข้อความ', 'error');
+  // Can send message OR image
+  if (!message && !currentChatAttachment) {
+    showToast('กรุณาพิมพ์ข้อความหรือแนบรูปภาพ', 'error');
     messageInput.focus();
     return;
   }
 
   // Auto-delete profanity: check if message contains vulgar words
-  const profaneWord = typeof containsProfanity === 'function' ? containsProfanity(message) : null;
-  if (profaneWord) {
-    messageInput.value = '';
-    messageInput.focus();
-    showToast(`⚠️ ข้อความมีคำไม่สุภาพ ("${profaneWord}") ระบบได้ลบข้อความออกอัตโนมัติ`, 'error');
-    return;
+  if (message) {
+    const profaneWord = typeof containsProfanity === 'function' ? containsProfanity(message) : null;
+    if (profaneWord) {
+      messageInput.value = '';
+      messageInput.focus();
+      showToast(`⚠️ ข้อความมีคำไม่สุภาพ ("${profaneWord}") ระบบได้ลบข้อความออกอัตโนมัติ`, 'error');
+      return;
+    }
   }
 
   // 5-second cooldown check: only apply to non-admin users
@@ -493,6 +658,39 @@ function sendChatMessage() {
       return;
     }
   }
+
+  // Upload attachment if any (Admin only)
+  let uploadedImageUrl = null;
+  if (currentChatAttachment) {
+    if (!isSenderAdmin) {
+      showToast('⚠️ การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น', 'error');
+      removeChatAttachment();
+      return;
+    }
+
+    const origBtnHtml = sendBtn ? sendBtn.innerHTML : '';
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span style="font-size: 0.75rem; font-weight: 700;">ส่งรูป...</span>';
+    }
+
+    try {
+      uploadedImageUrl = await uploadChatAttachment(currentChatAttachment, username);
+    } catch (err) {
+      console.error('Failed to upload image:', err);
+      showToast(err.message || 'ไม่สามารถอัปโหลดรูปภาพได้', 'error');
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = origBtnHtml;
+      }
+      return;
+    }
+
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = origBtnHtml;
+    }
+  }
   
   // Get user info for display
   const userInfo = getChatUserInfo(username);
@@ -501,7 +699,8 @@ function sendChatMessage() {
   const chatData = {
     username: username,
     displayName: userInfo.displayName,
-    message: message,
+    message: message || '',
+    imageUrl: uploadedImageUrl || null,
     isAdmin: userInfo.isAdmin,
     isVtuber: userInfo.isVtuber,
     timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -512,6 +711,7 @@ function sendChatMessage() {
     rtdb.ref('chat').push(chatData)
       .then(() => {
         messageInput.value = '';
+        removeChatAttachment();
         messageInput.focus();
         // Trigger 5-second delay for non-admin
         if (!isSenderAdmin) {
@@ -563,13 +763,15 @@ function loadChatMessages() {
       
       const messages = [];
       Object.entries(data).forEach(([key, msg]) => {
-        if (!msg || !msg.message) return;
+        if (!msg) return;
 
-        // Auto-delete from Firebase RTDB if contains profanity
-        const badWord = typeof containsProfanity === 'function' ? containsProfanity(msg.message) : null;
-        if (badWord) {
-          rtdb.ref('chat').child(key).remove().catch(() => {});
-          return;
+        // Auto-delete from Firebase RTDB if message text contains profanity
+        if (msg.message) {
+          const badWord = typeof containsProfanity === 'function' ? containsProfanity(msg.message) : null;
+          if (badWord) {
+            rtdb.ref('chat').child(key).remove().catch(() => {});
+            return;
+          }
         }
 
         messages.push({ ...msg, _key: key });
@@ -631,12 +833,117 @@ function createChatMessageElement(msg) {
   
   const bubbleEl = document.createElement('div');
   bubbleEl.className = 'chat-message-bubble';
-  bubbleEl.textContent = msg.message;
+  
+  // Message text
+  if (msg.message) {
+    const textEl = document.createElement('div');
+    textEl.className = 'chat-message-text';
+    textEl.textContent = msg.message;
+    bubbleEl.appendChild(textEl);
+  }
+
+  // Attached image (Admin media)
+  if (msg.imageUrl) {
+    const mediaContainer = document.createElement('div');
+    mediaContainer.className = 'chat-media-container';
+    mediaContainer.title = 'คลิกเพื่อดูภาพขนาดเต็ม';
+    mediaContainer.onclick = () => openChatImageLightbox(msg.imageUrl);
+
+    const img = document.createElement('img');
+    img.src = msg.imageUrl;
+    img.alt = 'รูปภาพแนบโดยแอดมิน';
+    img.className = 'chat-media-img';
+    img.loading = 'lazy';
+    mediaContainer.appendChild(img);
+    bubbleEl.appendChild(mediaContainer);
+  }
   
   wrapper.appendChild(headerEl);
   wrapper.appendChild(bubbleEl);
   
   return wrapper;
+}
+
+// Drag & Drop and Clipboard Paste Initialization (Admin Only)
+function initChatDragAndDropAndPaste() {
+  const chatInputArea = document.getElementById('chat-input-area');
+  const dragOverlay = document.getElementById('chat-drag-overlay');
+  const chatModal = document.getElementById('modal-chat');
+
+  if (chatInputArea) {
+    let dragCounter = 0;
+
+    chatInputArea.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const username = (document.getElementById('chat-username')?.value || '').trim();
+      if (!isAdminUser(username)) return;
+      dragCounter++;
+      if (dragOverlay) dragOverlay.style.display = 'flex';
+    });
+
+    chatInputArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const username = (document.getElementById('chat-username')?.value || '').trim();
+      if (!isAdminUser(username)) return;
+      if (dragOverlay) dragOverlay.style.display = 'flex';
+    });
+
+    chatInputArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        if (dragOverlay) dragOverlay.style.display = 'none';
+      }
+    });
+
+    chatInputArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter = 0;
+      if (dragOverlay) dragOverlay.style.display = 'none';
+
+      const username = (document.getElementById('chat-username')?.value || '').trim();
+      if (!isAdminUser(username)) {
+        showToast('⚠️ การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น', 'warning');
+        return;
+      }
+
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        processChatMediaFile(files[0]);
+      }
+    });
+  }
+
+  // Clipboard Paste listener
+  document.addEventListener('paste', (e) => {
+    const chatModal = document.getElementById('modal-chat');
+    if (!chatModal || !chatModal.classList.contains('show')) return;
+
+    const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.indexOf('image') !== -1) {
+        const username = (document.getElementById('chat-username')?.value || '').trim();
+        if (!isAdminUser(username)) {
+          showToast('⚠️ การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น', 'warning');
+          return;
+        }
+
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          processChatMediaFile(file);
+          break;
+        }
+      }
+    }
+  });
 }
 
 // Handle Enter keys & input events for live chat
@@ -685,4 +992,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === verifyModal) closeVtuberVerifyModal();
     });
   }
+
+  // Initialize Drag & Drop and Clipboard paste
+  initChatDragAndDropAndPaste();
 });
+
+// Expose functions to window for onclick handlers
+window.triggerChatFileSelect = triggerChatFileSelect;
+window.handleChatFileSelect = handleChatFileSelect;
+window.removeChatAttachment = removeChatAttachment;
+window.openChatImageLightbox = openChatImageLightbox;
+window.closeChatImageLightbox = closeChatImageLightbox;

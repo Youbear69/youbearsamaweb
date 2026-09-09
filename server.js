@@ -19,13 +19,18 @@ const PORT = 3000;
 const FIREBASE_WEB_API_KEY = 'AIzaSyBXj1EXxKUnk6TTvOFukF92PZitC5NqT8o';
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Ensure avatars uploads directory exists
+// Ensure uploads directories exist
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads', 'avatars');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const CHAT_UPLOADS_DIR = path.join(__dirname, 'public', 'uploads', 'chat');
+if (!fs.existsSync(CHAT_UPLOADS_DIR)) {
+  fs.mkdirSync(CHAT_UPLOADS_DIR, { recursive: true });
 }
 
 // Serve static assets from project root and public folder
@@ -812,6 +817,49 @@ app.delete('/api/registrations/:id', requireAdminAuth, (req, res) => {
   res.json({ success: true, message: 'ลบรายการสำเร็จ' });
 });
 
+// Admin Chat Media Upload API (Admin Only, Max 10MB)
+app.post('/api/chat/upload', (req, res) => {
+  const { dataUrl, username } = req.body || {};
+  if (!username || username.trim().toLowerCase() !== 'yuubear67') {
+    return res.status(403).json({ success: false, message: 'การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น' });
+  }
+
+  if (!dataUrl || typeof dataUrl !== 'string') {
+    return res.status(400).json({ success: false, message: 'ไม่พบข้อมูลรูปภาพ' });
+  }
+
+  // Check approximate file size (base64 size * 0.75)
+  const approxBytes = (dataUrl.length * 3) / 4;
+  if (approxBytes > 10.5 * 1024 * 1024) {
+    return res.status(400).json({ success: false, message: 'ขนาดไฟล์เกินกำหนด (สูงสุดไม่เกิน 10MB)' });
+  }
+
+  const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    return res.status(400).json({ success: false, message: 'รูปแบบรูปภาพไม่ถูกต้อง' });
+  }
+
+  const mimeType = matches[1];
+  const base64Data = matches[2];
+  let ext = '.png';
+  if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = '.jpg';
+  else if (mimeType.includes('gif')) ext = '.gif';
+  else if (mimeType.includes('webp')) ext = '.webp';
+  else if (mimeType.includes('svg')) ext = '.svg';
+
+  const safeName = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + ext;
+  const filePath = path.join(CHAT_UPLOADS_DIR, safeName);
+
+  fs.writeFile(filePath, Buffer.from(base64Data, 'base64'), (err) => {
+    if (err) {
+      console.error('Save chat upload error:', err);
+      return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการบันทึกรูปภาพบนเซิร์ฟเวอร์' });
+    }
+    const publicUrl = `/uploads/chat/${safeName}`;
+    res.json({ success: true, url: publicUrl });
+  });
+});
+
 // Admin Sync & Refresh All Avatars API
 app.post('/api/admin/sync-avatars', requireAdminAuth, async (req, res) => {
   try {
@@ -1199,6 +1247,60 @@ app.get('/api/export-csv', requireAdminAuth, (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="vtuber_zodiac_all_data.csv"');
   res.send(csvContent);
+});
+
+// ==========================================
+// Admin Chat Media Upload (Max 10MB)
+// ==========================================
+app.post('/api/chat/upload', (req, res) => {
+  try {
+    const { dataUrl, username } = req.body;
+
+    // Security check: Only admin yuubear67 is permitted to upload
+    if (username !== 'yuubear67') {
+      return res.status(403).json({ success: false, message: 'การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น' });
+    }
+
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      return res.status(400).json({ success: false, message: 'ไม่พบข้อมูลรูปภาพ' });
+    }
+
+    // Validate dataUrl format
+    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, message: 'รูปแบบรูปภาพไม่ถูกต้อง' });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Validate size (10MB limit)
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'ขนาดไฟล์เกิน 10MB' });
+    }
+
+    // Validate image mime type
+    let ext = 'png';
+    if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') ext = 'jpg';
+    else if (mimeType === 'image/gif') ext = 'gif';
+    else if (mimeType === 'image/webp') ext = 'webp';
+    else if (mimeType === 'image/svg+xml') ext = 'svg';
+    else if (!mimeType.startsWith('image/')) {
+      return res.status(400).json({ success: false, message: 'อนุญาตเฉพาะไฟล์รูปภาพเท่านั้น' });
+    }
+
+    const filename = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+    const filePath = path.join(CHAT_UPLOADS_DIR, filename);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/chat/${filename}`;
+    return res.json({ success: true, url: publicUrl, filename: filename });
+  } catch (err) {
+    console.error('[Chat Upload Error]', err);
+    return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการบันทึกรูปภาพ' });
+  }
 });
 
 // ==========================================
