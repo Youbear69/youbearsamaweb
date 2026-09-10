@@ -93,6 +93,17 @@ memoryData = loadLocalFile();
 // Firebase Realtime Database Integration
 // ==========================================
 let firebaseAuth = null;
+const CHAT_BACKUP_FILE = path.join(DB_DIR, 'chat_history.json');
+
+// Local chat cache
+let chatMemoryBackup = {};
+if (fs.existsSync(CHAT_BACKUP_FILE)) {
+  try {
+    chatMemoryBackup = JSON.parse(fs.readFileSync(CHAT_BACKUP_FILE, 'utf-8')) || {};
+  } catch (e) {
+    chatMemoryBackup = {};
+  }
+}
 
 try {
   if (fs.existsSync(KEY_FILE)) {
@@ -133,14 +144,45 @@ try {
         };
         saveLocalFile(memoryData);
         console.log('[Firebase Realtime] Synced data from Firebase RTDB');
+
+        // Backup chat if present in snapshot
+        if (val.chat && Object.keys(val.chat).length > 0) {
+          chatMemoryBackup = val.chat;
+          try {
+            fs.writeFileSync(CHAT_BACKUP_FILE, JSON.stringify(val.chat, null, 2), 'utf-8');
+          } catch (e) {}
+        }
       } else {
-        // If Firebase is completely empty, seed it with current local data
+        // If Firebase is completely empty, seed it with current local data using update() so child nodes are safe
         console.log('[Firebase Realtime] Initializing Firebase RTDB with initial data...');
-        rtdbRef.set(memoryData);
+        rtdbRef.update({
+          settings: memoryData.settings,
+          registrations: memoryData.registrations,
+          proposals: memoryData.proposals
+        });
       }
     }, (error) => {
       console.error('[Firebase Realtime] Error listening to updates:', error.message);
     });
+
+    // Dedicated permanent listener & backup for /chat node
+    const chatDbRef = db.ref('chat');
+    chatDbRef.on('value', (snapshot) => {
+      const chatVal = snapshot.val();
+      if (chatVal && Object.keys(chatVal).length > 0) {
+        chatMemoryBackup = chatVal;
+        try {
+          fs.writeFileSync(CHAT_BACKUP_FILE, JSON.stringify(chatVal, null, 2), 'utf-8');
+        } catch (e) {}
+      } else if (chatMemoryBackup && Object.keys(chatMemoryBackup).length > 0) {
+        // If Firebase chat is empty but we have local backup, restore messages to Firebase
+        console.log('[Firebase Realtime] Restoring chat history to Firebase...');
+        chatDbRef.update(chatMemoryBackup).catch(err => {
+          console.error('[Firebase Realtime] Error restoring chat:', err.message);
+        });
+      }
+    });
+
   } else {
     console.warn('[Firebase] Key file not found, running with local file storage');
   }
@@ -165,8 +207,14 @@ function writeData(data) {
   saveLocalFile(memoryData);
 
   // Asynchronously sync to Firebase Realtime Database
+  // CRITICAL: Use update() to only update settings, registrations, and proposals
+  // DO NOT use set() at root '/' as that would wipe out the '/chat' node!
   if (rtdbRef) {
-    rtdbRef.set(memoryData).catch(err => {
+    rtdbRef.update({
+      settings: memoryData.settings,
+      registrations: memoryData.registrations,
+      proposals: memoryData.proposals
+    }).catch(err => {
       console.error('[Firebase Realtime] Error syncing write to Firebase:', err.message);
     });
   }
@@ -174,8 +222,13 @@ function writeData(data) {
   return true;
 }
 
+function getChatBackup() {
+  return chatMemoryBackup;
+}
+
 module.exports = {
   readData,
   writeData,
-  getFirebaseAuth: () => firebaseAuth
+  getFirebaseAuth: () => firebaseAuth,
+  getChatBackup
 };

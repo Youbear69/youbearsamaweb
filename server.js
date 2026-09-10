@@ -2,7 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { readData, writeData, getFirebaseAuth } = require('./db');
+const { readData, writeData, getFirebaseAuth, getChatBackup } = require('./db');
 const {
   extractCleanHandle,
   cleanName,
@@ -1250,56 +1250,14 @@ app.get('/api/export-csv', requireAdminAuth, (req, res) => {
 });
 
 // ==========================================
-// Admin Chat Media Upload (Max 10MB)
+// Chat History API (Server Backup fallback)
 // ==========================================
-app.post('/api/chat/upload', (req, res) => {
+app.get('/api/chat/history', (req, res) => {
   try {
-    const { dataUrl, username } = req.body;
-
-    // Security check: Only admin yuubear67 is permitted to upload
-    if (username !== 'yuubear67') {
-      return res.status(403).json({ success: false, message: 'การแนบรูปภาพอนุญาตเฉพาะแอดมินเท่านั้น' });
-    }
-
-    if (!dataUrl || typeof dataUrl !== 'string') {
-      return res.status(400).json({ success: false, message: 'ไม่พบข้อมูลรูปภาพ' });
-    }
-
-    // Validate dataUrl format
-    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ success: false, message: 'รูปแบบรูปภาพไม่ถูกต้อง' });
-    }
-
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // Validate size (10MB limit)
-    if (buffer.length > 10 * 1024 * 1024) {
-      return res.status(400).json({ success: false, message: 'ขนาดไฟล์เกิน 10MB' });
-    }
-
-    // Validate image mime type
-    let ext = 'png';
-    if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') ext = 'jpg';
-    else if (mimeType === 'image/gif') ext = 'gif';
-    else if (mimeType === 'image/webp') ext = 'webp';
-    else if (mimeType === 'image/svg+xml') ext = 'svg';
-    else if (!mimeType.startsWith('image/')) {
-      return res.status(400).json({ success: false, message: 'อนุญาตเฉพาะไฟล์รูปภาพเท่านั้น' });
-    }
-
-    const filename = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-    const filePath = path.join(CHAT_UPLOADS_DIR, filename);
-
-    fs.writeFileSync(filePath, buffer);
-
-    const publicUrl = `/uploads/chat/${filename}`;
-    return res.json({ success: true, url: publicUrl, filename: filename });
+    const backup = typeof getChatBackup === 'function' ? getChatBackup() : {};
+    res.json({ success: true, data: backup });
   } catch (err) {
-    console.error('[Chat Upload Error]', err);
-    return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการบันทึกรูปภาพ' });
+    res.status(500).json({ success: false, data: {} });
   }
 });
 

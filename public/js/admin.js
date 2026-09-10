@@ -881,7 +881,7 @@ async function initAdminPage() {
     }
 
     if (typeof rtdb !== 'undefined' && rtdb) {
-      chatListenerRef = rtdb.ref('chat').orderByChild('timestamp').limitToLast(300).on('value', (snap) => {
+      chatListenerRef = rtdb.ref('chat').orderByChild('timestamp').limitToLast(500).on('value', (snap) => {
         const data = snap.val();
         allChatList = [];
         if (data) {

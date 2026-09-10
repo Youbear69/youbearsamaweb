@@ -744,19 +744,68 @@ function loadChatMessages() {
       chatVerifiedUser = null;
     }
   }
+
+  // 1. Instant Cache Pre-render: Keep chat visible immediately without blinking or waiting
+  try {
+    const cached = localStorage.getItem('chat_messages_cache');
+    if (cached && container.children.length === 0) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        container.innerHTML = '';
+        parsed.forEach(msg => {
+          container.appendChild(createChatMessageElement(msg));
+        });
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  } catch (e) {}
   
   // Remove existing listener
   if (chatListener && typeof rtdb !== 'undefined' && rtdb) {
     rtdb.ref('chat').off('value', chatListener);
   }
+
+  function renderMessagesList(messages) {
+    if (!messages || messages.length === 0) {
+      container.innerHTML = '<div class="chat-empty">ยังไม่มีข้อความ เริ่มพูดคุยกันเลย!</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    messages.forEach(msg => {
+      const msgEl = createChatMessageElement(msg);
+      container.appendChild(msgEl);
+    });
+    
+    // Auto scroll to bottom
+    container.scrollTop = container.scrollHeight;
+
+    // Cache locally
+    try {
+      localStorage.setItem('chat_messages_cache', JSON.stringify(messages.slice(-100)));
+    } catch (e) {}
+  }
   
   if (typeof rtdb !== 'undefined' && rtdb) {
-    // Listen for last 50 messages
-    chatListener = rtdb.ref('chat').orderByChild('timestamp').limitToLast(50).on('value', (snap) => {
+    // Listen for up to 200 messages in Firebase Realtime Database (retains chat history long-term)
+    chatListener = rtdb.ref('chat').orderByChild('timestamp').limitToLast(200).on('value', async (snap) => {
       const data = snap.val();
-      container.innerHTML = '';
       
       if (!data) {
+        // Fallback: If Firebase is temporarily empty or resetting, check server backup
+        try {
+          const res = await fetch('/api/chat/history');
+          if (res.ok) {
+            const json = await res.json();
+            if (json && json.success && json.data && Object.keys(json.data).length > 0) {
+              const fallbackMsgs = Object.entries(json.data).map(([k, v]) => ({ ...v, _key: k }));
+              fallbackMsgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+              renderMessagesList(fallbackMsgs);
+              return;
+            }
+          }
+        } catch (e) {}
+
         container.innerHTML = '<div class="chat-empty">ยังไม่มีข้อความ เริ่มพูดคุยกันเลย!</div>';
         return;
       }
@@ -778,19 +827,7 @@ function loadChatMessages() {
       });
 
       messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-      if (messages.length === 0) {
-        container.innerHTML = '<div class="chat-empty">ยังไม่มีข้อความ เริ่มพูดคุยกันเลย!</div>';
-        return;
-      }
-
-      messages.forEach(msg => {
-        const msgEl = createChatMessageElement(msg);
-        container.appendChild(msgEl);
-      });
-      
-      // Auto scroll to bottom
-      container.scrollTop = container.scrollHeight;
+      renderMessagesList(messages);
     });
   }
 }
