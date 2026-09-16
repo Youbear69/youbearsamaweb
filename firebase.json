@@ -28,6 +28,22 @@
         "destination": "/adminpanel.html"
       },
       {
+        "source": "/12vtubergame/random12ad",
+        "destination": "/random12ad.html"
+      },
+      {
+        "source": "/12vtubergame/random12ad/",
+        "destination": "/random12ad.html"
+      },
+      {
+        "source": "/12vtubergame/minigame",
+        "destination": "/minigame.html"
+      },
+      {
+        "source": "/12vtubergame/minigame/",
+        "destination": "/minigame.html"
+      },
+      {
         "source": "/12vtubergame/zodiac/**",
         "destination": "/zodiac.html"
       },
@@ -46,6 +62,22 @@
       {
         "source": "/adminpanel",
         "destination": "/adminpanel.html"
+      },
+      {
+        "source": "/random12ad",
+        "destination": "/random12ad.html"
+      },
+      {
+        "source": "/random12ad/",
+        "destination": "/random12ad.html"
+      },
+      {
+        "source": "/minigame",
+        "destination": "/minigame.html"
+      },
+      {
+        "source": "/minigame/",
+        "destination": "/minigame.html"
       },
       {
         "source": "/zodiac/**",

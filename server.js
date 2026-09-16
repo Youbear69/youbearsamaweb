@@ -1417,6 +1417,10 @@ app.get(['/minigame', '/minigame/'], (req, res) => {
   res.redirect('/12vtubergame/minigame');
 });
 
+app.get(['/random12ad', '/random12ad/'], (req, res) => {
+  res.redirect('/12vtubergame/random12ad');
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`====================================================`);
