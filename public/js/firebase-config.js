@@ -550,3 +550,43 @@ function fbExportCSV(registrations, proposals) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ==========================================
+// Random 12 Logs Helpers (RTDB)
+// ==========================================
+
+// Add a Random 12 spin log
+async function fbAddRandom12Log(data) {
+  const id = 'r12_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+  const entry = {
+    id: id,
+    timestamp: new Date().toISOString(),
+    mode: data.mode || 'registered', // 'registered' | 'proposed'
+    picksPerZodiac: data.picksPerZodiac || 1,
+    totalWinners: data.totalWinners || 0,
+    zodiacCount: data.zodiacCount || 0,
+    results: data.results || []
+  };
+  await rtdb.ref('random12_logs/' + id).set(entry);
+  return entry;
+}
+
+// Get all Random 12 spin logs (ordered latest first)
+async function fbGetRandom12Logs() {
+  const snap = await rtdb.ref('random12_logs').once('value');
+  const val = snap.val();
+  if (!val) return [];
+  const list = Object.values(val);
+  list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  return list;
+}
+
+// Delete single log entry
+async function fbDeleteRandom12Log(id) {
+  await rtdb.ref('random12_logs/' + id).remove();
+}
+
+// Clear all Random 12 spin logs
+async function fbClearAllRandom12Logs() {
+  await rtdb.ref('random12_logs').remove();
+}

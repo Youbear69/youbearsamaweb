@@ -1262,6 +1262,86 @@ app.get('/api/chat/history', (req, res) => {
 });
 
 // ==========================================
+// Random 12 Logs API (Local Storage on Server)
+// ==========================================
+const R12_LOGS_FILE = path.join(__dirname, 'database', 'random12_logs.json');
+
+function readLocalR12Logs() {
+  try {
+    if (!fs.existsSync(R12_LOGS_FILE)) return [];
+    const content = fs.readFileSync(R12_LOGS_FILE, 'utf-8');
+    return JSON.parse(content) || [];
+  } catch (e) {
+    console.error('Error reading local random12 logs:', e);
+    return [];
+  }
+}
+
+function writeLocalR12Logs(logs) {
+  try {
+    const dir = path.dirname(R12_LOGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(R12_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing local random12 logs:', e);
+  }
+}
+
+// GET all logs stored locally on this machine
+app.get('/api/random12/logs', (req, res) => {
+  try {
+    const logs = readLocalR12Logs();
+    res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST save log to local machine
+app.post('/api/random12/log', (req, res) => {
+  try {
+    const entry = req.body;
+    if (!entry.id) {
+      entry.id = 'r12_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+    if (!entry.timestamp) {
+      entry.timestamp = new Date().toISOString();
+    }
+    const logs = readLocalR12Logs();
+    logs.unshift(entry); // latest first
+    writeLocalR12Logs(logs);
+    console.log(`[Random12 Log] Saved log ${entry.id} locally (${entry.totalWinners} winners)`);
+    res.json({ success: true, data: entry });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE single log entry from local machine
+app.delete('/api/random12/logs/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    let logs = readLocalR12Logs();
+    logs = logs.filter(l => l.id !== id);
+    writeLocalR12Logs(logs);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE clear all logs on local machine
+app.delete('/api/random12/logs', (req, res) => {
+  try {
+    writeLocalR12Logs([]);
+    console.log('[Random12 Log] Cleared all local random12 logs');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
 // Page Routes
 // ==========================================
 
@@ -1306,6 +1386,10 @@ app.get('/12vtubergame/zodiac/:sign', (req, res) => {
 
 app.get('/12vtubergame/adminpanel', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'adminpanel.html'));
+});
+
+app.get(['/12vtubergame/random12ad', '/12vtubergame/random12ad/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'random12ad.html'));
 });
 
 app.get(['/12vtubergame/minigame', '/12vtubergame/minigame/'], (req, res) => {

@@ -112,6 +112,11 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
           <span>4. เปลี่ยนอีเมล & รหัสผ่าน</span>
         </button>
+        <button type="button" class="admin-main-tab-btn" data-tab="random12" onclick="switchAdminMainTab('random12')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="12 6 12 12 16 14"></polygon></svg>
+          <span>5. ประวัติการสุ่ม 12 ราศี</span>
+          <span class="admin-tab-pill-badge" id="tab-badge-random12">0</span>
+        </button>
       </div>
 
       <!-- ==========================================
@@ -444,6 +449,47 @@
               เปลี่ยนรหัสผ่าน / อีเมล
             </button>
           </form>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           TAB GROUP 5: ประวัติการสุ่ม 12 ราศี (Random 12 Logs)
+      ========================================== -->
+      <div id="admin-pane-random12" class="admin-tab-pane" style="display: none;">
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="12 6 12 12 16 14"></polygon></svg>
+                ประวัติการสุ่ม 12 ราศี (Random 12 Logs)
+              </h2>
+              <p style="color: var(--text-muted); font-size: 0.95rem;">
+                บันทึกประวัติการกดสุ่มทุกครั้ง และรายชื่อผู้ที่ถูกสุ่มได้ในแต่ละราศี
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-refresh-random12-logs" class="btn-secondary" style="font-size: 0.95rem; padding: 0.55rem 1.2rem; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                รีเฟรชประวัติ
+              </button>
+              <button type="button" id="btn-clear-all-random12-logs" class="btn-propose" style="font-size: 0.95rem; padding: 0.55rem 1.2rem; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; background: rgba(239, 68, 68, 0.15);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                ล้างประวัติการสุ่มทั้งหมด
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div id="random12-logs-empty" style="display: none; text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.4; margin-bottom: 0.75rem;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div style="font-size: 1.1rem; color: #cbd5e1;">ยังไม่มีประวัติการสุ่ม</div>
+            <div style="font-size: 0.9rem; margin-top: 0.3rem;">เมื่อมีการกดสุ่มที่หน้าระบบสุ่ม 12 ราศี ประวัติจะถูกบันทึกมาที่นี่อัตโนมัติ</div>
+          </div>
+
+          <!-- Logs List -->
+          <div id="random12-logs-list" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Rendered by JS -->
+          </div>
         </div>
       </div>
 

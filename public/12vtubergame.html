@@ -6,6 +6,7 @@
   <title>ลงทะเบียนเล่น ศึก 12 วีทูบเบอร์</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/random12.css">
 </head>
 <body class="page-home">
   <!-- Moving Cosmic Background -->
@@ -505,6 +506,25 @@
       <img id="chat-lightbox-img" src="" alt="ภาพขยาย" class="chat-lightbox-img">
     </div>
   </div>
+  <!-- Volume Control (Bottom Right) -->
+  <div class="volume-control" id="volume-control">
+    <button type="button" class="volume-toggle" id="volume-toggle" title="ปรับเสียง">
+      <svg id="volume-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="volume-icon-mute" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+    </button>
+    <div class="volume-slider-wrap" id="volume-slider-wrap">
+      <input type="range" min="0" max="100" value="30" class="volume-slider" id="volume-slider">
+      <span class="volume-value" id="volume-value">30%</span>
+    </div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -560,6 +580,86 @@
         switchMainTab('12vtuber');
       }
     });
+  </script>
+
+  <!-- Volume Control (Bottom Right) -->
+  <div class="volume-control" id="volume-control">
+    <button type="button" class="volume-toggle" id="volume-toggle" title="ปรับเสียง">
+      <svg id="volume-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="volume-icon-mute" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+    </button>
+    <div class="volume-slider-wrap" id="volume-slider-wrap">
+      <input type="range" min="0" max="100" value="30" class="volume-slider" id="volume-slider">
+      <span class="volume-value" id="volume-value">30%</span>
+    </div>
+  </div>
+
+  <!-- Volume Control Script -->
+  <script>
+  (function() {
+    const volumeSlider = document.getElementById('volume-slider');
+    const volumeValue = document.getElementById('volume-value');
+    const volumeToggle = document.getElementById('volume-toggle');
+    const volumeIconOn = document.getElementById('volume-icon-on');
+    const volumeIconMute = document.getElementById('volume-icon-mute');
+
+    let globalVolume = 0.3;
+    const savedVol = localStorage.getItem('random12_volume') || localStorage.getItem('site_volume');
+    if (savedVol !== null) globalVolume = parseFloat(savedVol);
+
+    function syncBGM() {
+      if (window.globalAudio) {
+        window.globalAudio.volume = globalVolume;
+        window.globalAudio.muted = (globalVolume <= 0);
+      }
+    }
+
+    function updateUI() {
+      if (volumeSlider) volumeSlider.value = Math.round(globalVolume * 100);
+      if (volumeValue) volumeValue.textContent = Math.round(globalVolume * 100) + '%';
+      if (volumeIconOn && volumeIconMute) {
+        volumeIconOn.style.display = globalVolume <= 0 ? 'none' : 'block';
+        volumeIconMute.style.display = globalVolume <= 0 ? 'block' : 'none';
+      }
+      syncBGM();
+    }
+    updateUI();
+
+    if (volumeSlider) {
+      volumeSlider.addEventListener('input', function(e) {
+        globalVolume = parseInt(e.target.value) / 100;
+        localStorage.setItem('random12_volume', globalVolume);
+        localStorage.setItem('site_volume', globalVolume);
+        updateUI();
+      });
+    }
+
+    if (volumeToggle) {
+      volumeToggle.addEventListener('click', function() {
+        if (globalVolume > 0) {
+          localStorage.setItem('random12_volume_prev', globalVolume);
+          globalVolume = 0;
+        } else {
+          var prev = parseFloat(localStorage.getItem('random12_volume_prev') || '0.3');
+          globalVolume = prev > 0 ? prev : 0.3;
+        }
+        localStorage.setItem('random12_volume', globalVolume);
+        localStorage.setItem('site_volume', globalVolume);
+        updateUI();
+      });
+    }
+
+    // Delayed sync in case globalAudio finishes initializing slightly later
+    setTimeout(syncBGM, 500);
+  })();
   </script>
 </body>
 </html>

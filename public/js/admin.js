@@ -230,6 +230,7 @@ async function initAdminPage() {
       showDashboardView();
       loadAdminData();
       initChatManagement();
+      initRandom12LogsManagement();
     } else {
       if (chatListenerRef && typeof rtdb !== 'undefined') {
         rtdb.ref('chat').off('value', chatListenerRef);
@@ -1067,8 +1068,203 @@ async function initAdminPage() {
         pane.classList.remove('active');
       }
     });
+
+    if (tabKey === 'random12' && typeof window.loadRandom12Logs === 'function') {
+      window.loadRandom12Logs();
+    }
   }
   window.switchAdminMainTab = switchAdminMainTab;
+
+  // ==========================================
+  // Random 12 Logs Management
+  // ==========================================
+  function initRandom12LogsManagement() {
+    const logsListEl = document.getElementById('random12-logs-list');
+    const logsEmptyEl = document.getElementById('random12-logs-empty');
+    const badgeRandom12 = document.getElementById('tab-badge-random12');
+    const btnRefreshLogs = document.getElementById('btn-refresh-random12-logs');
+    const btnClearAllLogs = document.getElementById('btn-clear-all-random12-logs');
+
+    let random12LogsCache = [];
+
+    async function loadRandom12Logs() {
+      if (!logsListEl) return;
+      try {
+        let localLogs = [];
+        let firebaseLogs = [];
+
+        // 1. Fetch from local machine server disk
+        try {
+          const res = await fetch('/api/random12/logs');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.data)) {
+              localLogs = data.data;
+            }
+          }
+        } catch (e) {
+          console.warn('Local log fetch notice:', e);
+        }
+
+        // 2. Fetch from Firebase RTDB online
+        try {
+          if (typeof fbGetRandom12Logs === 'function') {
+            firebaseLogs = await fbGetRandom12Logs();
+          } else {
+            const snap = await rtdb.ref('random12_logs').once('value');
+            const val = snap.val();
+            firebaseLogs = val ? Object.values(val) : [];
+          }
+        } catch (e) {
+          console.warn('Firebase log fetch notice:', e);
+        }
+
+        // Merge unique by id
+        const map = new Map();
+        localLogs.forEach(l => { if (l && l.id) map.set(l.id, l); });
+        firebaseLogs.forEach(l => { if (l && l.id) map.set(l.id, l); });
+
+        random12LogsCache = Array.from(map.values());
+        random12LogsCache.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        if (badgeRandom12) {
+          badgeRandom12.textContent = random12LogsCache.length;
+        }
+
+        renderRandom12Logs();
+      } catch (err) {
+        console.error('Failed to load random12 logs:', err);
+      }
+    }
+    window.loadRandom12Logs = loadRandom12Logs;
+
+    function renderRandom12Logs() {
+      if (!logsListEl) return;
+
+      if (!random12LogsCache || random12LogsCache.length === 0) {
+        if (logsEmptyEl) logsEmptyEl.style.display = 'block';
+        logsListEl.innerHTML = '';
+        return;
+      }
+
+      if (logsEmptyEl) logsEmptyEl.style.display = 'none';
+
+      logsListEl.innerHTML = random12LogsCache.map(log => {
+        let timeStr = '-';
+        if (log.timestamp) {
+          const d = new Date(log.timestamp);
+          const pad = n => String(n).padStart(2, '0');
+          timeStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        const isReg = log.mode === 'registered';
+        const modeBadge = isReg
+          ? '<span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; background: rgba(124, 58, 237, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);">👤 สุ่มลงทะเบียน</span>'
+          : '<span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4);">⭐ สุ่มเสนอชื่อ</span>';
+
+        const results = log.results || [];
+
+        const zodiacsHtml = results.map(r => {
+          const winnersList = (r.winners || []).map(w => {
+            const avatar = w.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(w.displayName || '?')}&backgroundColor=7c3aed&textColor=ffffff`;
+            return `
+              <div style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 8px; padding: 4px 8px; font-size: 0.82rem; min-width: 0; overflow: hidden;">
+                <img src="${escapeHtml(avatar)}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=VT&backgroundColor=7c3aed&textColor=ffffff'">
+                <div style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <span style="color: #ffffff; font-weight: 600;">${escapeHtml(w.displayName)}</span>
+                  ${w.xAccount ? `<span style="color: #94a3b8; font-size: 0.72rem; margin-left: 4px;">@${escapeHtml(w.xAccount.replace(/^https?:\/\/(x|twitter)\.com\//, '').replace(/^@/, ''))}</span>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          return `
+            <div style="background: rgba(15, 9, 36, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: #a78bfa; display: flex; align-items: center; justify-content: space-between;">
+                <span>ราศี${escapeHtml(r.zodiacNameTh || r.zodiacKey)} (${escapeHtml(r.zodiacNameEn || '')})</span>
+                <span style="font-size: 0.75rem; color: #cbd5e1; background: rgba(139, 92, 246, 0.2); padding: 1px 7px; border-radius: 10px;">${(r.winners || []).length} คน</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                ${winnersList || '<span style="color: #64748b; font-size: 0.78rem;">ไม่มีผู้สุ่มได้</span>'}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="admin-card" style="padding: 1.2rem; border: 1.5px solid rgba(139, 92, 246, 0.28); background: rgba(21, 12, 51, 0.75); margin-bottom: 0;">
+            <!-- Top Bar of Log Card -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(139, 92, 246, 0.2); padding-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <span style="color: #ffffff; font-size: 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  ${timeStr}
+                </span>
+                ${modeBadge}
+                <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 600;">
+                  สุ่มราศีละ ${log.picksPerZodiac || 1} คน
+                </span>
+                <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; background: rgba(52, 211, 153, 0.15); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.35); font-weight: 600;">
+                  รวมได้ทั้งหมด ${log.totalWinners || 0} คน (${log.zodiacCount || results.length} ราศี)
+                </span>
+              </div>
+              <button type="button" onclick="window.adminDeleteRandom12Log('${log.id}')" class="btn-propose" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; background: rgba(239, 68, 68, 0.12); display: inline-flex; align-items: center; gap: 4px;" title="ลบรายการนี้">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>ลบรายการนี้</span>
+              </button>
+            </div>
+
+            <!-- 12 Zodiac Winners Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+              ${zodiacsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.adminDeleteRandom12Log = async function(id) {
+      if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบประวัติการสุ่มรายการนี้?')) return;
+      try {
+        await Promise.allSettled([
+          fetch('/api/random12/logs/' + encodeURIComponent(id), { method: 'DELETE' }),
+          typeof fbDeleteRandom12Log === 'function' ? fbDeleteRandom12Log(id) : rtdb.ref('random12_logs/' + id).remove()
+        ]);
+        showToast('ลบประวัติการสุ่มสำเร็จ', 'success');
+        loadRandom12Logs();
+      } catch (err) {
+        console.error(err);
+        showToast('เกิดข้อผิดพลาดในการลบ: ' + err.message, 'error');
+      }
+    };
+
+    if (btnClearAllLogs) {
+      btnClearAllLogs.onclick = async () => {
+        if (!confirm('⚠️ คำเตือน: คุณต้องการล้างประวัติการสุ่ม 12 ราศีทั้งหมดใช่หรือไม่?\n(การกระทำนี้จะล้างประวัติทั้งบนเครื่องนี้และบนระบบออนไลน์อย่างถาวร)')) return;
+        try {
+          await Promise.allSettled([
+            fetch('/api/random12/logs', { method: 'DELETE' }),
+            typeof fbClearAllRandom12Logs === 'function' ? fbClearAllRandom12Logs() : rtdb.ref('random12_logs').remove()
+          ]);
+          showToast('ล้างประวัติการสุ่มทั้งหมดเรียบร้อยแล้ว', 'success');
+          loadRandom12Logs();
+        } catch (err) {
+          console.error(err);
+          showToast('เกิดข้อผิดพลาดในการล้างประวัติ: ' + err.message, 'error');
+        }
+      };
+    }
+
+    if (btnRefreshLogs) {
+      btnRefreshLogs.onclick = () => {
+        loadRandom12Logs();
+        showToast('รีเฟรชประวัติการสุ่มแล้ว', 'success');
+      };
+    }
+
+    // Initial load
+    loadRandom12Logs();
+  }
 
   // Toggle Profanity Filter List accordion
   window.toggleProfanityList = function() {

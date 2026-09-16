@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สุ่ม 12 ราศี - ศึก 12 วีทูบเบอร์</title>
+  <meta name="description" content="สุ่มชื่อผู้เข้าร่วมจากทุกราศีพร้อมกัน 12 ราศี ศึก 12 วีทูบเบอร์">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/random12.css">
+</head>
+<body>
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Universal Top Navigation Bar & Social Pill -->
+  <header class="top-nav-bar">
+    <nav class="nav-pill-group">
+      <a href="https://yuubearsama.online/" class="nav-pill-link">Home</a>
+      <a href="/12vtubergame" class="nav-pill-link active">ศึก 12 วีทูบเบอร์</a>
+      <a href="/12vtubergame/minigame" class="nav-pill-link">Mini Game</a>
+    </nav>
+    <div class="top-social-group">
+      <a href="https://www.youtube.com/@yuubeargame" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="YouTube: @yuubeargame">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      </a>
+      <a href="https://x.com/bearuwu_001" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="X: @bearuwu_001">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="https://ezdn.app/youbear" target="_blank" rel="noopener noreferrer" class="social-pill-btn social-pill-ezdn" title="EasyDonate: @youbear">
+        <img src="/easydonate-symbol-bg-brand.svg" alt="EasyDonate" class="ezdn-nav-icon">
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content" style="padding-top: 5rem;">
+    <!-- Header Banner -->
+    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 2rem; width: 100%; max-width: 1200px; margin-top: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+      <a href="/12vtubergame"><img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์ Logo" style="max-width: 200px; width: 100%; height: auto;"></a>
+      <div style="text-align: left;">
+        <h1 class="page-title" style="margin-bottom: 0.4rem; text-align: left; font-size: 1.6rem;">🎰 สุ่ม 12 ราศี</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">สุ่มชื่อ VTuber จากทุกราศีพร้อมกัน</p>
+      </div>
+    </div>
+
+    <!-- Mode Toggle -->
+    <div class="random-mode-toggle" id="random-mode-toggle">
+      <button type="button" class="mode-btn active" data-mode="registered" id="mode-btn-registered">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Random ลงทะเบียน
+      </button>
+      <button type="button" class="mode-btn" data-mode="proposed" id="mode-btn-proposed">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Random เสนอ
+      </button>
+    </div>
+
+    <!-- 12 Zodiac Slot Grid -->
+    <div class="random12-grid" id="random12-grid">
+      <!-- Cards injected by JavaScript -->
+    </div>
+
+    <!-- Start Controls Area -->
+    <div class="random12-start-area" id="random12-start-area">
+      <!-- Pick Count Selector -->
+      <div class="pick-count-panel" id="pick-count-panel">
+        <span class="pick-count-label">สุ่มราศีละ</span>
+        <div class="pick-counter-wrap">
+          <button type="button" class="pick-counter-btn" id="btn-count-minus" title="ลดจำนวนคน" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="pick-counter-display">
+            <span class="pick-counter-num" id="pick-count-val">1</span>
+            <span class="pick-counter-unit">คน</span>
+          </div>
+          <button type="button" class="pick-counter-btn" id="btn-count-plus" title="เพิ่มจำนวนคน">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Start Button -->
+      <button type="button" class="random12-start-btn" id="btn-start-random" disabled>
+        <div class="start-btn-inner">
+          <svg class="start-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <span class="start-text">กดเพื่อสุ่ม</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div class="random12-status" id="random12-status"></div>
+  </main>
+
+  <!-- Volume Control (Bottom Right) -->
+  <div class="volume-control" id="volume-control">
+    <button type="button" class="volume-toggle" id="volume-toggle" title="ปรับเสียง">
+      <svg id="volume-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="volume-icon-mute" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+    </button>
+    <div class="volume-slider-wrap" id="volume-slider-wrap">
+      <input type="range" min="0" max="100" value="30" class="volume-slider" id="volume-slider">
+      <span class="volume-value" id="volume-value">30%</span>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/random12.js"></script>
+</body>
+</html>

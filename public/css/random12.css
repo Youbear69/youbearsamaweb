@@ -1,0 +1,712 @@
+/* ================================================
+   Random 12 Zodiac Page — Slot Machine Styles
+   ================================================ */
+
+/* Mode Toggle */
+.random-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.random-mode-toggle .mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.4rem;
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  border-radius: var(--radius-pill);
+  background: rgba(21, 12, 51, 0.6);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.random-mode-toggle .mode-btn:hover {
+  border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.random-mode-toggle .mode-btn.active {
+  background: rgba(124, 58, 237, 0.3);
+  border-color: var(--color-purple);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.25);
+}
+
+/* ---- 12-Card Grid (2 Rows x 6 Columns) ---- */
+.random12-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 0.75rem;
+}
+
+@media (max-width: 1150px) {
+  .random12-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 780px) {
+  .random12-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .random12-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .random12-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* ---- Zodiac Slot Card ---- */
+.zodiac-slot-card {
+  position: relative;
+  background: rgba(21, 12, 51, 0.65);
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: blur(12px);
+  transition: all 0.35s ease;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.zodiac-slot-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.zodiac-slot-card:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.15);
+}
+
+/* Zodiac icon in card */
+.slot-zodiac-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.slot-zodiac-icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: brightness(1.1);
+}
+
+/* Zodiac label */
+.slot-zodiac-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Slot Reel Area (Name Display) ---- */
+.slot-reel {
+  width: 100%;
+  min-height: 68px;
+  height: auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(10, 6, 24, 0.55);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-reel-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  transition: opacity 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Avatar in slot */
+.slot-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(139, 92, 246, 0.4);
+  background: rgba(21, 12, 51, 0.8);
+  flex-shrink: 0;
+}
+
+/* Name in slot (แถวเดียวยาว ๆ) */
+.slot-name {
+  font-size: 0.8rem;
+  color: #fff;
+  text-align: left;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+  flex: 1;
+}
+
+/* Placeholder state */
+.slot-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(157, 147, 204, 0.4);
+}
+
+/* ---- Spinning State ---- */
+.zodiac-slot-card.spinning .slot-reel {
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: inset 0 0 20px rgba(124, 58, 237, 0.15);
+}
+
+.zodiac-slot-card.spinning .slot-zodiac-icon {
+  animation: pulseIcon 0.6s ease-in-out infinite;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* Spinning reel animation */
+@keyframes slotSpin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+.slot-reel-track {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: 100%;
+  left: 0;
+}
+
+.slot-reel-track.animating {
+  animation: slotSpin var(--spin-duration, 2s) cubic-bezier(0.35, 0, 0.25, 1) forwards;
+}
+
+.slot-reel-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 68px;
+  padding: 0.3rem;
+  flex-shrink: 0;
+}
+
+/* ---- Revealed State ---- */
+.zodiac-slot-card.revealed {
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 25px rgba(52, 211, 153, 0.12), 0 4px 20px rgba(124, 58, 237, 0.1);
+  animation: revealPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.zodiac-slot-card.revealed .slot-zodiac-icon {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.zodiac-slot-card.revealed .slot-reel {
+  border-color: rgba(52, 211, 153, 0.25);
+  background: rgba(10, 6, 24, 0.4);
+}
+
+.zodiac-slot-card.revealed .slot-name {
+  color: #34d399;
+}
+
+/* ---- Full-Width Winner Rows (แถวเดียวยาว ๆ เห็นชื่อครบ) ---- */
+.slot-reel.multi-mode {
+  height: auto;
+  min-height: 68px;
+}
+
+.slot-multi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.3rem 0.25rem;
+  box-sizing: border-box;
+}
+
+.slot-winner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.slot-winner-row .slot-winner-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+}
+
+.slot-winner-row .slot-winner-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  flex: 1;
+  text-align: left;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.zodiac-slot-card.revealed .slot-winner-row {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.zodiac-slot-card.revealed .slot-winner-name {
+  color: #a7f3d0;
+}
+
+.random12-grid.all-done .zodiac-slot-card.revealed .slot-winner-row {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.random12-grid.all-done .zodiac-slot-card.revealed .slot-winner-name {
+  color: #fde68a;
+}
+
+/* ---- Empty zodiac (no people) ---- */
+.zodiac-slot-card.empty-zodiac {
+  opacity: 0.45;
+}
+
+.zodiac-slot-card.empty-zodiac .slot-reel {
+  background: rgba(10, 6, 24, 0.3);
+}
+
+/* ---- Start Controls Area ---- */
+.random12-start-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1.5rem 0 0.8rem;
+  flex-wrap: wrap;
+}
+
+/* Pick Count Selector Panel */
+.pick-count-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(21, 12, 51, 0.75);
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pick-count-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.pick-counter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pick-counter-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  background: rgba(124, 58, 237, 0.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pick-counter-btn:not(:disabled):hover {
+  background: var(--color-purple);
+  border-color: #a78bfa;
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.pick-counter-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pick-counter-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 44px;
+}
+
+.pick-counter-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+  line-height: 1;
+}
+
+.pick-counter-unit {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.random12-start-btn {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(139, 92, 246, 0.5);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(59, 130, 246, 0.2));
+  cursor: pointer;
+  transition: all 0.35s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.random12-start-btn:not(:disabled):hover {
+  border-color: var(--color-purple);
+  box-shadow: 0 0 35px rgba(124, 58, 237, 0.35), 0 0 60px rgba(124, 58, 237, 0.15);
+  transform: scale(1.08);
+}
+
+.random12-start-btn:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.random12-start-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.start-btn-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.start-icon {
+  fill: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.4));
+}
+
+.start-text {
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.random12-start-btn.spinning-active {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2));
+  animation: spinBtnPulse 1s ease-in-out infinite;
+}
+
+@keyframes spinBtnPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.5), 0 0 60px rgba(239, 68, 68, 0.2); }
+}
+
+/* ---- Status Text ---- */
+.random12-status {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+  min-height: 1.5em;
+}
+
+/* ---- All Done Celebration ---- */
+@keyframes celebrateShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.random12-grid.all-done .zodiac-slot-card.revealed {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.12), 0 4px 25px rgba(124, 58, 237, 0.1);
+}
+
+.random12-grid.all-done .zodiac-slot-card.revealed .slot-zodiac-icon {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.random12-grid.all-done .zodiac-slot-card.revealed .slot-name {
+  background: linear-gradient(90deg, #fbbf24, #f472b6, #60a5fa, #fbbf24);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: celebrateShine 3s linear infinite;
+}
+
+/* ---- Confetti Canvas ---- */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@keyframes revealPop {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* ================================================
+   Volume Control (Bottom Right)
+   ================================================ */
+/* Hide duplicate common.js BGM toggle on this page so it never overlaps */
+#bgm-toggle-btn {
+  display: none !important;
+}
+
+.volume-control {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9900;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row-reverse;
+}
+
+.volume-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  background: rgba(21, 12, 51, 0.85);
+  backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.volume-toggle:hover {
+  border-color: var(--color-purple);
+  background: rgba(124, 58, 237, 0.2);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.25);
+}
+
+.volume-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(21, 12, 51, 0.9);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.volume-control:hover .volume-slider-wrap,
+.volume-slider-wrap.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-purple) 0%, rgba(139, 92, 246, 0.2) 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-purple);
+  border: 2px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-purple);
+  border: 2px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+
+.volume-value {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ---- Sparkle particles on revealed cards ---- */
+.sparkle-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fbbf24;
+  pointer-events: none;
+  animation: sparkleFloat 1.2s ease-out forwards;
+  z-index: 5;
+}
+
+@keyframes sparkleFloat {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--sx, 20px), var(--sy, -30px)) scale(0);
+  }
+}
+
+/* ---- Responsive tweaks ---- */
+@media (max-width: 640px) {
+  .zodiac-slot-card {
+    min-height: 145px;
+    padding: 0.75rem 0.5rem 0.65rem;
+  }
+  .slot-zodiac-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .slot-zodiac-icon img {
+    width: 22px;
+    height: 22px;
+  }
+  .slot-reel {
+    height: 58px;
+  }
+  .slot-reel-item {
+    height: 58px;
+  }
+  .slot-name {
+    font-size: 0.65rem;
+  }
+  .slot-avatar {
+    width: 26px;
+    height: 26px;
+  }
+  .random12-start-btn {
+    width: 65px;
+    height: 65px;
+  }
+  .start-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .volume-control {
+    bottom: 12px;
+    right: 12px;
+  }
+  .volume-toggle {
+    width: 34px;
+    height: 34px;
+  }
+  .volume-slider {
+    width: 70px;
+  }
+}

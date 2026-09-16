@@ -362,7 +362,10 @@ function initBGM() {
   if (!globalAudio) {
     globalAudio = new Audio('/audio/bgm.mp3');
     globalAudio.loop = true;
-    globalAudio.volume = 0.05; // 5% Soft Volume
+    
+    // Default 30% volume as requested
+    const savedSiteVol = localStorage.getItem('random12_volume') || localStorage.getItem('site_volume');
+    globalAudio.volume = savedSiteVol !== null ? parseFloat(savedSiteVol) : 0.3;
 
     // Restore playback position if available
     const savedTime = parseFloat(sessionStorage.getItem('bgm_time') || '0');
@@ -382,6 +385,13 @@ function initBGM() {
       sessionStorage.setItem('bgm_time', String(globalAudio.currentTime));
       sessionStorage.setItem('bgm_playing', String(!globalAudio.paused));
     });
+  }
+
+  window.globalAudio = globalAudio;
+
+  // If page already has a dedicated volume control widget (e.g. random12ad), do not create duplicate floating button
+  if (document.getElementById('volume-control')) {
+    return;
   }
 
   // Create or reuse sound toggle button
