@@ -8,6 +8,14 @@
     ],
     "rewrites": [
       {
+        "source": "/nxzawpguesser",
+        "destination": "/nxzawpguesser.html"
+      },
+      {
+        "source": "/nxzawpguesser/",
+        "destination": "/nxzawpguesser.html"
+      },
+      {
         "source": "/12vtubergame",
         "destination": "/12vtubergame.html"
       },

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counter-Strike Map Guesser — AWP Version | NXZ</title>
+  <meta name="description" content="Test your CS2 map knowledge through an AWP scope! Guess the map from zoomed-in scope views.">
+  <link rel="icon" type="image/png" href="/nxzawpguesser/NXZ Logo2.png">
+  <link rel="stylesheet" href="/css/awpguesser.css">
+</head>
+<body>
+
+  <!-- Screen Muzzle Flash Overlay -->
+  <div id="muzzle-overlay" class="muzzle-flash-overlay"></div>
+
+  <!-- Audio Volume Controller -->
+  <div class="audio-controls" id="audio-controls-panel" title="Game Audio">
+    <button type="button" id="volume-toggle-btn" class="audio-btn" aria-label="Toggle Mute">🔉</button>
+    <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="25" title="Volume">
+    <span id="volume-percent-label" class="volume-percent-label">25%</span>
+  </div>
+
+  <div id="app-container">
+
+    <!-- ======================================================= -->
+    <!-- 1. HOME / MENU SCREEN                                   -->
+    <!-- ======================================================= -->
+    <div id="screen-menu" class="view-screen">
+      <div class="menu-wrapper">
+        
+        <!-- Header: Title & Logo -->
+        <div class="menu-header">
+          <div class="title-box">
+            <span class="sub-title">AWP Version.</span>
+            <span class="main-title-orange">Counter-Strike</span>
+            <span class="main-title-white">Map Guesser</span>
+          </div>
+          <div class="logo-container">
+            <div id="bullet-spark" class="bullet-spark"></div>
+            <img id="nxz-logo" src="/nxzawpguesser/NXZ Logo2.png" alt="NXZ Logo">
+          </div>
+        </div>
+
+        <!-- Controls: Play Solo + Mode Selection -->
+        <div class="menu-controls">
+          <div class="play-solo-wrapper">
+            <button type="button" id="btn-play-solo" class="play-circle-btn" aria-label="Play Solo">
+              <div class="play-triangle"></div>
+            </button>
+            <span class="play-solo-label">Play Solo</span>
+          </div>
+
+          <div class="mode-selector">
+            <button type="button" class="mode-pill active" data-mode="10">10 Rounds</button>
+            <button type="button" class="mode-pill" data-mode="20">20 Rounds</button>
+            <button type="button" class="mode-pill" data-mode="30">30 Rounds</button>
+            <button type="button" class="mode-pill" data-mode="endless">Endless Mode</button>
+          </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="menu-footer">
+          Map Pool Only
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 2. GAME SCREEN                                          -->
+    <!-- ======================================================= -->
+    <div id="screen-game" class="view-screen hidden">
+      <!-- Game Header -->
+      <div class="game-header">
+        <div class="game-title-group">
+          <div class="game-title-logo">
+            <span class="accent">CS</span> Map Guesser
+          </div>
+          <div class="game-status-indicators">
+            <span id="round-badge" class="round-badge">1/10</span>
+            <span id="skip-badge" class="skip-indicator">Skip : 1</span>
+          </div>
+        </div>
+        <div class="game-status-indicators">
+          <span id="score-display" class="score-display">correct : 0</span>
+        </div>
+      </div>
+
+      <!-- Game Arena (Scope Viewport + Map Buttons Grid) -->
+      <div class="game-arena">
+        <div class="scope-viewport">
+          <img id="scope-img" class="scope-image" src="" alt="AWP Scope View">
+        </div>
+
+        <div class="map-selection-panel">
+          <div id="map-buttons-grid" class="map-buttons-grid">
+            <!-- Rendered by awpguesser.js -->
+          </div>
+          <button type="button" id="btn-guess" class="guess-btn">Guess</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 3. REVEAL / ANSWER SCREEN                               -->
+    <!-- ======================================================= -->
+    <div id="screen-reveal" class="view-screen hidden">
+      <div class="reveal-wrapper">
+        <div class="reveal-header">
+          <div class="main-title"><span class="accent">CS</span> Map Guesser</div>
+          <div class="stats">
+            <span id="reveal-round-text">1/10</span>
+            &nbsp;&nbsp;
+            <span id="reveal-score-text">correct : 0</span>
+          </div>
+        </div>
+
+        <div class="reveal-content-row">
+          <div class="answer-image-box">
+            <img id="answer-img" class="answer-image" src="" alt="Answer Reveal">
+          </div>
+
+          <div class="next-btn-container">
+            <button type="button" id="btn-next" class="next-btn">Next</button>
+          </div>
+        </div>
+
+        <div class="reveal-map-banner">
+          <img id="reveal-logo" class="reveal-map-logo" src="" alt="Map Logo">
+          <span id="reveal-name" class="reveal-map-name"></span>
+          <span id="reveal-badge" class="result-badge"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 4. SUMMARY / GAME OVER SCREEN                           -->
+    <!-- ======================================================= -->
+    <div id="screen-summary" class="view-screen hidden">
+      <div class="summary-card">
+        <div class="summary-header">
+          <div class="summary-tag">Match Summary</div>
+          <h1 id="summary-title" class="summary-title">VICTORY!</h1>
+        </div>
+
+        <div class="summary-stats-grid">
+          <div class="summary-stat-box">
+            <div id="summary-score" class="stat-value">0 / 10</div>
+            <div class="stat-label">Correct Guesses</div>
+          </div>
+          <div class="summary-stat-box">
+            <div id="summary-accuracy" class="stat-value">0%</div>
+            <div class="stat-label">Accuracy</div>
+          </div>
+          <div class="summary-stat-box">
+            <div id="summary-mode" class="stat-value">10 Rounds</div>
+            <div class="stat-label">Game Mode</div>
+          </div>
+        </div>
+
+        <div class="summary-actions">
+          <button type="button" id="btn-play-again" class="summary-btn primary">Play Again</button>
+          <button type="button" id="btn-main-menu" class="summary-btn secondary">Main Menu</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/awpguesser.js"></script>
+</body>
+</html>

@@ -590,3 +590,97 @@ async function fbDeleteRandom12Log(id) {
 async function fbClearAllRandom12Logs() {
   await rtdb.ref('random12_logs').remove();
 }
+
+// ==========================================
+// Proposal Likes & Hearts System (Firebase RTDB)
+// ==========================================
+
+// Increment like count for a proposal via Firebase RTDB transaction
+async function fbLikeProposal(proposalId) {
+  if (!proposalId) return { count: 0 };
+  const safeId = String(proposalId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const countRef = rtdb.ref('proposal_likes/' + safeId + '/count');
+  
+  try {
+    const result = await countRef.transaction((currentCount) => {
+      return (currentCount || 0) + 1;
+    });
+    
+    // Also record last liked timestamp
+    rtdb.ref('proposal_likes/' + safeId + '/lastLikedAt').set(new Date().toISOString());
+
+    // Also notify local server API if running (graceful fallback)
+    fetch('/api/proposals/' + encodeURIComponent(proposalId) + '/like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(() => {});
+
+    return { 
+      id: proposalId, 
+      count: result && result.snapshot ? (result.snapshot.val() || 0) : 0,
+      committed: result ? result.committed : true 
+    };
+  } catch (err) {
+    console.warn('Firebase RTDB like transaction error:', err);
+    // Fallback to local server API
+    try {
+      const res = await fetch('/api/proposals/' + encodeURIComponent(proposalId) + '/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      return { id: proposalId, count: data.count || 1 };
+    } catch (e) {
+      return { id: proposalId, count: 1 };
+    }
+  }
+}
+
+// Get all proposal likes mapping: { [proposalId]: count }
+async function fbGetProposalLikes() {
+  try {
+    const snap = await rtdb.ref('proposal_likes').once('value');
+    const val = snap.val() || {};
+    const map = {};
+    for (const [id, item] of Object.entries(val)) {
+      if (typeof item === 'number') {
+        map[id] = item;
+      } else if (item && typeof item.count === 'number') {
+        map[id] = item.count;
+      }
+    }
+    return map;
+  } catch (err) {
+    console.warn('fbGetProposalLikes error:', err);
+    try {
+      const res = await fetch('/api/proposals/likes');
+      const data = await res.json();
+      return data.data || {};
+    } catch (e) {
+      return {};
+    }
+  }
+}
+
+// Listen to real-time changes in proposal likes
+function fbListenProposalLikes(callback) {
+  const likesRef = rtdb.ref('proposal_likes');
+  const handler = (snapshot) => {
+    const val = snapshot.val() || {};
+    const map = {};
+    for (const [id, item] of Object.entries(val)) {
+      if (typeof item === 'number') {
+        map[id] = item;
+      } else if (item && typeof item.count === 'number') {
+        map[id] = item.count;
+      }
+    }
+    if (typeof callback === 'function') {
+      callback(map);
+    }
+  };
+
+  likesRef.on('value', handler);
+  return () => likesRef.off('value', handler);
+}
+

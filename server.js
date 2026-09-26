@@ -1250,6 +1250,45 @@ app.get('/api/export-csv', requireAdminAuth, (req, res) => {
 });
 
 // ==========================================
+// Proposal Likes API (Local & Firebase fallback)
+// ==========================================
+app.get('/api/proposals/likes', (req, res) => {
+  try {
+    const db = readData();
+    const rawLikes = db.proposal_likes || {};
+    const likesMap = {};
+    for (const [id, val] of Object.entries(rawLikes)) {
+      likesMap[id] = typeof val === 'number' ? val : (val && typeof val.count === 'number' ? val.count : 0);
+    }
+    res.json({ success: true, data: likesMap });
+  } catch (err) {
+    res.status(500).json({ success: false, data: {} });
+  }
+});
+
+app.post('/api/proposals/:id/like', (req, res) => {
+  try {
+    const proposalId = req.params.id;
+    if (!proposalId) {
+      return res.status(400).json({ success: false, message: 'Proposal ID is required' });
+    }
+    const db = readData();
+    if (!db.proposal_likes) db.proposal_likes = {};
+    const current = db.proposal_likes[proposalId];
+    const currentCount = typeof current === 'number' ? current : (current && typeof current.count === 'number' ? current.count : 0);
+    const newCount = currentCount + 1;
+    db.proposal_likes[proposalId] = {
+      count: newCount,
+      lastLikedAt: new Date().toISOString()
+    };
+    writeData(db);
+    res.json({ success: true, id: proposalId, count: newCount });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ==========================================
 // Chat History API (Server Backup fallback)
 // ==========================================
 app.get('/api/chat/history', (req, res) => {
@@ -1394,6 +1433,10 @@ app.get(['/12vtubergame/random12ad', '/12vtubergame/random12ad/'], (req, res) =>
 
 app.get(['/12vtubergame/minigame', '/12vtubergame/minigame/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'minigame.html'));
+});
+
+app.get(['/nxzawpguesser', '/nxzawpguesser/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'nxzawpguesser.html'));
 });
 
 // Keep old paths working too (backward compatibility)

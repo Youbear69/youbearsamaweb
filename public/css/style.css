@@ -1462,18 +1462,46 @@ body.page-home {
   box-sizing: border-box !important;
 }
 
+.participant-name-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  margin-bottom: 0.2rem;
+  box-sizing: border-box;
+}
+
+.participant-name-wrap.has-overflow {
+  text-align: left;
+  mask-image: linear-gradient(to right, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
+}
+
 .participant-name {
   font-size: clamp(1.35rem, 2.2vw, 1.75rem);
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.25;
+}
+
+.participant-name:not(.is-overflowing) {
+  width: 100%;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  width: 100%;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-  margin-bottom: 0.2rem;
+}
+
+.participant-name.is-overflowing {
+  width: auto;
+  overflow: visible;
+  text-overflow: clip;
+  animation: nameMarqueeSlide var(--marquee-duration, 7s) ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .participant-meta {
@@ -2926,44 +2954,317 @@ input:checked + .toggle-slider:before {
 /* Proposed VTubers Zodiac Filter Dropdown Toolbar */
 .proposed-filter-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.4rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 1.6rem;
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 0.75rem 1.2rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #171233;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 154, 61, 0.35);
+  box-sizing: border-box;
 }
 
 .proposed-filter-bar label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fbbf24;
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #eab308;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+}
+
+.proposed-filter-bar label svg {
+  stroke: #eab308;
+  width: 20px;
+  height: 20px;
 }
 
 .proposed-filter-bar select {
-  min-width: 220px;
-  background: #1e1245;
+  width: 100%;
+  min-width: 0;
+  background: #120e28;
   color: #ffffff;
-  border: 1.5px solid rgba(251, 191, 36, 0.4);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
-  font-size: 1.05rem;
+  border: 1.5px solid rgba(212, 154, 61, 0.45);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.25rem;
   cursor: pointer;
   outline: none;
-  transition: var(--transition-smooth);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
 .proposed-filter-bar select:focus {
-  border-color: #fbbf24;
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+  border-color: #f7ba4c;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
 }
+
+/* ==========================================
+   Proposed VTuber Horizontal Pill Cards
+   ========================================== */
+.registrants-grid.proposed-cards-mode {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.1rem 1.4rem;
+  padding: 0.25rem 0;
+}
+
+@media (max-width: 640px) {
+  .registrants-grid.proposed-cards-mode {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+}
+
+.proposed-hcard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #171233;
+  border: 1.5px solid #d49a3d;
+  border-radius: 9999px;
+  padding: 6px 14px 6px 8px;
+  height: 72px;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.proposed-hcard:hover {
+  border-color: #f7ba4c;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(212, 154, 61, 0.25);
+}
+
+.proposed-hcard-avatar-wrap {
+  display: block;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.proposed-hcard-avatar-wrap:hover {
+  transform: scale(1.05);
+}
+
+.proposed-hcard-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.proposed-hcard-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  margin: 0 0.85rem 0 0.75rem;
+  gap: 0.65rem;
+}
+
+.proposed-hcard-name-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.proposed-hcard-name-wrap.has-overflow {
+  mask-image: linear-gradient(to right, black calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 14px), transparent 100%);
+}
+
+.proposed-hcard-name {
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.2;
+  display: inline-block;
+  transition: color 0.15s ease;
+}
+
+.proposed-hcard-name:not(.is-overflowing) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.proposed-hcard-name.is-overflowing {
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  animation: nameMarqueeSlide var(--marquee-duration, 7s) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.proposed-hcard-name:hover {
+  color: #f7ba4c;
+  text-decoration: underline;
+}
+
+.proposed-hcard-zodiac {
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  opacity: 0.95;
+  line-height: 1.2;
+  flex-shrink: 0;
+  margin-left: auto;
+  text-align: right;
+  padding-left: 0.35rem;
+}
+
+/* Smooth marquee for long names:
+   1. Pause at start to read comfortably
+   2. Slide smoothly to the end
+   3. Pause at the end to finish reading
+   4. Fade out
+   5. Reset position back to 0
+   6. Fade in and repeat
+*/
+@keyframes nameMarqueeSlide {
+  0%, 25% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  65%, 80% {
+    transform: translateX(calc(-1 * var(--marquee-dist, 40px)));
+    opacity: 1;
+  }
+  87% {
+    transform: translateX(calc(-1 * var(--marquee-dist, 40px)));
+    opacity: 0;
+  }
+  91% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.proposed-hcard-heart {
+  background: transparent;
+  border: 1.5px solid #d49a3d;
+  border-radius: 9999px;
+  padding: 4px 14px 4px 12px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: #ffffff;
+  outline: none;
+  user-select: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.proposed-hcard-heart:hover {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: #f7ba4c;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+}
+
+.proposed-hcard-heart:active {
+  transform: scale(0.95);
+}
+
+.proposed-hcard-heart .heart-icon-svg {
+  width: 22px;
+  height: 22px;
+  stroke: #ffffff;
+  fill: none;
+  transition: transform 0.25s ease, stroke 0.2s ease, fill 0.2s ease;
+}
+
+.proposed-hcard-heart .heart-count-text {
+  font-family: 'Layiji Mahaniyom V1.5', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+/* Heart Liked State */
+.proposed-hcard-heart.is-liked {
+  border-color: #ff477e;
+  background: rgba(255, 71, 126, 0.16);
+}
+
+.proposed-hcard-heart.is-liked .heart-icon-svg {
+  stroke: #ff477e;
+  fill: #ff477e;
+  filter: drop-shadow(0 0 6px rgba(255, 71, 126, 0.7));
+}
+
+.proposed-hcard-heart.is-liked .heart-count-text {
+  color: #ff85a2;
+}
+
+/* Pop animation on click */
+.proposed-hcard-heart.heart-pop {
+  animation: heartPopAnim 0.35s ease-out;
+}
+
+@keyframes heartPopAnim {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  70% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* Floating heart particle effect */
+.floating-heart-burst {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  font-size: 1.5rem;
+  animation: floatHeartUp 0.9s ease-out forwards;
+  filter: drop-shadow(0 2px 8px rgba(244, 63, 94, 0.6));
+}
+
+@keyframes floatHeartUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.8);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -35px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70px) scale(1.4);
+  }
+}
+
 
 /* ==========================================
    Universal Top Navigation Bar & Social Pill

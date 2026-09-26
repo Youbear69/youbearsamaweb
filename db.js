@@ -72,6 +72,7 @@ function loadLocalFile() {
       parsed.settings.registrationClosedMessage = "ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย";
     }
     if (!parsed.settings.adminAuth) parsed.settings.adminAuth = initialData.settings.adminAuth;
+    if (!parsed.proposal_likes) parsed.proposal_likes = {};
     return parsed;
   } catch (err) {
     console.error('Error reading local file database:', err);
@@ -140,7 +141,8 @@ try {
             : (val.registrations ? Object.values(val.registrations) : []),
           proposals: Array.isArray(val.proposals)
             ? val.proposals
-            : (val.proposals ? Object.values(val.proposals) : [])
+            : (val.proposals ? Object.values(val.proposals) : []),
+          proposal_likes: val.proposal_likes || (memoryData ? memoryData.proposal_likes : {})
         };
         saveLocalFile(memoryData);
         console.log('[Firebase Realtime] Synced data from Firebase RTDB');
