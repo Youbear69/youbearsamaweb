@@ -1916,6 +1916,18 @@ body.page-home {
 }
 
 /* Admin Dashboard */
+body.page-admin .main-content {
+  max-width: 1600px;
+  width: 96%;
+  padding: 1.5rem 1rem 3rem 1rem;
+}
+
+body.page-admin .admin-card {
+  max-width: 100%;
+  width: 100%;
+  padding: 1.8rem 2rem;
+}
+
 .admin-card {
   width: 100%;
   max-width: 1140px;
@@ -1944,17 +1956,48 @@ body.page-home {
   max-width: 500px;
 }
 
+/* Dedicated Admin Table Container with Smooth Visible Scrollbar */
+.admin-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  background: rgba(12, 8, 26, 0.65);
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+.admin-table-container::-webkit-scrollbar {
+  height: 10px;
+}
+.admin-table-container::-webkit-scrollbar-track {
+  background: rgba(20, 14, 38, 0.85);
+  border-radius: 6px;
+}
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 6px;
+  border: 2px solid rgba(20, 14, 38, 0.85);
+}
+.admin-table-container::-webkit-scrollbar-thumb:hover {
+  background: #c084fc;
+}
+
 .admin-table {
   width: 100%;
+  min-width: 1180px; /* guarantees columns never get squeezed or cut off! */
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .admin-table th,
 .admin-table td {
-  padding: 1rem 1.2rem;
+  padding: 0.85rem 0.95rem;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box !important;
 }
 
@@ -1962,16 +2005,206 @@ body.page-home {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.02rem;
+  white-space: nowrap;
 }
 
 .admin-table td {
   color: #eee9ff;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
 }
 
 .admin-table tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Specific column widths and alignment */
+.admin-table .col-idx {
+  width: 48px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-table .col-name {
+  min-width: 220px;
+}
+
+.admin-table .col-social {
+  min-width: 190px;
+  max-width: 280px;
+  word-break: break-all;
+}
+
+.admin-table .col-zodiac {
+  min-width: 125px;
+  white-space: nowrap;
+}
+
+.admin-table .col-date {
+  min-width: 135px;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+.admin-table .col-hearts {
+  min-width: 185px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-table .col-status {
+  min-width: 145px;
+  white-space: nowrap;
+}
+
+.admin-table .col-actions {
+  min-width: 115px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Admin Heart Widget */
+.admin-heart-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px 6px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  user-select: none;
+  vertical-align: middle;
+}
+
+.admin-heart-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  color: #fda4af;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 58px;
+  justify-content: center;
+  outline: none;
+}
+
+.admin-heart-count-badge:hover {
+  background: rgba(244, 63, 94, 0.3);
+  border-color: #fb7185;
+  color: #ffffff;
+  transform: scale(1.06);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
+}
+
+.btn-heart-adjust {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  outline: none;
+}
+
+.btn-heart-minus:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #fca5a5;
+  transform: scale(1.12);
+}
+
+.btn-heart-plus:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  color: #6ee7b7;
+  transform: scale(1.12);
+}
+
+.btn-heart-reset {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  margin-left: 2px;
+  outline: none;
+}
+
+.btn-heart-reset:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  transform: rotate(-45deg) scale(1.12);
+}
+
+/* Admin Checkbox & Toggle */
+.admin-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.admin-toggle-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 38px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  position: relative;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.admin-toggle-checkbox::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  background: #ffffff;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.admin-toggle-checkbox:checked {
+  background: #10b981;
+  border-color: #34d399;
+}
+
+.admin-toggle-checkbox:checked::before {
+  transform: translateX(18px);
+  background: #ffffff;
 }
 
 .btn-delete {

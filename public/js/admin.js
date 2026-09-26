@@ -129,6 +129,7 @@ async function initAdminPage() {
 
   let allRegistrations = [];
   let allProposals = [];
+  let allLikesMap = {};
   let currentViewMode = 'all'; // 'all' | 'direct' | 'proposed'
 
   // Tab View Switcher Elements
@@ -331,15 +332,17 @@ async function initAdminPage() {
   // Load Data
   async function loadAdminData() {
     try {
-      const [regs, props, stats, settings] = await Promise.all([
+      const [regs, props, stats, settings, likes] = await Promise.all([
         fbGetRegistrations(),
         fbGetProposals(),
         fbGetZodiacStats(),
-        fbGetSettings()
+        fbGetSettings(),
+        typeof fbGetProposalLikes === 'function' ? fbGetProposalLikes() : {}
       ]);
 
       allRegistrations = regs || [];
       allProposals = props || [];
+      allLikesMap = likes || {};
 
       // Update stat pills
       const totalDirect = allRegistrations.length;
@@ -469,6 +472,20 @@ async function initAdminPage() {
       filtered.sort((a, b) => sortThaiEnglish(a, b, true));
     } else if (sortVal === 'date-asc') {
       filtered.sort((a, b) => sortDate(a, b, false));
+    } else if (sortVal === 'likes-desc') {
+      filtered.sort((a, b) => {
+        const lA = (a.entryType === 'proposal') ? (allLikesMap[a.id] || 0) : -1;
+        const lB = (b.entryType === 'proposal') ? (allLikesMap[b.id] || 0) : -1;
+        if (lB !== lA) return lB - lA;
+        return sortDate(a, b, true);
+      });
+    } else if (sortVal === 'likes-asc') {
+      filtered.sort((a, b) => {
+        const lA = (a.entryType === 'proposal') ? (allLikesMap[a.id] || 0) : 999999;
+        const lB = (b.entryType === 'proposal') ? (allLikesMap[b.id] || 0) : 999999;
+        if (lA !== lB) return lA - lB;
+        return sortDate(a, b, true);
+      });
     } else {
       // date-desc (default)
       filtered.sort((a, b) => sortDate(a, b, true));
@@ -478,7 +495,7 @@ async function initAdminPage() {
     if (filtered.length === 0) {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
             ไม่พบข้อมูลตามเงื่อนไขที่ระบุ
           </td>
         </tr>
@@ -534,24 +551,52 @@ async function initAdminPage() {
         `;
       }
 
+      // Heart column
+      let heartHtml = '';
+      if (isProp) {
+        const currentCount = (allLikesMap && allLikesMap[item.id] !== undefined)
+          ? allLikesMap[item.id]
+          : (item.likes || 0);
+        heartHtml = `
+          <div class="admin-heart-control" data-id="${item.id}">
+            <button type="button" class="btn-heart-adjust btn-heart-minus" data-id="${item.id}" title="ลดหัวใจ -1">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button type="button" class="admin-heart-count-badge" data-id="${item.id}" data-name="${escapeHtml(item.displayName || '')}" data-count="${currentCount}" title="คลิกเพื่อแก้ไขตัวเลขโดยตรง">
+              <span class="heart-emoji">❤️</span>
+              <span class="heart-num" id="heart-count-${item.id}">${currentCount}</span>
+            </button>
+            <button type="button" class="btn-heart-adjust btn-heart-plus" data-id="${item.id}" title="เพิ่มหัวใจ +1">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button type="button" class="btn-heart-reset" data-id="${item.id}" data-name="${escapeHtml(item.displayName || '')}" title="รีเซ็ตเป็น 0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+            </button>
+          </div>
+        `;
+      } else {
+        heartHtml = `<span style="color: var(--text-muted); opacity: 0.5;">-</span>`;
+      }
+
       return `
         <tr>
-          <td style="color: var(--text-muted);">${index + 1}</td>
-          <td>
+          <td class="col-idx" style="color: var(--text-muted);">${index + 1}</td>
+          <td class="col-name">
             ${thumbHtml}
             <strong style="color: ${isProp ? '#fcd34d' : '#ffffff'};">${isProp ? '⭐ ' : ''}${escapeHtml(item.displayName || '-')}</strong>
           </td>
-          <td>
+          <td class="col-social">
             <a href="${escapeHtml(clickUrl)}" target="_blank" rel="noopener noreferrer" style="color: ${isProp ? '#60a5fa' : '#c77dff'}; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
               <span>${escapeHtml(item.xAccount)}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </td>
-          <td style="color: ${isUnknown ? '#fcd34d' : '#c4b5fd'};">${escapeHtml(zodiacLabel)}</td>
-          <td style="font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
-          <td>${statusHtml}</td>
-          <td>
-            <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <td class="col-zodiac" style="color: ${isUnknown ? '#fcd34d' : '#c4b5fd'};">${escapeHtml(zodiacLabel)}</td>
+          <td class="col-date" style="font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
+          <td class="col-hearts">${heartHtml}</td>
+          <td class="col-status">${statusHtml}</td>
+          <td class="col-actions">
+            <div style="display: flex; gap: 0.4rem; align-items: center; justify-content: center;">
               <button class="btn-edit btn-edit-entry" data-id="${item.id}" data-type="${item.entryType}" title="แก้ไข">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </button>
@@ -618,6 +663,128 @@ async function initAdminPage() {
         }
       };
     });
+
+    // Attach heart minus listeners
+    tableBody.querySelectorAll('.btn-heart-minus').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        adminChangeLikes(id, -1);
+      };
+    });
+
+    // Attach heart plus listeners
+    tableBody.querySelectorAll('.btn-heart-plus').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        adminChangeLikes(id, 1);
+      };
+    });
+
+    // Attach heart count badge click listener (prompt custom count)
+    tableBody.querySelectorAll('.admin-heart-count-badge').forEach(badge => {
+      badge.onclick = (e) => {
+        e.stopPropagation();
+        const id = badge.getAttribute('data-id');
+        const name = badge.getAttribute('data-name');
+        const count = parseInt(badge.getAttribute('data-count') || '0', 10);
+        adminPromptSetLikes(id, count, name);
+      };
+    });
+
+    // Attach heart reset listeners
+    tableBody.querySelectorAll('.btn-heart-reset').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        adminResetLikes(id, name);
+      };
+    });
+  }
+
+  // Heart Count Management Functions
+  async function adminChangeLikes(proposalId, delta) {
+    const current = (allLikesMap && allLikesMap[proposalId] !== undefined)
+      ? allLikesMap[proposalId]
+      : 0;
+    const newCount = Math.max(0, current + delta);
+    if (current === 0 && delta < 0) return; // already 0
+
+    allLikesMap[proposalId] = newCount;
+    const countEl = document.getElementById(`heart-count-${proposalId}`);
+    if (countEl) countEl.textContent = newCount;
+    const badge = document.querySelector(`.admin-heart-count-badge[data-id="${proposalId}"]`);
+    if (badge) badge.setAttribute('data-count', newCount);
+
+    try {
+      if (typeof fbSetProposalLikes === 'function') {
+        await fbSetProposalLikes(proposalId, newCount);
+      }
+    } catch (err) {
+      console.error('Failed to change likes:', err);
+      showToast('เกิดข้อผิดพลาดในการบันทึกจำนวนหัวใจ', 'error');
+    }
+  }
+
+  async function adminPromptSetLikes(proposalId, currentCount, name) {
+    const promptVal = prompt(`ระบุจำนวนหัวใจใหม่สำหรับ "${name}":`, currentCount || 0);
+    if (promptVal === null) return;
+    const newCount = parseInt(promptVal.trim(), 10);
+    if (isNaN(newCount) || newCount < 0) {
+      showToast('กรุณาระบุตัวเลขจำนวนเต็มบวกหรือ 0', 'error');
+      return;
+    }
+
+    allLikesMap[proposalId] = newCount;
+    const countEl = document.getElementById(`heart-count-${proposalId}`);
+    if (countEl) countEl.textContent = newCount;
+    const badge = document.querySelector(`.admin-heart-count-badge[data-id="${proposalId}"]`);
+    if (badge) badge.setAttribute('data-count', newCount);
+
+    try {
+      if (typeof fbSetProposalLikes === 'function') {
+        await fbSetProposalLikes(proposalId, newCount);
+      }
+      showToast(`เปลี่ยนจำนวนหัวใจของ "${name}" เป็น ${newCount} เรียบร้อย`, 'success');
+    } catch (err) {
+      console.error('Failed to set likes:', err);
+      showToast('เกิดข้อผิดพลาดในการบันทึกจำนวนหัวใจ', 'error');
+    }
+  }
+
+  async function adminResetLikes(proposalId, name) {
+    if (!confirm(`คุณต้องการรีเซ็ตจำนวนหัวใจของ "${name}" ให้กลับเป็น 0 หรือไม่?`)) return;
+
+    allLikesMap[proposalId] = 0;
+    const countEl = document.getElementById(`heart-count-${proposalId}`);
+    if (countEl) countEl.textContent = 0;
+    const badge = document.querySelector(`.admin-heart-count-badge[data-id="${proposalId}"]`);
+    if (badge) badge.setAttribute('data-count', 0);
+
+    try {
+      if (typeof fbResetProposalLikes === 'function') {
+        await fbResetProposalLikes(proposalId);
+      }
+      showToast(`รีเซ็ตจำนวนหัวใจของ "${name}" เป็น 0 เรียบร้อยแล้ว`, 'success');
+    } catch (err) {
+      console.error('Failed to reset likes:', err);
+      showToast('เกิดข้อผิดพลาดในการรีเซ็ตหัวใจ', 'error');
+    }
+  }
+
+  // Real-time listener for proposal likes
+  if (typeof fbListenProposalLikes === 'function') {
+    fbListenProposalLikes((updatedLikes) => {
+      allLikesMap = updatedLikes || {};
+      for (const [id, count] of Object.entries(allLikesMap)) {
+        const countEl = document.getElementById(`heart-count-${id}`);
+        if (countEl) countEl.textContent = count;
+        const badge = document.querySelector(`.admin-heart-count-badge[data-id="${id}"]`);
+        if (badge) badge.setAttribute('data-count', count);
+      }
+    });
   }
 
   // Filter & Search input listeners
@@ -630,6 +797,30 @@ async function initAdminPage() {
     btnRefresh.onclick = () => {
       showToast('กำลังรีเฟรชข้อมูล...');
       loadAdminData();
+    };
+  }
+
+  // Reset All Likes Button
+  const btnResetAllLikes = document.getElementById('btn-reset-all-likes');
+  if (btnResetAllLikes) {
+    btnResetAllLikes.onclick = async () => {
+      const confirmFirst = confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตจำนวนหัวใจของทุกคนทั้งหมดเป็น 0 ?\n(การกระทำนี้จะเปลี่ยนหัวใจของทุกคนในระบบเป็น 0)');
+      if (!confirmFirst) return;
+
+      try {
+        btnResetAllLikes.disabled = true;
+        if (typeof fbResetAllProposalLikes === 'function') {
+          await fbResetAllProposalLikes();
+        }
+        allLikesMap = {};
+        showToast('รีเซ็ตหัวใจทุกคนเป็น 0 เรียบร้อยแล้ว', 'success');
+        renderUnifiedTable();
+      } catch (err) {
+        console.error(err);
+        showToast('เกิดข้อผิดพลาดในการรีเซ็ตหัวใจทั้งหมด', 'error');
+      } finally {
+        btnResetAllLikes.disabled = false;
+      }
     };
   }
 

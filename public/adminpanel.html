@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
 </head>
-<body>
+<body class="page-admin">
   <!-- Moving Cosmic Background -->
   <div class="cosmic-bg">
     <div class="cosmic-orb-1"></div>
@@ -77,6 +77,10 @@
             <button id="btn-clean-duplicates" type="button" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc; background: rgba(56, 189, 248, 0.12);">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               สแกนชื่อซ้ำ / ย้ายไปลงทะเบียน
+            </button>
+            <button id="btn-reset-all-likes" type="button" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(244, 63, 94, 0.4); color: #fda4af; background: rgba(244, 63, 94, 0.12);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+              รีเซ็ตหัวใจทั้งหมด
             </button>
             <button id="btn-sync-avatars" type="button" class="btn-secondary" style="font-size: 1rem; padding: 0.55rem 1.4rem; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(168, 85, 247, 0.4); color: #c4b5fd;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -198,6 +202,8 @@
               <select id="admin-sort" class="form-select">
                 <option value="date-desc">📅 วันที่: ใหม่ ➔ เก่า (ล่าสุด)</option>
                 <option value="date-asc">📅 วันที่: เก่า ➔ ใหม่ (ก่อนหน้า)</option>
+                <option value="likes-desc">❤️ หัวใจ: มาก ➔ น้อย (ยอดนิยม)</option>
+                <option value="likes-asc">🤍 หัวใจ: น้อย ➔ มาก</option>
                 <option value="name-asc">🔤 ชื่อ: ก-ฮ / A-Z</option>
                 <option value="name-desc">🔤 ชื่อ: ฮ-ก / Z-A</option>
               </select>
@@ -205,17 +211,18 @@
           </div>
 
           <!-- Unified Members Table -->
-          <div style="overflow-x: auto;">
+          <div class="admin-table-container">
             <table class="admin-table">
               <thead>
                 <tr id="admin-table-headers">
-                  <th>ลำดับ</th>
-                  <th>ชื่อสำหรับเรียกในไลฟ์ / ชื่อที่เสนอ</th>
-                  <th>บัญชี / ลิงก์ X</th>
-                  <th>ราศี</th>
-                  <th>วันที่บันทึก</th>
-                  <th>แสดงหน้าแรก</th>
-                  <th>จัดการ</th>
+                  <th class="col-idx">ลำดับ</th>
+                  <th class="col-name">ชื่อสำหรับเรียกในไลฟ์ / ชื่อที่เสนอ</th>
+                  <th class="col-social">บัญชี / ลิงก์ X</th>
+                  <th class="col-zodiac">ราศี</th>
+                  <th class="col-date">วันที่บันทึก</th>
+                  <th class="col-hearts">หัวใจ ❤️</th>
+                  <th class="col-status">แสดงหน้าแรก</th>
+                  <th class="col-actions">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="admin-table-body">

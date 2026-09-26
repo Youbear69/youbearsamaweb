@@ -1288,6 +1288,41 @@ app.post('/api/proposals/:id/like', (req, res) => {
   }
 });
 
+// Admin: Set or update proposal likes
+app.post('/api/admin/proposals/:id/likes', (req, res) => {
+  try {
+    const proposalId = req.params.id;
+    if (!proposalId) {
+      return res.status(400).json({ success: false, message: 'Proposal ID is required' });
+    }
+    const { count } = req.body;
+    const targetCount = Math.max(0, parseInt(count, 10) || 0);
+
+    const db = readData();
+    if (!db.proposal_likes) db.proposal_likes = {};
+    db.proposal_likes[proposalId] = {
+      count: targetCount,
+      lastLikedAt: new Date().toISOString()
+    };
+    writeData(db);
+    res.json({ success: true, id: proposalId, count: targetCount });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin: Reset all proposal likes to 0
+app.post('/api/admin/proposals/reset-all-likes', (req, res) => {
+  try {
+    const db = readData();
+    db.proposal_likes = {};
+    writeData(db);
+    res.json({ success: true, message: 'รีเซ็ตจำนวนหัวใจทั้งหมดเรียบร้อยแล้ว' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ==========================================
 // Chat History API (Server Backup fallback)
 // ==========================================

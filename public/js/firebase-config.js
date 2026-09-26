@@ -684,3 +684,64 @@ function fbListenProposalLikes(callback) {
   return () => likesRef.off('value', handler);
 }
 
+// Admin: Set exact heart count for a proposal
+async function fbSetProposalLikes(proposalId, count) {
+  if (!proposalId) return { count: 0 };
+  const safeId = String(proposalId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const targetCount = Math.max(0, parseInt(count, 10) || 0);
+
+  try {
+    await rtdb.ref('proposal_likes/' + safeId).set({
+      count: targetCount,
+      lastLikedAt: new Date().toISOString()
+    });
+
+    // Also notify local server API if running (graceful fallback)
+    fetch('/api/admin/proposals/' + encodeURIComponent(proposalId) + '/likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: targetCount })
+    }).catch(() => {});
+
+    return { id: proposalId, count: targetCount };
+  } catch (err) {
+    console.warn('Firebase RTDB fbSetProposalLikes error:', err);
+    try {
+      const res = await fetch('/api/admin/proposals/' + encodeURIComponent(proposalId) + '/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: targetCount })
+      });
+      const data = await res.json();
+      return { id: proposalId, count: data.count !== undefined ? data.count : targetCount };
+    } catch (e) {
+      return { id: proposalId, count: targetCount };
+    }
+  }
+}
+
+// Admin: Reset heart count of a single proposal to 0
+async function fbResetProposalLikes(proposalId) {
+  return await fbSetProposalLikes(proposalId, 0);
+}
+
+// Admin: Reset ALL proposal likes to 0
+async function fbResetAllProposalLikes() {
+  try {
+    await rtdb.ref('proposal_likes').remove();
+    fetch('/api/admin/proposals/reset-all-likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(() => {});
+    return true;
+  } catch (err) {
+    console.warn('fbResetAllProposalLikes error:', err);
+    try {
+      await fetch('/api/admin/proposals/reset-all-likes', { method: 'POST' });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
