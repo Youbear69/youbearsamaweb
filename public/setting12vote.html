@@ -10,7 +10,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/socket.io/socket.io.js" onerror="this.onerror=null; window._noSocketIo = true;"></script>
   <style>
     :root {
       --admin-bg-card: rgba(22, 14, 45, 0.82);
@@ -534,9 +539,22 @@
   <div class="vote-toast" id="toast"></div>
 
   <script>
-    const socket = io();
+    const socket = (typeof io === 'function') ? io() : null;
 
-    let zodiacMeta = [];
+    let zodiacMeta = (typeof ZODIAC_METADATA !== 'undefined') ? ZODIAC_METADATA : [
+      { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png' },
+      { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png' },
+      { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png' },
+      { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png' },
+      { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png' },
+      { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png' },
+      { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png' },
+      { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png' },
+      { key: 'libra', th: 'ตุลย์/ตุล', en: 'Libra', icon: 'libra.png' },
+      { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png' },
+      { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png' },
+      { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png' }
+    ];
     let zodiacMembers = {};
     let allVotes = {};
     let isLocked = false;
@@ -556,34 +574,73 @@
       return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1c1530`;
     }
 
+    function applyAdminData(data) {
+      if (!data) return;
+      if (data.zodiacMeta && data.zodiacMeta.length) zodiacMeta = data.zodiacMeta;
+      zodiacMembers = data.members || {};
+      allVotes = data.votes || {};
+      isLocked = !!data.isLocked;
+
+      renderMembers();
+      renderTally();
+      renderVoteLog();
+      updateLockUI();
+    }
+
     async function init() {
+      // 1. Initial UI render
+      renderMembers();
+      renderTally();
+      renderVoteLog();
+      updateLockUI();
+
+      // 2. Load registrations via Firebase RTDB helper if available
       try {
-        socket.emit('admin:join');
-        const [stateRes, regRes] = await Promise.all([
-          fetch('/api/vote/state?role=admin'),
-          fetch('/api/vote/registrations')
-        ]);
-        const stateData = await stateRes.json();
-        const regData = await regRes.json();
-
-        if (stateData.success) {
-          zodiacMeta = stateData.zodiacMeta || [];
-          zodiacMembers = stateData.members || {};
-          allVotes = stateData.votes || {};
-          isLocked = stateData.isLocked || false;
+        if (typeof fbGetRegistrations === 'function') {
+          allRegistrations = await fbGetRegistrations();
+          renderMembers();
         }
-
-        if (regData.success) {
-          allRegistrations = regData.data || [];
-        }
-
-        renderMembers();
-        renderTally();
-        renderVoteLog();
-        updateLockUI();
-      } catch (err) {
-        console.error('Init error:', err);
+      } catch (e) {
+        console.warn('Firebase fbGetRegistrations warning:', e);
       }
+
+      // 3. Fallback fetch registrations via REST if needed
+      if (!allRegistrations || allRegistrations.length === 0) {
+        try {
+          const regRes = await fetch('/api/vote/registrations');
+          if (regRes.ok) {
+            const regData = await regRes.json();
+            if (regData.success) {
+              allRegistrations = regData.data || [];
+              renderMembers();
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 4. Setup Firebase RTDB live listener for votes, members, lock status
+      if (typeof rtdb !== 'undefined') {
+        rtdb.ref('vote').on('value', (snap) => {
+          const val = snap.val() || {};
+          applyAdminData(val);
+        });
+      }
+
+      // 5. Setup local socket if running locally
+      if (socket) {
+        socket.emit('admin:join');
+      }
+
+      // 6. Fallback REST state
+      try {
+        const stateRes = await fetch('/api/vote/state?role=admin');
+        if (stateRes.ok) {
+          const stateData = await stateRes.json();
+          if (stateData.success) {
+            applyAdminData(stateData);
+          }
+        }
+      } catch(e) {}
     }
 
     function renderMembers() {
@@ -633,20 +690,50 @@
       });
     }
 
-    function changeMember(selectEl) {
+    async function changeMember(selectEl) {
       const zodiacKey = selectEl.dataset.zodiac;
       const regId = selectEl.value;
 
+      let memberData = null;
+      if (regId) {
+        const reg = allRegistrations.find(r => r.id === regId);
+        if (reg) {
+          memberData = {
+            regId: reg.id,
+            displayName: reg.displayName,
+            imageUrl: reg.imageUrl || '',
+            zodiacKey: zodiacKey
+          };
+        }
+      }
+
+      // Update local state immediately
+      if (memberData) {
+        zodiacMembers[zodiacKey] = memberData;
+      } else {
+        delete zodiacMembers[zodiacKey];
+      }
+      renderTally();
+      renderVoteLog();
+
+      // Update Firebase RTDB
+      if (typeof rtdb !== 'undefined') {
+        if (memberData) {
+          await rtdb.ref(`vote/members/${zodiacKey}`).set(memberData);
+        } else {
+          await rtdb.ref(`vote/members/${zodiacKey}`).remove();
+        }
+      }
+
+      // Fallback REST & Socket
       fetch('/api/vote/set-member', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ zodiacKey, regId })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-          const z = zodiacMeta.find(item => item.key === zodiacKey);
-          showToast(`อัปเดตสมาชิก ราศี${z ? z.th : zodiacKey} เรียบร้อยแล้ว`);
-        }
-      });
+      }).catch(() => {});
+
+      const z = zodiacMeta.find(item => item.key === zodiacKey);
+      showToast(`อัปเดตสมาชิก ราศี${z ? z.th : zodiacKey} เรียบร้อยแล้ว`);
     }
 
     function renderTally() {
@@ -752,14 +839,16 @@
       try {
         isLocked = !isLocked;
         updateLockUI();
-        socket.emit('admin:toggleLock');
-        const res = await fetch('/api/vote/admin/toggle-lock', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          isLocked = data.isLocked;
-          updateLockUI();
-          showToast(isLocked ? '🔒 ล็อคการโหวตแล้ว' : '🔓 ปลดล็อคการโหวตแล้ว');
+
+        // Update Firebase RTDB
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('vote/isLocked').set(isLocked);
         }
+
+        if (socket) socket.emit('admin:toggleLock');
+        fetch('/api/vote/admin/toggle-lock', { method: 'POST' }).catch(() => {});
+
+        showToast(isLocked ? '🔒 ล็อคการโหวตแล้ว' : '🔓 ปลดล็อคการโหวตแล้ว');
       } catch (err) {
         console.error('Toggle lock error:', err);
       }
@@ -772,12 +861,15 @@
         renderVoteLog();
         showToast('🔄 กำลังรีเซ็ตรอบโหวต...');
 
-        socket.emit('admin:reset');
-        const res = await fetch('/api/vote/admin/reset', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อยแล้ว');
+        // Update Firebase RTDB
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('vote/votes').remove();
         }
+
+        if (socket) socket.emit('admin:reset');
+        fetch('/api/vote/admin/reset', { method: 'POST' }).catch(() => {});
+
+        showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อยแล้ว');
       } catch (err) {
         console.error('Reset round error:', err);
         showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อยแล้ว');
@@ -787,70 +879,66 @@
     async function reloginAll() {
       try {
         showToast('🔁 กำลังส่งคำสั่ง Re-Login...');
-        socket.emit('admin:relogin');
-        const res = await fetch('/api/vote/admin/relogin', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('🔁 สั่งให้ผู้เล่นทุกคน Login ใหม่เรียบร้อยแล้ว');
+
+        // Update Firebase RTDB
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('vote/reloginEpoch').set(Date.now());
         }
+
+        if (socket) socket.emit('admin:relogin');
+        fetch('/api/vote/admin/relogin', { method: 'POST' }).catch(() => {});
+
+        showToast('🔁 สั่งให้ผู้เล่นทุกคน Login ใหม่เรียบร้อยแล้ว');
       } catch (err) {
         console.error('Relogin error:', err);
         showToast('🔁 สั่งให้ผู้เล่นทุกคน Login ใหม่เรียบร้อยแล้ว');
       }
     }
 
-    // Socket events
-    socket.on('vote:admin_state', (data) => {
-      zodiacMembers = data.members || zodiacMembers;
-      allVotes = data.votes || {};
-      isLocked = data.isLocked || false;
-      renderTally();
-      renderVoteLog();
-      updateLockUI();
-    });
+    // Socket events (for local dev)
+    if (socket) {
+      socket.on('vote:admin_state', (data) => {
+        applyAdminData(data);
+      });
 
-    socket.on('vote:state', (data) => {
-      zodiacMembers = data.members || zodiacMembers;
-      allVotes = data.votes || {};
-      isLocked = data.isLocked || false;
-      renderTally();
-      renderVoteLog();
-      updateLockUI();
-    });
+      socket.on('vote:state', (data) => {
+        applyAdminData(data);
+      });
 
-    socket.on('vote:update', (data) => {
-      allVotes = data.votes || allVotes;
-      renderTally();
-      renderVoteLog();
-    });
+      socket.on('vote:update', (data) => {
+        allVotes = data.votes || allVotes;
+        renderTally();
+        renderVoteLog();
+      });
 
-    socket.on('vote:locked', () => {
-      isLocked = true;
-      updateLockUI();
-      showToast('🔒 ล็อคการโหวตแล้ว');
-    });
+      socket.on('vote:locked', () => {
+        isLocked = true;
+        updateLockUI();
+        showToast('🔒 ล็อคการโหวตแล้ว');
+      });
 
-    socket.on('vote:unlocked', () => {
-      isLocked = false;
-      updateLockUI();
-      showToast('🔓 ปลดล็อคการโหวตแล้ว');
-    });
+      socket.on('vote:unlocked', () => {
+        isLocked = false;
+        updateLockUI();
+        showToast('🔓 ปลดล็อคการโหวตแล้ว');
+      });
 
-    socket.on('vote:reset', () => {
-      allVotes = {};
-      isLocked = false;
-      renderTally();
-      renderVoteLog();
-      updateLockUI();
-      showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อย');
-    });
+      socket.on('vote:reset', () => {
+        allVotes = {};
+        isLocked = false;
+        renderTally();
+        renderVoteLog();
+        updateLockUI();
+        showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อย');
+      });
 
-    socket.on('vote:members_update', (data) => {
-      zodiacMembers = data.members || zodiacMembers;
-      renderMembers();
-      renderTally();
-      renderVoteLog();
-    });
+      socket.on('vote:members_update', (data) => {
+        zodiacMembers = data.members || zodiacMembers;
+        renderMembers();
+        renderTally();
+        renderVoteLog();
+      });
+    }
 
     init();
   </script>

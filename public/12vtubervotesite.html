@@ -10,7 +10,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/socket.io/socket.io.js" onerror="this.onerror=null; window._noSocketIo = true;"></script>
   <style>
     :root {
       --vote-bg-card: rgba(22, 14, 45, 0.78);
@@ -739,14 +744,27 @@
   </div>
 
   <script>
-    const socket = io();
+    const socket = (typeof io === 'function') ? io() : null;
 
     // State
     let myZodiacKey = null;
     let myVoteTarget = null;
     let zodiacMembers = {};
     let isLocked = false;
-    let zodiacMeta = [];
+    let zodiacMeta = (typeof ZODIAC_METADATA !== 'undefined') ? ZODIAC_METADATA : [
+      { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png' },
+      { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png' },
+      { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png' },
+      { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png' },
+      { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png' },
+      { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png' },
+      { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png' },
+      { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png' },
+      { key: 'libra', th: 'ตุลย์/ตุล', en: 'Libra', icon: 'libra.png' },
+      { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png' },
+      { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png' },
+      { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png' }
+    ];
 
     const ZODIAC_ICONS_PATH = '/assets/images/white/';
 
@@ -781,41 +799,71 @@
       return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1c1530`;
     }
 
+    // Apply data from RTDB or REST
+    function applyVoteData(data) {
+      if (!data) return;
+      if (data.zodiacMeta && data.zodiacMeta.length) zodiacMeta = data.zodiacMeta;
+      zodiacMembers = data.members || {};
+      isLocked = !!data.isLocked;
+
+      const loginTime = parseInt(sessionStorage.getItem('voteLoginTime') || '0', 10);
+      if (data.reloginEpoch && loginTime < data.reloginEpoch) {
+        sessionStorage.removeItem('voteMyZodiac');
+        sessionStorage.removeItem('voteLoginTime');
+        myZodiacKey = null;
+        myVoteTarget = null;
+        loginSection.classList.remove('hidden');
+        voteSection.classList.add('hidden');
+        renderLoginGrid();
+        updateLockUI();
+        showToast('🔄 แอดมินขอให้ทุกคนเข้าสู่ระบบใหม่', '🔄');
+        return;
+      }
+
+      const activeSaved = sessionStorage.getItem('voteMyZodiac');
+      if (activeSaved && zodiacMeta.some(z => z.key === activeSaved)) {
+        myZodiacKey = activeSaved;
+        if (data.votes && data.votes[activeSaved]) {
+          myVoteTarget = data.votes[activeSaved];
+        } else if (data.myVote) {
+          myVoteTarget = data.myVote;
+        } else if (data.votes && myZodiacKey in data.votes) {
+          myVoteTarget = data.votes[myZodiacKey];
+        }
+        showVoteScreen();
+      } else {
+        loginSection.classList.remove('hidden');
+        voteSection.classList.add('hidden');
+        renderLoginGrid();
+      }
+    }
+
     // Initialize
     async function init() {
+      // First, render immediately from initial metadata so page is never empty
+      renderLoginGrid();
+
+      // Setup Firebase RTDB listener if available
+      if (typeof rtdb !== 'undefined') {
+        rtdb.ref('vote').on('value', (snap) => {
+          const val = snap.val() || {};
+          applyVoteData(val);
+        });
+      }
+
+      // Also try local REST API if available (for server.js fallback)
       try {
         const saved = sessionStorage.getItem('voteMyZodiac');
-        const loginTime = parseInt(sessionStorage.getItem('voteLoginTime') || '0', 10);
         const url = saved ? `/api/vote/state?zodiac=${encodeURIComponent(saved)}` : '/api/vote/state';
         const res = await fetch(url);
-        const data = await res.json();
-        if (data.success) {
-          zodiacMeta = data.zodiacMeta || [];
-          zodiacMembers = data.members || {};
-          isLocked = data.isLocked || false;
-
-          // If admin triggered relogin after user last logged in, clear session
-          if (data.reloginEpoch && loginTime < data.reloginEpoch) {
-            sessionStorage.removeItem('voteMyZodiac');
-            sessionStorage.removeItem('voteLoginTime');
-            myZodiacKey = null;
-            myVoteTarget = null;
-          }
-
-          renderLoginGrid();
-
-          const activeSaved = sessionStorage.getItem('voteMyZodiac');
-          if (activeSaved && zodiacMeta.some(z => z.key === activeSaved)) {
-            myZodiacKey = activeSaved;
-            myVoteTarget = data.myVote || null;
-            showVoteScreen();
-          } else {
-            loginSection.classList.remove('hidden');
-            voteSection.classList.add('hidden');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) {
+            applyVoteData(data);
           }
         }
       } catch (err) {
-        console.error('Init error:', err);
+        // Ignored in Firebase static environment
       }
     }
 
@@ -852,13 +900,20 @@
           sessionStorage.setItem('voteMyZodiac', z.key);
           sessionStorage.setItem('voteLoginTime', Date.now().toString());
 
-          // Fetch user's own current vote if any
+          // Read vote from RTDB if present
+          if (typeof rtdb !== 'undefined') {
+            try {
+              const snap = await rtdb.ref(`vote/votes/${z.key}`).once('value');
+              myVoteTarget = snap.val() || null;
+            } catch(e) {}
+          }
+
+          // Fallback to REST
           try {
             const res = await fetch(`/api/vote/state?zodiac=${encodeURIComponent(z.key)}`);
-            const data = await res.json();
-            if (data.success) {
-              myVoteTarget = data.myVote || null;
-              isLocked = data.isLocked || false;
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && data.myVote) myVoteTarget = data.myVote;
             }
           } catch(e) {}
 
@@ -959,10 +1014,26 @@
           }
 
           myVoteTarget = z.key;
-          socket.emit('vote', { voterZodiac: myZodiacKey, targetZodiac: z.key });
-
           renderVoteGrid();
           updateStatusBar();
+
+          // Write to Firebase RTDB
+          if (typeof rtdb !== 'undefined' && myZodiacKey) {
+            rtdb.ref(`vote/votes/${myZodiacKey}`).set(z.key);
+          }
+
+          // Emit to local socket if present
+          if (socket) {
+            socket.emit('vote', { voterZodiac: myZodiacKey, targetZodiac: z.key });
+          }
+
+          // Fallback REST
+          fetch('/api/vote/cast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voterZodiac: myZodiacKey, targetZodiac: z.key })
+          }).catch(() => {});
+
           const targetMember = zodiacMembers[z.key];
           const nameToDisplay = targetMember ? targetMember.displayName : `ราศี${z.th}`;
           if (isSelf) {
@@ -1009,62 +1080,64 @@
       updateStatusBar();
     }
 
-    // Socket Events
-    socket.on('vote:confirmed', (data) => {
-      if (data && data.targetZodiac) {
-        myVoteTarget = data.targetZodiac;
+    // Socket Events (for local development)
+    if (socket) {
+      socket.on('vote:confirmed', (data) => {
+        if (data && data.targetZodiac) {
+          myVoteTarget = data.targetZodiac;
+          if (!voteSection.classList.contains('hidden')) {
+            renderVoteGrid();
+            updateStatusBar();
+          }
+        }
+      });
+
+      socket.on('vote:locked', () => {
+        isLocked = true;
+        updateLockUI();
+        showToast('🔒 การโหวตถูกล็อคแล้ว', '🔒');
+      });
+
+      socket.on('vote:unlocked', () => {
+        isLocked = false;
+        updateLockUI();
+        showToast('🔓 ปลดล็อคการโหวตแล้ว สามารถเลือกต่อได้', '🔓');
+      });
+
+      socket.on('vote:reset', () => {
+        myVoteTarget = null;
+        isLocked = false;
+        updateLockUI();
         if (!voteSection.classList.contains('hidden')) {
           renderVoteGrid();
           updateStatusBar();
         }
-      }
-    });
+        showToast('🔄 แอดมินได้รีเซ็ตรอบการโหวตแล้ว', '🔄');
+      });
 
-    socket.on('vote:locked', () => {
-      isLocked = true;
-      updateLockUI();
-      showToast('🔒 การโหวตถูกล็อคแล้ว', '🔒');
-    });
-
-    socket.on('vote:unlocked', () => {
-      isLocked = false;
-      updateLockUI();
-      showToast('🔓 ปลดล็อคการโหวตแล้ว สามารถเลือกต่อได้', '🔓');
-    });
-
-    socket.on('vote:reset', () => {
-      myVoteTarget = null;
-      isLocked = false;
-      updateLockUI();
-      if (!voteSection.classList.contains('hidden')) {
-        renderVoteGrid();
-        updateStatusBar();
-      }
-      showToast('🔄 แอดมินได้รีเซ็ตรอบการโหวตแล้ว', '🔄');
-    });
-
-    socket.on('vote:relogin', () => {
-      myZodiacKey = null;
-      myVoteTarget = null;
-      sessionStorage.removeItem('voteMyZodiac');
-      sessionStorage.removeItem('voteLoginTime');
-      loginSection.classList.remove('hidden');
-      voteSection.classList.add('hidden');
-      renderLoginGrid();
-      updateLockUI();
-      showToast('🔄 แอดมินขอให้ทุกคนเข้าสู่ระบบใหม่', '🔄');
-    });
-
-    socket.on('vote:members_update', (data) => {
-      zodiacMembers = data.members || zodiacMembers;
-      if (!loginSection.classList.contains('hidden')) {
+      socket.on('vote:relogin', () => {
+        myZodiacKey = null;
+        myVoteTarget = null;
+        sessionStorage.removeItem('voteMyZodiac');
+        sessionStorage.removeItem('voteLoginTime');
+        loginSection.classList.remove('hidden');
+        voteSection.classList.add('hidden');
         renderLoginGrid();
-      }
-      if (!voteSection.classList.contains('hidden')) {
-        updateMyUserHeader();
-        renderVoteGrid();
-      }
-    });
+        updateLockUI();
+        showToast('🔄 แอดมินขอให้ทุกคนเข้าสู่ระบบใหม่', '🔄');
+      });
+
+      socket.on('vote:members_update', (data) => {
+        zodiacMembers = data.members || zodiacMembers;
+        if (!loginSection.classList.contains('hidden')) {
+          renderLoginGrid();
+        }
+        if (!voteSection.classList.contains('hidden')) {
+          updateMyUserHeader();
+          renderVoteGrid();
+        }
+      });
+    }
 
     // Start
     init();

@@ -1629,11 +1629,28 @@ app.post('/api/vote/admin/toggle-lock', (req, res) => {
 });
 
 // Vote page routes
-app.get(['/12vtubervotesite', '/12vtubervotesite/'], (req, res) => {
+app.get([
+  '/vote', '/vote/',
+  '/votesite', '/votesite/',
+  '/12vtubervotesite', '/12vtubervotesite/',
+  '/12vtubergame/vote', '/12vtubergame/vote/',
+  '/12vtubergame/votesite', '/12vtubergame/votesite/',
+  '/12vtubergame/12vtubervotesite', '/12vtubergame/12vtubervotesite/'
+], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', '12vtubervotesite.html'));
 });
 
-app.get(['/setting12vote', '/setting12vote/'], (req, res) => {
+// Setting / Admin Vote page routes
+app.get([
+  '/setting', '/setting/',
+  '/settings', '/settings/',
+  '/settingvote', '/settingvote/',
+  '/setting12vote', '/setting12vote/',
+  '/12vtubergame/setting', '/12vtubergame/setting/',
+  '/12vtubergame/settings', '/12vtubergame/settings/',
+  '/12vtubergame/settingvote', '/12vtubergame/settingvote/',
+  '/12vtubergame/setting12vote', '/12vtubergame/setting12vote/'
+], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'setting12vote.html'));
 });
 
