@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โหวตเกม 12 ราศี — ศึก 12 วีทูบเบอร์</title>
+  <meta name="description" content="ระบบโหวตเกม 12 VTuber ราศี">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --vote-bg-card: rgba(22, 14, 45, 0.78);
+      --vote-border: rgba(147, 98, 248, 0.22);
+      --vote-primary: #a855f7;
+      --vote-cyan: #38bdf8;
+      --vote-amber: #fbbf24;
+    }
+
+    body {
+      font-family: 'Kanit', 'Layiji Mahaniyom V1.5', sans-serif !important;
+      min-height: 100vh;
+      color: #f1f0f8;
+      background-color: #070414;
+      overflow-x: hidden;
+    }
+
+    .vote-page-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 5.5rem 1.25rem 4rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Brand Header */
+    .vote-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 2rem;
+      width: 100%;
+    }
+
+    .vote-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.8rem;
+      transition: transform 0.3s ease;
+    }
+    .vote-logo-wrap:hover {
+      transform: scale(1.03);
+    }
+    .vote-logo {
+      height: 72px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.45));
+    }
+
+    .vote-page-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 10%, #e9d5ff 50%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+    }
+
+    .vote-page-subtitle {
+      font-size: 1.05rem;
+      color: #b7a9d6;
+      font-weight: 400;
+      max-width: 650px;
+      line-height: 1.5;
+    }
+
+    /* Section Panels */
+    .vote-panel {
+      background: var(--vote-bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--vote-border);
+      border-radius: 22px;
+      padding: 2rem 2.2rem;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      .vote-panel {
+        padding: 1.4rem 1.1rem;
+        border-radius: 18px;
+      }
+      .vote-page-title {
+        font-size: 1.75rem;
+      }
+      .vote-page-container {
+        padding-top: 4.8rem;
+      }
+    }
+
+    .panel-step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #d8b4fe;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 1rem;
+    }
+
+    .panel-heading {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-desc {
+      font-size: 0.95rem;
+      color: #a494c7;
+      margin-top: 0.25rem;
+    }
+
+    /* Active User Banner */
+    .active-user-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      background: linear-gradient(135deg, rgba(88, 28, 135, 0.45) 0%, rgba(30, 27, 75, 0.6) 100%);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+      border-radius: 18px;
+      padding: 1rem 1.4rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .user-profile-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .user-badge-avatar {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+    }
+
+    .user-badge-avatar img.avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #c084fc;
+      background: #191032;
+      box-shadow: 0 0 14px rgba(192, 132, 252, 0.4);
+    }
+
+    .user-badge-avatar img.zodiac-mini-badge {
+      position: absolute;
+      bottom: -3px;
+      right: -3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0f0a24;
+      border: 1.5px solid #a855f7;
+      padding: 2px;
+      object-fit: contain;
+    }
+
+    .user-details-title {
+      font-size: 0.85rem;
+      color: #d8b4fe;
+      font-weight: 400;
+    }
+
+    .user-details-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .user-details-zodiac {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      font-weight: 500;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 10px;
+      border-radius: 9999px;
+    }
+
+    .btn-switch-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #e9d5ff;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-family: inherit;
+    }
+    .btn-switch-user:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      transform: translateY(-2px);
+    }
+
+    /* Zodiac Cards Grid */
+    .zodiac-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .zodiac-selection-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+    }
+    @media (max-width: 768px) {
+      .zodiac-selection-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+    }
+    @media (max-width: 480px) {
+      .zodiac-selection-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+
+    /* Individual Zodiac Card */
+    .zodiac-vote-card {
+      background: rgba(26, 18, 54, 0.65);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 16px;
+      padding: 14px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      min-height: 82px;
+    }
+
+    .zodiac-vote-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(56, 189, 248, 0.08) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .zodiac-vote-card:hover {
+      transform: translateY(-4px);
+      background: rgba(38, 26, 78, 0.85);
+      border-color: rgba(192, 132, 252, 0.55);
+      box-shadow: 0 10px 28px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .zodiac-vote-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Self Card Indicator */
+    .zodiac-vote-card.is-self {
+      border-color: rgba(251, 191, 36, 0.45);
+      background: rgba(45, 28, 65, 0.75);
+    }
+    .zodiac-vote-card.is-self:hover {
+      border-color: rgba(251, 191, 36, 0.7);
+      box-shadow: 0 10px 28px rgba(245, 158, 11, 0.28);
+    }
+
+    .self-pill-tag {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 0.68rem;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #fef3c7;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      z-index: 2;
+    }
+
+    /* Selected Vote State */
+    .zodiac-vote-card.selected-vote {
+      background: linear-gradient(135deg, rgba(76, 29, 149, 0.75) 0%, rgba(30, 27, 75, 0.85) 100%) !important;
+      border: 2px solid #a855f7 !important;
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.55), inset 0 0 15px rgba(168, 85, 247, 0.25) !important;
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .selected-check-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      z-index: 2;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Card Components */
+    .zodiac-visuals-col {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .zodiac-avatar-round {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(168, 85, 247, 0.35);
+      background: #140d2a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: transform 0.25s ease;
+    }
+    .zodiac-vote-card:hover .zodiac-avatar-round {
+      transform: scale(1.05);
+      border-color: #c084fc;
+    }
+
+    .zodiac-icon-subbadge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0f0a24;
+      border: 1.5px solid rgba(168, 85, 247, 0.6);
+      padding: 2px;
+      object-fit: contain;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .zodiac-card-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .zodiac-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.2;
+    }
+
+    .zodiac-name-th {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .zodiac-name-en {
+      font-size: 0.75rem;
+      color: #9d8ec2;
+      font-weight: 400;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .zodiac-player-name {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: #38bdf8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+
+    .zodiac-player-name.empty-player {
+      color: #796c96;
+      font-size: 0.78rem;
+      font-weight: 400;
+    }
+
+    /* Status Bar */
+    .vote-status-bar {
+      width: 100%;
+      background: rgba(24, 15, 50, 0.85);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 16px;
+      padding: 1.1rem 1.6rem;
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .vote-status-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .vote-status-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .vote-status-text {
+      font-size: 1.05rem;
+      color: #e2d9f3;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .vote-status-text .highlight-target {
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .vote-status-text .highlight-member {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .vote-self-tag {
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      margin-left: 6px;
+    }
+
+    .vote-status-hint {
+      font-size: 0.82rem;
+      color: #9d8ec2;
+      font-weight: 400;
+    }
+
+    /* Secret Vote Security Notice */
+    .secret-vote-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: rgba(30, 18, 65, 0.45);
+      border: 1px dashed rgba(168, 85, 247, 0.3);
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem;
+      width: 100%;
+      margin-top: 1.2rem;
+    }
+
+    .secret-notice-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .secret-notice-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e9d5ff;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .secret-notice-desc {
+      font-size: 0.88rem;
+      color: #a494c7;
+      line-height: 1.5;
+    }
+
+    /* Locked Banner */
+    .locked-alert-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      background: linear-gradient(135deg, rgba(185, 28, 28, 0.35) 0%, rgba(127, 29, 29, 0.45) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      border-radius: 14px;
+      padding: 1rem 1.4rem;
+      color: #fca5a5;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 16px rgba(185, 28, 28, 0.25);
+    }
+    .locked-alert-banner.show {
+      display: flex;
+    }
+
+    /* Toast */
+    .vote-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(24, 15, 52, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: #ffffff;
+      padding: 0.85rem 1.8rem;
+      border-radius: 9999px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 15px rgba(168, 85, 247, 0.3);
+      z-index: 999;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .vote-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="page-vote">
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Universal Top Navigation Bar & Social Pill -->
+  <header class="top-nav-bar">
+    <nav class="nav-pill-group">
+      <a href="https://yuubearsama.online/" class="nav-pill-link">Home</a>
+      <a href="/12vtubergame" class="nav-pill-link">ศึก 12 วีทูบเบอร์</a>
+      <a href="/12vtubergame/minigame" class="nav-pill-link">Mini Game</a>
+      <a href="/12vtubervotesite" class="nav-pill-link active">โหวต (Vote)</a>
+    </nav>
+    <div class="top-social-group">
+      <a href="https://www.youtube.com/@yuubeargame" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="YouTube: @yuubeargame">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      </a>
+      <a href="https://x.com/bearuwu_001" target="_blank" rel="noopener noreferrer" class="social-pill-btn" title="X: @bearuwu_001">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="https://ezdn.app/youbear" target="_blank" rel="noopener noreferrer" class="social-pill-btn social-pill-ezdn" title="EasyDonate: @youbear">
+        <img src="/easydonate-symbol-bg-brand.svg" alt="EasyDonate" class="ezdn-nav-icon">
+      </a>
+    </div>
+  </header>
+
+  <main class="vote-page-container">
+    <!-- Header Logo & Title -->
+    <div class="vote-header">
+      <a href="/12vtubergame" class="vote-logo-wrap" title="กลับสู่หน้าหลัก">
+        <img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์" class="vote-logo">
+      </a>
+      <h1 class="vote-page-title">ระบบโหวต — ศึก 12 วีทูบเบอร์</h1>
+      <p class="vote-page-subtitle">ลงคะแนนโหวตเกมสำหรับตัวแทน 12 ราศี (ระบบโหวตลับเพื่อเปิดเผยผลในไลฟ์สตรีม)</p>
+    </div>
+
+    <!-- STEP 1: LOGIN SECTION -->
+    <section id="loginSection" class="vote-panel">
+      <div class="panel-header-row">
+        <div>
+          <span class="panel-step-badge">ขั้นตอนที่ 1 / Step 1</span>
+          <h2 class="panel-heading">🔐 ยืนยันตัวตน — เลือกราศีของคุณ</h2>
+          <p class="panel-desc">คลิกเลือกการ์ดราศีและตัวละครที่คุณเป็นตัวแทน เพื่อเข้าสู่ระบบการโหวต</p>
+        </div>
+      </div>
+
+      <div id="loginGrid" class="zodiac-selection-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- STEP 2: VOTING SECTION -->
+    <section id="voteSection" class="hidden" style="width: 100%;">
+      <!-- Active User Bar -->
+      <div class="active-user-bar">
+        <div class="user-profile-info">
+          <div class="user-badge-avatar">
+            <img id="myAvatarImg" class="avatar-img" src="" alt="avatar">
+            <img id="myZodiacMiniBadge" class="zodiac-mini-badge" src="" alt="icon">
+          </div>
+          <div>
+            <div class="user-details-title">เข้าสู่ระบบในฐานะ</div>
+            <div class="user-details-name">
+              <span id="myDisplayName">—</span>
+              <span id="myZodiacBadge" class="user-details-zodiac">ราศี...</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-switch-user" onclick="switchUser()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          สลับราศี / ออกจากระบบ
+        </button>
+      </div>
+
+      <!-- Locked Warning Banner -->
+      <div id="lockedBanner" class="locked-alert-banner">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>ขณะนี้แอดมินได้ล็อคการโหวตแล้ว (ไม่สามารถเปลี่ยนการโหวตได้ รอแอดมินเปิดรอบใหม่)</span>
+      </div>
+
+      <!-- Voting Card Panel -->
+      <div class="vote-panel">
+        <div class="panel-header-row">
+          <div>
+            <span class="panel-step-badge">ขั้นตอนที่ 2 / Step 2</span>
+            <h2 class="panel-heading">🗳️ เลือกลงคะแนนโหวต</h2>
+            <p class="panel-desc">คลิกเลือกราศีที่คุณต้องการโหวต (สามารถเลือกโหวตให้ตนเองได้ และเปลี่ยนได้ตลอดเวลาจนกว่าจะล็อค)</p>
+          </div>
+        </div>
+
+        <div id="voteGrid" class="zodiac-selection-grid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Current Selection Status Bar -->
+        <div class="vote-status-bar" id="statusBar">
+          <div class="vote-status-left">
+            <span class="vote-status-icon">⚡</span>
+            <div>
+              <div class="vote-status-text" id="statusMainText">กรุณาคลิกเลือกราศีที่ต้องการโหวต</div>
+              <div class="vote-status-hint" id="statusHintText">คุณสามารถเปลี่ยนการโหวตได้ตลอดเวลาจนกว่าแอดมินจะกดล็อค</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secret Ballot Notice -->
+        <div class="secret-vote-notice">
+          <span class="secret-notice-icon">🤫</span>
+          <div>
+            <div class="secret-notice-title">ระบบลงคะแนนแบบโหวตลับ (Secret Ballot)</div>
+            <div class="secret-notice-desc">การลงคะแนนของคุณจะถูกบันทึกและส่งตรงไปยังแอดมินโดยเฉพาะ จะไม่มีการแสดงผลคู่โหวตให้ผู้เล่นคนอื่นทราบในหน้านี้ เพื่อความยุติธรรมและรอลุ้นการประกาศผลอย่างเป็นทางการในไลฟ์สตรีม</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="vote-toast" id="toast">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">แจ้งเตือน</span>
+  </div>
+
+  <script>
+    const socket = io();
+
+    // State
+    let myZodiacKey = null;
+    let myVoteTarget = null;
+    let zodiacMembers = {};
+    let isLocked = false;
+    let zodiacMeta = [];
+
+    const ZODIAC_ICONS_PATH = '/assets/images/white/';
+
+    // DOM Elements
+    const loginSection = document.getElementById('loginSection');
+    const voteSection = document.getElementById('voteSection');
+    const loginGrid = document.getElementById('loginGrid');
+    const voteGrid = document.getElementById('voteGrid');
+    const statusBar = document.getElementById('statusBar');
+    const statusMainText = document.getElementById('statusMainText');
+    const statusHintText = document.getElementById('statusHintText');
+    const lockedBanner = document.getElementById('lockedBanner');
+
+    // User details bar
+    const myAvatarImg = document.getElementById('myAvatarImg');
+    const myZodiacMiniBadge = document.getElementById('myZodiacMiniBadge');
+    const myDisplayName = document.getElementById('myDisplayName');
+    const myZodiacBadge = document.getElementById('myZodiacBadge');
+
+    function showToast(msg, icon = '✨') {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toastMsg');
+      const i = document.getElementById('toastIcon');
+      m.textContent = msg;
+      i.textContent = icon;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function getDefaultAvatar(seed) {
+      return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1c1530`;
+    }
+
+    // Initialize
+    async function init() {
+      try {
+        const saved = sessionStorage.getItem('voteMyZodiac');
+        const loginTime = parseInt(sessionStorage.getItem('voteLoginTime') || '0', 10);
+        const url = saved ? `/api/vote/state?zodiac=${encodeURIComponent(saved)}` : '/api/vote/state';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success) {
+          zodiacMeta = data.zodiacMeta || [];
+          zodiacMembers = data.members || {};
+          isLocked = data.isLocked || false;
+
+          // If admin triggered relogin after user last logged in, clear session
+          if (data.reloginEpoch && loginTime < data.reloginEpoch) {
+            sessionStorage.removeItem('voteMyZodiac');
+            sessionStorage.removeItem('voteLoginTime');
+            myZodiacKey = null;
+            myVoteTarget = null;
+          }
+
+          renderLoginGrid();
+
+          const activeSaved = sessionStorage.getItem('voteMyZodiac');
+          if (activeSaved && zodiacMeta.some(z => z.key === activeSaved)) {
+            myZodiacKey = activeSaved;
+            myVoteTarget = data.myVote || null;
+            showVoteScreen();
+          } else {
+            loginSection.classList.remove('hidden');
+            voteSection.classList.add('hidden');
+          }
+        }
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    }
+
+    // Render Login Screen Grid
+    function renderLoginGrid() {
+      loginGrid.innerHTML = '';
+      zodiacMeta.forEach(z => {
+        const member = zodiacMembers[z.key];
+        const card = document.createElement('div');
+        card.className = 'zodiac-vote-card';
+
+        const avatarSrc = (member && member.imageUrl) ? member.imageUrl : getDefaultAvatar(z.key);
+        const displayName = (member && member.displayName) ? member.displayName : '(รอเลือกสมาชิก)';
+        const isAssigned = !!(member && member.displayName);
+
+        card.innerHTML = `
+          <div class="zodiac-visuals-col">
+            <img class="zodiac-avatar-round" src="${avatarSrc}" alt="${z.th}" onerror="this.src='${getDefaultAvatar(z.key)}'">
+            <img class="zodiac-icon-subbadge" src="${ZODIAC_ICONS_PATH}${z.icon}" alt="${z.th}">
+          </div>
+          <div class="zodiac-card-info">
+            <div class="zodiac-title-row">
+              <span class="zodiac-name-th">${z.th}</span>
+              <span class="zodiac-name-en">(${z.en})</span>
+            </div>
+            <div class="zodiac-player-name ${isAssigned ? '' : 'empty-player'}">
+              ${isAssigned ? '👤 ' + displayName : '⏳ ' + displayName}
+            </div>
+          </div>
+        `;
+
+        card.addEventListener('click', async () => {
+          myZodiacKey = z.key;
+          sessionStorage.setItem('voteMyZodiac', z.key);
+          sessionStorage.setItem('voteLoginTime', Date.now().toString());
+
+          // Fetch user's own current vote if any
+          try {
+            const res = await fetch(`/api/vote/state?zodiac=${encodeURIComponent(z.key)}`);
+            const data = await res.json();
+            if (data.success) {
+              myVoteTarget = data.myVote || null;
+              isLocked = data.isLocked || false;
+            }
+          } catch(e) {}
+
+          showVoteScreen();
+          showToast(`เข้าสู่ระบบเป็น ราศี${z.th} (${displayName})`, '🔐');
+        });
+
+        loginGrid.appendChild(card);
+      });
+    }
+
+    // Switch to Vote Screen
+    function showVoteScreen() {
+      loginSection.classList.add('hidden');
+      voteSection.classList.remove('hidden');
+
+      updateMyUserHeader();
+      renderVoteGrid();
+      updateLockUI();
+    }
+
+    // Switch user / Logout
+    function switchUser() {
+      sessionStorage.removeItem('voteMyZodiac');
+      sessionStorage.removeItem('voteLoginTime');
+      myZodiacKey = null;
+      myVoteTarget = null;
+      loginSection.classList.remove('hidden');
+      voteSection.classList.add('hidden');
+      renderLoginGrid();
+      showToast('ออกจากระบบเรียบร้อย สามารถเลือกราศีใหม่ได้', '👋');
+    }
+
+    // Update active user bar
+    function updateMyUserHeader() {
+      if (!myZodiacKey) return;
+      const z = zodiacMeta.find(item => item.key === myZodiacKey);
+      const member = zodiacMembers[myZodiacKey];
+
+      const avatarSrc = (member && member.imageUrl) ? member.imageUrl : getDefaultAvatar(myZodiacKey);
+      const displayName = (member && member.displayName) ? member.displayName : 'ตัวแทนราศี';
+
+      myAvatarImg.src = avatarSrc;
+      myAvatarImg.onerror = () => { myAvatarImg.src = getDefaultAvatar(myZodiacKey); };
+      myZodiacMiniBadge.src = z ? `${ZODIAC_ICONS_PATH}${z.icon}` : '';
+      myDisplayName.textContent = displayName;
+      myZodiacBadge.textContent = z ? `ราศี${z.th} (${z.en})` : myZodiacKey;
+    }
+
+    // Render Vote Grid (Allows self-voting!)
+    function renderVoteGrid() {
+      voteGrid.innerHTML = '';
+      zodiacMeta.forEach(z => {
+        const member = zodiacMembers[z.key];
+        const card = document.createElement('div');
+        card.className = 'zodiac-vote-card';
+
+        const isSelf = (z.key === myZodiacKey);
+        const isSelected = (myVoteTarget === z.key);
+
+        if (isSelf) card.classList.add('is-self');
+        if (isSelected) card.classList.add('selected-vote');
+
+        const avatarSrc = (member && member.imageUrl) ? member.imageUrl : getDefaultAvatar(z.key);
+        const displayName = (member && member.displayName) ? member.displayName : '(รอเลือกสมาชิก)';
+        const isAssigned = !!(member && member.displayName);
+
+        // Self badge or selected badge
+        let badgesHTML = '';
+        if (isSelected) {
+          badgesHTML += `<div class="selected-check-badge">✓ โหวตแล้ว</div>`;
+        } else if (isSelf) {
+          badgesHTML += `<div class="self-pill-tag">⭐ ตัวคุณเอง</div>`;
+        }
+
+        card.innerHTML = `
+          ${badgesHTML}
+          <div class="zodiac-visuals-col">
+            <img class="zodiac-avatar-round" src="${avatarSrc}" alt="${z.th}" onerror="this.src='${getDefaultAvatar(z.key)}'">
+            <img class="zodiac-icon-subbadge" src="${ZODIAC_ICONS_PATH}${z.icon}" alt="${z.th}">
+          </div>
+          <div class="zodiac-card-info">
+            <div class="zodiac-title-row">
+              <span class="zodiac-name-th">${z.th}</span>
+              <span class="zodiac-name-en">(${z.en})</span>
+            </div>
+            <div class="zodiac-player-name ${isAssigned ? '' : 'empty-player'}">
+              ${isAssigned ? '👤 ' + displayName : '⏳ ' + displayName}
+            </div>
+          </div>
+        `;
+
+        // Click to vote (ALLOW SELF-VOTE!)
+        card.addEventListener('click', () => {
+          if (isLocked) {
+            showToast('🔒 การโหวตถูกล็อคแล้ว ไม่สามารถเปลี่ยนคะแนนได้', '⚠️');
+            return;
+          }
+
+          myVoteTarget = z.key;
+          socket.emit('vote', { voterZodiac: myZodiacKey, targetZodiac: z.key });
+
+          renderVoteGrid();
+          updateStatusBar();
+          const targetMember = zodiacMembers[z.key];
+          const nameToDisplay = targetMember ? targetMember.displayName : `ราศี${z.th}`;
+          if (isSelf) {
+            showToast(`คุณโหวตให้ตนเอง (ราศี${z.th}) สำเร็จ!`, '🌟');
+          } else {
+            showToast(`โหวตให้ ราศี${z.th} (${nameToDisplay}) สำเร็จ!`, '🗳️');
+          }
+        });
+
+        voteGrid.appendChild(card);
+      });
+
+      updateStatusBar();
+    }
+
+    // Update bottom status bar
+    function updateStatusBar() {
+      if (!myZodiacKey) return;
+      if (myVoteTarget) {
+        const targetMeta = zodiacMeta.find(z => z.key === myVoteTarget);
+        const targetMember = zodiacMembers[myVoteTarget];
+        const targetName = targetMember ? targetMember.displayName : '—';
+        const isSelfVote = (myVoteTarget === myZodiacKey);
+
+        const selfBadge = isSelfVote ? `<span class="vote-self-tag">🌟 โหวตให้ตนเอง</span>` : '';
+
+        statusMainText.innerHTML = `คุณกำลังเลือกโหวตให้ : <span class="highlight-target">ราศี${targetMeta ? targetMeta.th : myVoteTarget}</span> คุณ <span class="highlight-member">${targetName}</span> ${selfBadge}`;
+        statusHintText.textContent = isLocked
+          ? '🔒 แอดมินล็อคการโหวตแล้ว ข้อมูลนี้ถูกบันทึกเรียบร้อย'
+          : '✓ บันทึกการโหวตแล้ว (คุณสามารถคลิกเปลี่ยนราศีอื่นได้ตลอดเวลาก่อนแอดมินจะกดล็อค)';
+      } else {
+        statusMainText.innerHTML = 'กรุณาคลิกเลือกราศีที่คุณต้องการโหวต';
+        statusHintText.textContent = 'คุณสามารถเลือกโหวตให้ใครก็ได้ รวมถึงตนเอง';
+      }
+    }
+
+    // Update lock UI
+    function updateLockUI() {
+      if (isLocked) {
+        lockedBanner.classList.add('show');
+      } else {
+        lockedBanner.classList.remove('show');
+      }
+      updateStatusBar();
+    }
+
+    // Socket Events
+    socket.on('vote:confirmed', (data) => {
+      if (data && data.targetZodiac) {
+        myVoteTarget = data.targetZodiac;
+        if (!voteSection.classList.contains('hidden')) {
+          renderVoteGrid();
+          updateStatusBar();
+        }
+      }
+    });
+
+    socket.on('vote:locked', () => {
+      isLocked = true;
+      updateLockUI();
+      showToast('🔒 การโหวตถูกล็อคแล้ว', '🔒');
+    });
+
+    socket.on('vote:unlocked', () => {
+      isLocked = false;
+      updateLockUI();
+      showToast('🔓 ปลดล็อคการโหวตแล้ว สามารถเลือกต่อได้', '🔓');
+    });
+
+    socket.on('vote:reset', () => {
+      myVoteTarget = null;
+      isLocked = false;
+      updateLockUI();
+      if (!voteSection.classList.contains('hidden')) {
+        renderVoteGrid();
+        updateStatusBar();
+      }
+      showToast('🔄 แอดมินได้รีเซ็ตรอบการโหวตแล้ว', '🔄');
+    });
+
+    socket.on('vote:relogin', () => {
+      myZodiacKey = null;
+      myVoteTarget = null;
+      sessionStorage.removeItem('voteMyZodiac');
+      sessionStorage.removeItem('voteLoginTime');
+      loginSection.classList.remove('hidden');
+      voteSection.classList.add('hidden');
+      renderLoginGrid();
+      updateLockUI();
+      showToast('🔄 แอดมินขอให้ทุกคนเข้าสู่ระบบใหม่', '🔄');
+    });
+
+    socket.on('vote:members_update', (data) => {
+      zodiacMembers = data.members || zodiacMembers;
+      if (!loginSection.classList.contains('hidden')) {
+        renderLoginGrid();
+      }
+      if (!voteSection.classList.contains('hidden')) {
+        updateMyUserHeader();
+        renderVoteGrid();
+      }
+    });
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

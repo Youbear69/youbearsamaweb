@@ -2,6 +2,8 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const { Server: SocketIOServer } = require('socket.io');
 const { readData, writeData, getFirebaseAuth, getChatBackup } = require('./db');
 const {
   extractCleanHandle,
@@ -13,6 +15,8 @@ const {
 } = require('./public/js/common');
 
 const app = express();
+const httpServer = http.createServer(app);
+const io = new SocketIOServer(httpServer, { cors: { origin: '*' } });
 
 const PORT = 3000;
 
@@ -1499,12 +1503,201 @@ app.get(['/random12ad', '/random12ad/'], (req, res) => {
   res.redirect('/12vtubergame/random12ad');
 });
 
-// Start Server
-app.listen(PORT, () => {
+// ==========================================
+// 12 VTuber Vote System
+// ==========================================
+
+// Vote state file
+const VOTE_STATE_FILE = path.join(__dirname, 'database', 'vote_state.json');
+
+function readVoteState() {
+  try {
+    if (!fs.existsSync(VOTE_STATE_FILE)) {
+      const initial = { members: {}, votes: {}, isLocked: false };
+      fs.writeFileSync(VOTE_STATE_FILE, JSON.stringify(initial, null, 2), 'utf-8');
+      return initial;
+    }
+    return JSON.parse(fs.readFileSync(VOTE_STATE_FILE, 'utf-8'));
+  } catch (e) {
+    console.error('Error reading vote state:', e);
+    return { members: {}, votes: {}, isLocked: false };
+  }
+}
+
+function writeVoteState(state) {
+  try {
+    const dir = path.dirname(VOTE_STATE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(VOTE_STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing vote state:', e);
+  }
+}
+
+let voteState = readVoteState();
+
+function getVotePublicState(voterZodiac = null) {
+  return {
+    zodiacMeta: ZODIAC_METADATA,
+    members: voteState.members || {},
+    isLocked: voteState.isLocked || false,
+    reloginEpoch: voteState.reloginEpoch || 0,
+    myVote: voterZodiac ? (voteState.votes[voterZodiac] || null) : null
+  };
+}
+
+function getVoteAdminState() {
+  return {
+    zodiacMeta: ZODIAC_METADATA,
+    members: voteState.members || {},
+    votes: voteState.votes || {},
+    isLocked: voteState.isLocked || false,
+    reloginEpoch: voteState.reloginEpoch || 0
+  };
+}
+
+// Vote API routes
+app.get('/api/vote/state', (req, res) => {
+  const { role, zodiac } = req.query;
+  if (role === 'admin') {
+    return res.json({ success: true, ...getVoteAdminState() });
+  }
+  res.json({ success: true, ...getVotePublicState(zodiac) });
+});
+
+app.get('/api/vote/registrations', (req, res) => {
+  const db = readData();
+  res.json({ success: true, data: db.registrations || [] });
+});
+
+app.post('/api/vote/set-member', (req, res) => {
+  const { zodiacKey, regId } = req.body;
+  if (!zodiacKey) return res.status(400).json({ success: false, message: 'zodiacKey required' });
+
+  if (!regId) {
+    // Clear member
+    delete voteState.members[zodiacKey];
+  } else {
+    const db = readData();
+    const reg = (db.registrations || []).find(r => r.id === regId);
+    if (reg) {
+      voteState.members[zodiacKey] = {
+        regId: reg.id,
+        displayName: reg.displayName,
+        imageUrl: reg.imageUrl || '',
+        zodiacKey: zodiacKey
+      };
+    }
+  }
+  writeVoteState(voteState);
+  io.emit('vote:members_update', { members: voteState.members });
+  io.to('admin-room').emit('vote:admin_state', getVoteAdminState());
+  res.json({ success: true });
+});
+
+// Admin Control REST endpoints (Reliable HTTP trigger + Socket broadcast)
+app.post('/api/vote/admin/reset', (req, res) => {
+  voteState.votes = {};
+  voteState.isLocked = false;
+  writeVoteState(voteState);
+  io.to('admin-room').emit('vote:update', { votes: {} });
+  io.to('admin-room').emit('vote:admin_state', getVoteAdminState());
+  io.emit('vote:reset');
+  console.log('[Vote Admin API] Round reset executed');
+  res.json({ success: true, message: 'Reset round successful' });
+});
+
+app.post('/api/vote/admin/relogin', (req, res) => {
+  voteState.reloginEpoch = Date.now();
+  writeVoteState(voteState);
+  io.emit('vote:relogin');
+  console.log('[Vote Admin API] Re-login all users executed');
+  res.json({ success: true, message: 'Re-login triggered' });
+});
+
+app.post('/api/vote/admin/toggle-lock', (req, res) => {
+  voteState.isLocked = !voteState.isLocked;
+  writeVoteState(voteState);
+  if (voteState.isLocked) {
+    io.emit('vote:locked');
+  } else {
+    io.emit('vote:unlocked');
+  }
+  io.to('admin-room').emit('vote:admin_state', getVoteAdminState());
+  console.log(`[Vote Admin API] Toggle lock: isLocked=${voteState.isLocked}`);
+  res.json({ success: true, isLocked: voteState.isLocked });
+});
+
+// Vote page routes
+app.get(['/12vtubervotesite', '/12vtubervotesite/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', '12vtubervotesite.html'));
+});
+
+app.get(['/setting12vote', '/setting12vote/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'setting12vote.html'));
+});
+
+// Socket.IO for vote system
+io.on('connection', (socket) => {
+  // Admin joins room for full live vote feeds
+  socket.on('admin:join', () => {
+    socket.join('admin-room');
+    socket.emit('vote:admin_state', getVoteAdminState());
+  });
+
+  // User casts vote (secretly sent to admin only)
+  socket.on('vote', (data) => {
+    if (voteState.isLocked) {
+      socket.emit('vote:locked');
+      return;
+    }
+    const { voterZodiac, targetZodiac } = data;
+    if (!voterZodiac || !targetZodiac) return;
+
+    voteState.votes[voterZodiac] = targetZodiac;
+    writeVoteState(voteState);
+
+    // Confirm to voter
+    socket.emit('vote:confirmed', { voterZodiac, targetZodiac });
+
+    // Send updated votes only to admin room
+    io.to('admin-room').emit('vote:update', { votes: voteState.votes });
+  });
+
+  // Admin: reset round
+  socket.on('admin:reset', () => {
+    voteState.votes = {};
+    voteState.isLocked = false;
+    writeVoteState(voteState);
+    io.to('admin-room').emit('vote:update', { votes: {} });
+    io.emit('vote:reset');
+  });
+
+  // Admin: toggle lock
+  socket.on('admin:toggleLock', () => {
+    voteState.isLocked = !voteState.isLocked;
+    writeVoteState(voteState);
+    if (voteState.isLocked) {
+      io.emit('vote:locked');
+    } else {
+      io.emit('vote:unlocked');
+    }
+  });
+
+  // Admin: re-login all users
+  socket.on('admin:relogin', () => {
+    io.emit('vote:relogin');
+  });
+});
+
+// Start Server (using httpServer for Socket.IO)
+httpServer.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`Server is running!`);
   console.log(`Landing:    http://localhost:${PORT}`);
   console.log(`12 Vtuber:  http://localhost:${PORT}/12vtubergame`);
   console.log(`Admin:      http://localhost:${PORT}/12vtubergame/adminpanel`);
+  console.log(`Vote:       http://localhost:${PORT}/12vtubervotesite`);
+  console.log(`Vote Admin: http://localhost:${PORT}/setting12vote`);
   console.log(`====================================================`);
 });

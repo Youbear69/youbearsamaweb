@@ -1,16 +1,86 @@
 <!doctype html>
 <html lang="th">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>yuubearsama.online</title>
-	<link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YUUBEARSAMA | Official Website</title>
+  <meta name="description" content="YUUBEARSAMA - เว็บไซต์หลัก อีเวนต์ที่กำลังจะมาถึง ศึก 12 วีทูบเบอร์ x easydonate" />
+  <meta property="og:title" content="YUUBEARSAMA" />
+  <meta property="og:image" content="/images/character.png" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-	<main class="card">
-		<h1 class="title">กำลังทำเว็บ</h1>
-		<p class="domain">yuubearsama.online</p>
-		<a class="btn" href="./12vtubergame/">สมัคร "ศึก 12 วีทูบเบอร์"</a>
-	</main>
+
+  <!-- ===== BACKGROUND (grain + glow อยู่ใน CSS) ===== -->
+  <div class="bg-glow" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <!-- ===== SOCIAL (มุมขวาบน) : แก้ลิงก์ที่ href ===== -->
+  <nav class="social" id="social-bar" aria-label="Social links">
+    <a id="social-youtube" href="https://www.youtube.com/@yuubearsama" target="_blank" rel="noopener" aria-label="YouTube">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z"/></svg>
+    </a>
+    <a id="social-x" href="https://x.com/yuubearsama" target="_blank" rel="noopener" aria-label="X (Twitter)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.2 2h3.4l-7.4 8.5L23 22h-6.8l-5.3-7-6.1 7H1.4l7.9-9.1L1 2h7l4.8 6.4L18.2 2zm-1.2 18h1.9L7.1 3.9H5.1L17 20z"/></svg>
+    </a>
+    <a id="social-easydonate" href="https://easydonate.app/yuubearsama" target="_blank" rel="noopener" aria-label="easydonate">
+      <img src="images/easydonate-symbol.svg" alt="" />
+    </a>
+  </nav>
+
+  <main class="page">
+
+    <!-- ===== HERO : ชื่อ + ตัวละคร =====
+         ทั้งหมดอยู่ใน SVG เดียว ตำแหน่งจึงตรงกันทุกขนาดจอ
+         - เปลี่ยนรูปตัวละคร: แก้ href="images/character.png" (มี 2 ที่ : ตัวรูป + mask)
+           ถ้าขนาดรูปเปลี่ยน ปรับ x / y / width / height ให้เท่ากันทั้ง 2 ที่
+         - เปลี่ยนชื่อ: แก้ข้อความใน <text> ทั้ง 2 อัน + <h1> -->
+    <header class="hero">
+      <h1 class="sr-only" id="hero-title">YUUBEARSAMA</h1>
+
+      <svg class="hero-art" id="hero-art" viewBox="0 0 1000 490" aria-hidden="true">
+        <defs>
+          <!-- mask = รูปร่างตัวละคร (ใช้ alpha ของรูป) -->
+          <mask id="char-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="490" style="mask-type:alpha">
+            <image href="images/character.png" x="280" y="30" width="441" height="460">
+              <animateTransform attributeName="transform" type="translate" values="0 0; 0 -12; 0 0"
+                keyTimes="0;0.5;1" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" dur="6s" repeatCount="indefinite" />
+            </image>
+          </mask>
+          <filter id="title-shadow" x="-10%" y="-30%" width="120%" height="180%">
+            <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".75" />
+          </filter>
+        </defs>
+
+        <!-- 1) ชื่อตัวใหญ่ (หลังตัวละคร) -->
+        <text class="title-back" x="500" y="190" text-anchor="middle" filter="url(#title-shadow)">YUUBEARSAMA</text>
+
+        <!-- 2) ตัวละคร (ลอยขึ้นลง) -->
+        <image class="title-char" href="images/character.png" x="280" y="30" width="441" height="460">
+          <animateTransform attributeName="transform" type="translate" values="0 0; 0 -12; 0 0"
+            keyTimes="0;0.5;1" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" dur="6s" repeatCount="indefinite" />
+        </image>
+
+        <!-- 3) ชื่อแบบขอบบาง ๆ (เหนือตัวละคร เห็นเฉพาะบนตัวละคร) -->
+        <text class="title-outline" x="500" y="190" text-anchor="middle" mask="url(#char-mask)">YUUBEARSAMA</text>
+      </svg>
+    </header>
+
+    <!-- ===== MAIN CARD (glassmorphism) ===== -->
+    <section class="card" id="event-card" aria-labelledby="event-heading">
+      <h2 class="card-title" id="event-heading">Up Coming Event :</h2>
+
+      <!-- แถวโลโก้อีเวนต์ : แก้ลิงก์/รูปได้ -->
+      <div class="event-logos">
+        <a id="event-12vtuber" href="https://yuubearsama.online/12vtubergame" aria-label="ศึก 12 วีทูบเบอร์">
+          <img src="images/logo-12.png" alt="ศึก 12 วีทูบเบอร์" />
+        </a>
+      </div>
+
+      <!-- ข้อความล่างการ์ด -->
+      <p class="card-more" id="more-text">More In Develop...</p>
+    </section>
+
+  </main>
 </body>
 </html>

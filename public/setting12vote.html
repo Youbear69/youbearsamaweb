@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Vote — ศึก 12 วีทูบเบอร์</title>
+  <meta name="description" content="แผงควบคุมระบบโหวต 12 VTuber ราศีสำหรับแอดมิน">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --admin-bg-card: rgba(22, 14, 45, 0.82);
+      --admin-border: rgba(147, 98, 248, 0.22);
+      --admin-primary: #a855f7;
+      --admin-cyan: #38bdf8;
+      --admin-amber: #fbbf24;
+      --admin-red: #ef4444;
+      --admin-green: #22c55e;
+    }
+
+    body {
+      font-family: 'Kanit', 'Layiji Mahaniyom V1.5', sans-serif !important;
+      min-height: 100vh;
+      color: #f1f0f8;
+      background-color: #070414;
+      overflow-x: hidden;
+    }
+
+    .admin-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 5.5rem 1.25rem 4rem 1.25rem;
+    }
+
+    /* Top Brand & Title */
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 1.2rem;
+    }
+
+    .admin-header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .admin-logo {
+      height: 54px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.4));
+    }
+
+    .admin-title-wrap h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .admin-title-wrap p {
+      font-size: 0.92rem;
+      color: #b7a9d6;
+    }
+
+    /* Main Grid Layout */
+    .admin-layout-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .admin-layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panels */
+    .admin-panel {
+      background: var(--admin-bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--admin-border);
+      border-radius: 20px;
+      padding: 1.6rem 1.8rem;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Controls Bar */
+    .admin-control-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .status-badge-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(30, 20, 60, 0.6);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: 12px;
+      padding: 10px 16px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .status-dot.active {
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+      animation: pulseGreen 2s infinite;
+    }
+    .status-dot.locked {
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulseRed 2s infinite;
+    }
+    @keyframes pulseRed {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .admin-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .admin-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-lock {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    }
+    .btn-lock:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+    }
+    .btn-lock.locked {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    }
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-relogin {
+      grid-column: span 2;
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #e9d5ff;
+    }
+    .btn-relogin:hover {
+      background: rgba(168, 85, 247, 0.3);
+      color: #ffffff;
+    }
+
+    /* Member Setup Row */
+    .member-config-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(30, 20, 60, 0.45);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 12px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+    .member-config-item:hover {
+      background: rgba(45, 28, 85, 0.65);
+      border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .member-zodiac-icon {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(168, 85, 247, 0.4));
+      flex-shrink: 0;
+    }
+
+    .member-zodiac-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #e9d5ff;
+      min-width: 58px;
+      flex-shrink: 0;
+    }
+
+    .member-select-custom {
+      flex: 1;
+      padding: 7px 12px;
+      background: rgba(20, 12, 40, 0.85);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 0.88rem;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+    .member-select-custom:focus {
+      border-color: #c084fc;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.3);
+    }
+    .member-select-custom option {
+      background: #191032;
+      color: #ffffff;
+    }
+
+    /* Tally and Live Results on Right */
+    .tally-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .tally-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .tally-card {
+      background: rgba(30, 20, 60, 0.5);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tally-card.has-votes {
+      border-color: rgba(251, 191, 36, 0.5);
+      background: rgba(50, 30, 80, 0.65);
+    }
+
+    .tally-icon {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .tally-info {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.2;
+    }
+
+    .tally-name {
+      font-size: 0.82rem;
+      color: #d8b4fe;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tally-count {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .tally-card.has-votes .tally-count {
+      color: #fbbf24;
+    }
+
+    /* Vote Detail List */
+    .vote-log-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(28, 18, 56, 0.5);
+      border: 1px solid rgba(139, 92, 246, 0.16);
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+    .vote-log-entry:hover {
+      background: rgba(40, 26, 80, 0.7);
+    }
+
+    .vote-log-actor {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+    .vote-log-actor.target {
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    .vote-log-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid rgba(168, 85, 247, 0.3);
+      background: #140d2a;
+      flex-shrink: 0;
+    }
+
+    .vote-log-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .vote-log-actor.voter .vote-log-name { color: #d8b4fe; }
+    .vote-log-actor.target .vote-log-name { color: #38bdf8; }
+
+    .vote-log-arrow {
+      color: #a855f7;
+      font-weight: 700;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .vote-self-indicator {
+      font-size: 0.65rem;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .empty-vote-log {
+      text-align: center;
+      padding: 2.5rem;
+      color: #8c7ea8;
+      font-size: 0.95rem;
+      background: rgba(20, 12, 40, 0.3);
+      border-radius: 12px;
+      border: 1px dashed rgba(139, 92, 246, 0.2);
+    }
+
+    /* Toast */
+    .vote-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(24, 15, 52, 0.95);
+      backdrop-filter: blur(16px);
+      color: #ffffff;
+      padding: 0.85rem 1.8rem;
+      border-radius: 9999px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+      z-index: 999;
+      opacity: 0;
+      transition: all 0.35s ease;
+      pointer-events: none;
+    }
+    .vote-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Moving Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Top Nav Bar -->
+  <header class="top-nav-bar">
+    <nav class="nav-pill-group">
+      <a href="https://yuubearsama.online/" class="nav-pill-link">Home</a>
+      <a href="/12vtubergame" class="nav-pill-link">ศึก 12 วีทูบเบอร์</a>
+      <a href="/12vtubervotesite" class="nav-pill-link" target="_blank">ไปยังหน้าโหวต (Vote Page) ↗</a>
+      <a href="/setting12vote" class="nav-pill-link active">Admin Vote</a>
+    </nav>
+  </header>
+
+  <main class="admin-container">
+    <div class="admin-header">
+      <div class="admin-header-left">
+        <a href="/12vtubergame">
+          <img src="/assets/images/12 v.png" alt="ศึก 12 วีทูบเบอร์" class="admin-logo">
+        </a>
+        <div class="admin-title-wrap">
+          <h1>⚙️ แผงควบคุมระบบโหวต (Admin Vote)</h1>
+          <p>ตั้งค่าตัวแทนแต่ละราศี, ล็อค/ปลดล็อคการโหวต, รีเซ็ตรอบ และดูคะแนนสด</p>
+        </div>
+      </div>
+      <div>
+        <a href="/12vtubervotesite" target="_blank" class="admin-btn" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); color:#ffffff; text-decoration: none;">
+          🌐 เปิดหน้าโหวตผู้เล่น (New Tab)
+        </a>
+      </div>
+    </div>
+
+    <div class="admin-layout-grid">
+      <!-- LEFT COLUMN: CONTROLS & MEMBERS -->
+      <div>
+        <div class="admin-panel">
+          <h2 class="panel-title">🎮 ควบคุมรอบการโหวต</h2>
+          
+          <div class="admin-control-bar">
+            <div class="status-badge-box">
+              <div class="status-indicator">
+                <span class="status-dot active" id="lockStatusDot"></span>
+                <span id="lockStatusLabel">สถานะ: เปิดรับโหวตอยู่ (Open)</span>
+              </div>
+            </div>
+
+            <div class="admin-actions">
+              <button type="button" class="admin-btn btn-lock" id="btnToggleLock" onclick="toggleLock()">
+                🔒 ล็อคการโหวต
+              </button>
+              <button type="button" class="admin-btn btn-reset" onclick="confirmResetRound()">
+                🔄 รีเซ็ตรอบโหวต
+              </button>
+              <button type="button" class="admin-btn btn-relogin" onclick="reloginAll()">
+                🔁 บังคับทุกคน Login ใหม่ (Re-Login All)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <h2 class="panel-title">👥 ตั้งค่าตัวแทน 12 ราศี</h2>
+          <p style="font-size:0.85rem; color:#9d8ec2; margin-bottom: 1rem;">เลือกผู้ลงทะเบียนที่ได้สิทธิ์แข่งในแต่ละราศี (ข้อมูลจะอัปเดตไปหน้าโหวตสดทันที)</p>
+          <div id="membersContainer">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: RESULTS & TALLY -->
+      <div>
+        <!-- Vote Tally Summary -->
+        <div class="admin-panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+            <h2 class="panel-title" style="margin-bottom:0;">📈 สรุปคะแนนโหวตแต่ละราศี (Tally)</h2>
+            <div style="font-size:0.9rem; color:#d8b4fe; font-weight:600;" id="totalVotesCountLabel">โหวตแล้ว 0 / 12 คน</div>
+          </div>
+          <div id="tallyGrid" class="tally-summary-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Detailed Match Log -->
+        <div class="admin-panel">
+          <h2 class="panel-title">🗳️ บันทึกการลงคะแนน (Live Vote Log)</h2>
+          <div id="voteLogContainer">
+            <!-- Rendered by JS -->
+          </div>
+          <div id="emptyLogMsg" class="empty-vote-log">
+            ยังไม่มีผู้ลงคะแนนโหวตในรอบนี้
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="vote-toast" id="toast"></div>
+
+  <script>
+    const socket = io();
+
+    let zodiacMeta = [];
+    let zodiacMembers = {};
+    let allVotes = {};
+    let isLocked = false;
+    let allRegistrations = [];
+
+    const ZODIAC_ICONS_PATH = '/assets/images/white/';
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function getDefaultAvatar(seed) {
+      return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1c1530`;
+    }
+
+    async function init() {
+      try {
+        socket.emit('admin:join');
+        const [stateRes, regRes] = await Promise.all([
+          fetch('/api/vote/state?role=admin'),
+          fetch('/api/vote/registrations')
+        ]);
+        const stateData = await stateRes.json();
+        const regData = await regRes.json();
+
+        if (stateData.success) {
+          zodiacMeta = stateData.zodiacMeta || [];
+          zodiacMembers = stateData.members || {};
+          allVotes = stateData.votes || {};
+          isLocked = stateData.isLocked || false;
+        }
+
+        if (regData.success) {
+          allRegistrations = regData.data || [];
+        }
+
+        renderMembers();
+        renderTally();
+        renderVoteLog();
+        updateLockUI();
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    }
+
+    function renderMembers() {
+      const container = document.getElementById('membersContainer');
+      container.innerHTML = '';
+
+      zodiacMeta.forEach(z => {
+        const member = zodiacMembers[z.key];
+        const currentRegId = member ? member.regId || '' : '';
+
+        // Registrations for this zodiac (or all registrations sorted)
+        const zodiacRegs = allRegistrations.filter(r => r.zodiacKey === z.key);
+        // Also allow other registrants if needed
+        const otherRegs = allRegistrations.filter(r => r.zodiacKey !== z.key);
+
+        const row = document.createElement('div');
+        row.className = 'member-config-item';
+
+        let optionsHTML = `<option value="">— ยังไม่เลือกตัวแทน —</option>`;
+        if (zodiacRegs.length > 0) {
+          optionsHTML += `<optgroup label="ตรงราศี${z.th}">`;
+          zodiacRegs.forEach(r => {
+            const sel = (currentRegId === r.id) ? 'selected' : '';
+            optionsHTML += `<option value="${r.id}" ${sel}>${r.displayName} (${r.xAccount || ''})</option>`;
+          });
+          optionsHTML += `</optgroup>`;
+        }
+
+        if (otherRegs.length > 0) {
+          optionsHTML += `<optgroup label="ผู้สมัครราศีอื่น">`;
+          otherRegs.forEach(r => {
+            const sel = (currentRegId === r.id) ? 'selected' : '';
+            optionsHTML += `<option value="${r.id}" ${sel}>${r.displayName} (${r.zodiacNameTh || ''})</option>`;
+          });
+          optionsHTML += `</optgroup>`;
+        }
+
+        row.innerHTML = `
+          <img class="member-zodiac-icon" src="${ZODIAC_ICONS_PATH}${z.icon}" alt="${z.th}">
+          <span class="member-zodiac-title">ราศี${z.th}</span>
+          <select class="member-select-custom" data-zodiac="${z.key}" onchange="changeMember(this)">
+            ${optionsHTML}
+          </select>
+        `;
+
+        container.appendChild(row);
+      });
+    }
+
+    function changeMember(selectEl) {
+      const zodiacKey = selectEl.dataset.zodiac;
+      const regId = selectEl.value;
+
+      fetch('/api/vote/set-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zodiacKey, regId })
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          const z = zodiacMeta.find(item => item.key === zodiacKey);
+          showToast(`อัปเดตสมาชิก ราศี${z ? z.th : zodiacKey} เรียบร้อยแล้ว`);
+        }
+      });
+    }
+
+    function renderTally() {
+      const grid = document.getElementById('tallyGrid');
+      grid.innerHTML = '';
+
+      // Count votes per target
+      const counts = {};
+      zodiacMeta.forEach(z => { counts[z.key] = 0; });
+      Object.values(allVotes).forEach(target => {
+        if (counts[target] !== undefined) counts[target]++;
+        else counts[target] = 1;
+      });
+
+      const totalVoted = Object.keys(allVotes).length;
+      document.getElementById('totalVotesCountLabel').textContent = `โหวตแล้ว ${totalVoted} / 12 คน`;
+
+      zodiacMeta.forEach(z => {
+        const count = counts[z.key] || 0;
+        const member = zodiacMembers[z.key];
+        const memberName = member ? member.displayName : `(ราศี${z.th})`;
+
+        const card = document.createElement('div');
+        card.className = 'tally-card' + (count > 0 ? ' has-votes' : '');
+        card.innerHTML = `
+          <img class="tally-icon" src="${ZODIAC_ICONS_PATH}${z.icon}" alt="${z.th}">
+          <div class="tally-info">
+            <div class="tally-name">${z.th} : ${memberName}</div>
+            <div class="tally-count">${count} <span style="font-size:0.75rem; font-weight:400; color:#b3a2d1;">คะแนน</span></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderVoteLog() {
+      const container = document.getElementById('voteLogContainer');
+      const emptyMsg = document.getElementById('emptyLogMsg');
+      container.innerHTML = '';
+
+      const entries = Object.entries(allVotes);
+      if (entries.length === 0) {
+        emptyMsg.style.display = 'block';
+        return;
+      }
+      emptyMsg.style.display = 'none';
+
+      entries.forEach(([voterKey, targetKey]) => {
+        const voterMeta = zodiacMeta.find(z => z.key === voterKey);
+        const targetMeta = zodiacMeta.find(z => z.key === targetKey);
+        const voterMember = zodiacMembers[voterKey];
+        const targetMember = zodiacMembers[targetKey];
+
+        const isSelfVote = (voterKey === targetKey);
+
+        const voterAvatar = (voterMember && voterMember.imageUrl) ? voterMember.imageUrl : getDefaultAvatar(voterKey);
+        const targetAvatar = (targetMember && targetMember.imageUrl) ? targetMember.imageUrl : getDefaultAvatar(targetKey);
+
+        const voterName = voterMember ? voterMember.displayName : `ราศี${voterMeta?.th || voterKey}`;
+        const targetName = targetMember ? targetMember.displayName : `ราศี${targetMeta?.th || targetKey}`;
+
+        const entry = document.createElement('div');
+        entry.className = 'vote-log-entry';
+        entry.innerHTML = `
+          <div class="vote-log-actor voter">
+            <img class="vote-log-avatar" src="${voterAvatar}" alt="" onerror="this.src='${getDefaultAvatar(voterKey)}'">
+            <div class="vote-log-name">${voterName} <span style="font-size:0.78rem; color:#a494c7;">(${voterMeta?.th || voterKey})</span></div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span class="vote-log-arrow">➔</span>
+            ${isSelfVote ? '<span class="vote-self-indicator">โหวตให้ตัวเอง</span>' : ''}
+          </div>
+
+          <div class="vote-log-actor target">
+            <div class="vote-log-name">${targetName} <span style="font-size:0.78rem; color:#a494c7;">(${targetMeta?.th || targetKey})</span></div>
+            <img class="vote-log-avatar" src="${targetAvatar}" alt="" onerror="this.src='${getDefaultAvatar(targetKey)}'">
+          </div>
+        `;
+        container.appendChild(entry);
+      });
+    }
+
+    function updateLockUI() {
+      const dot = document.getElementById('lockStatusDot');
+      const label = document.getElementById('lockStatusLabel');
+      const btn = document.getElementById('btnToggleLock');
+
+      if (isLocked) {
+        dot.className = 'status-dot locked';
+        label.textContent = 'สถานะ: 🔒 ล็อคการโหวตแล้ว (Locked)';
+        btn.innerHTML = '🔓 ปลดล็อคการโหวต';
+        btn.classList.add('locked');
+      } else {
+        dot.className = 'status-dot active';
+        label.textContent = 'สถานะ: 🟢 เปิดรับโหวตอยู่ (Open)';
+        btn.innerHTML = '🔒 ล็อคการโหวต';
+        btn.classList.remove('locked');
+      }
+    }
+
+    async function toggleLock() {
+      try {
+        isLocked = !isLocked;
+        updateLockUI();
+        socket.emit('admin:toggleLock');
+        const res = await fetch('/api/vote/admin/toggle-lock', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          isLocked = data.isLocked;
+          updateLockUI();
+          showToast(isLocked ? '🔒 ล็อคการโหวตแล้ว' : '🔓 ปลดล็อคการโหวตแล้ว');
+        }
+      } catch (err) {
+        console.error('Toggle lock error:', err);
+      }
+    }
+
+    async function confirmResetRound() {
+      try {
+        allVotes = {};
+        renderTally();
+        renderVoteLog();
+        showToast('🔄 กำลังรีเซ็ตรอบโหวต...');
+
+        socket.emit('admin:reset');
+        const res = await fetch('/api/vote/admin/reset', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อยแล้ว');
+        }
+      } catch (err) {
+        console.error('Reset round error:', err);
+        showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อยแล้ว');
+      }
+    }
+
+    async function reloginAll() {
+      try {
+        showToast('🔁 กำลังส่งคำสั่ง Re-Login...');
+        socket.emit('admin:relogin');
+        const res = await fetch('/api/vote/admin/relogin', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🔁 สั่งให้ผู้เล่นทุกคน Login ใหม่เรียบร้อยแล้ว');
+        }
+      } catch (err) {
+        console.error('Relogin error:', err);
+        showToast('🔁 สั่งให้ผู้เล่นทุกคน Login ใหม่เรียบร้อยแล้ว');
+      }
+    }
+
+    // Socket events
+    socket.on('vote:admin_state', (data) => {
+      zodiacMembers = data.members || zodiacMembers;
+      allVotes = data.votes || {};
+      isLocked = data.isLocked || false;
+      renderTally();
+      renderVoteLog();
+      updateLockUI();
+    });
+
+    socket.on('vote:state', (data) => {
+      zodiacMembers = data.members || zodiacMembers;
+      allVotes = data.votes || {};
+      isLocked = data.isLocked || false;
+      renderTally();
+      renderVoteLog();
+      updateLockUI();
+    });
+
+    socket.on('vote:update', (data) => {
+      allVotes = data.votes || allVotes;
+      renderTally();
+      renderVoteLog();
+    });
+
+    socket.on('vote:locked', () => {
+      isLocked = true;
+      updateLockUI();
+      showToast('🔒 ล็อคการโหวตแล้ว');
+    });
+
+    socket.on('vote:unlocked', () => {
+      isLocked = false;
+      updateLockUI();
+      showToast('🔓 ปลดล็อคการโหวตแล้ว');
+    });
+
+    socket.on('vote:reset', () => {
+      allVotes = {};
+      isLocked = false;
+      renderTally();
+      renderVoteLog();
+      updateLockUI();
+      showToast('🔄 รีเซ็ตรอบโหวตเรียบร้อย');
+    });
+
+    socket.on('vote:members_update', (data) => {
+      zodiacMembers = data.members || zodiacMembers;
+      renderMembers();
+      renderTally();
+      renderVoteLog();
+    });
+
+    init();
+  </script>
+</body>
+</html>
