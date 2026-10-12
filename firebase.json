@@ -44,52 +44,12 @@
         "destination": "/minigame.html"
       },
       {
-        "source": "/12vtubergame/vote",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/12vtubergame/vote/",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
         "source": "/12vtubergame/votesite",
         "destination": "/12vtubervotesite.html"
       },
       {
         "source": "/12vtubergame/votesite/",
         "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/12vtubergame/12vtubervotesite",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/12vtubergame/12vtubervotesite/",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/12vtubergame/setting",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/12vtubergame/setting/",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/12vtubergame/settings",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/12vtubergame/settings/",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/12vtubergame/settingvote",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/12vtubergame/settingvote/",
-        "destination": "/setting12vote.html"
       },
       {
         "source": "/12vtubergame/setting12vote",
@@ -116,52 +76,12 @@
         "destination": "/12vtubergame.html"
       },
       {
-        "source": "/vote",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/vote/",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/votesite",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/votesite/",
-        "destination": "/12vtubervotesite.html"
-      },
-      {
         "source": "/12vtubervotesite",
         "destination": "/12vtubervotesite.html"
       },
       {
         "source": "/12vtubervotesite/",
         "destination": "/12vtubervotesite.html"
-      },
-      {
-        "source": "/setting",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/setting/",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/settings",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/settings/",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/settingvote",
-        "destination": "/setting12vote.html"
-      },
-      {
-        "source": "/settingvote/",
-        "destination": "/setting12vote.html"
       },
       {
         "source": "/setting12vote",
