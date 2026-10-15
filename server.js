@@ -1474,6 +1474,10 @@ app.get(['/12vtubergame/minigame', '/12vtubergame/minigame/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'minigame.html'));
 });
 
+app.get(['/12vtubergame/bonus12', '/12vtubergame/bonus12/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', '12vtubergame', 'bonus12', 'index.html'));
+});
+
 app.get(['/nxzawpguesser', '/nxzawpguesser/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'nxzawpguesser.html'));
 });

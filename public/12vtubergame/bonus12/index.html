@@ -1,0 +1,507 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonus 12</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #060310;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Cosmic Background from 12vtuber */
+    .cosmic-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: 
+        radial-gradient(circle at 50% 15%, rgba(124, 58, 237, 0.42) 0%, transparent 65%),
+        radial-gradient(circle at 10% 85%, rgba(59, 130, 246, 0.4) 0%, transparent 60%),
+        radial-gradient(circle at 90% 80%, rgba(147, 51, 234, 0.45) 0%, transparent 55%),
+        radial-gradient(circle at 50% 90%, rgba(6, 182, 212, 0.25) 0%, transparent 50%),
+        linear-gradient(180deg, #070412 0%, #0d0722 50%, #060310 100%);
+    }
+
+    .cosmic-orb-1 {
+      position: absolute;
+      top: -12%;
+      left: 25%;
+      width: 70vw;
+      height: 70vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(59, 130, 246, 0.15) 50%, transparent 70%);
+      filter: blur(50px);
+      animation: floatOrb1 18s ease-in-out infinite alternate;
+    }
+
+    .cosmic-orb-2 {
+      position: absolute;
+      bottom: -15%;
+      left: -10%;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.38) 0%, rgba(14, 165, 233, 0.15) 50%, transparent 70%);
+      filter: blur(55px);
+      animation: floatOrb2 22s ease-in-out infinite alternate;
+    }
+
+    .cosmic-orb-3 {
+      position: absolute;
+      bottom: -10%;
+      right: -5%;
+      width: 55vw;
+      height: 55vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.32) 0%, rgba(30, 58, 138, 0.2) 50%, transparent 70%);
+      filter: blur(50px);
+      animation: floatOrb3 20s ease-in-out infinite alternate;
+    }
+
+    .cosmic-stars {
+      position: absolute;
+      inset: -50px;
+      background-image:
+        radial-gradient(1.5px 1.5px at 15% 20%, #ffffff 100%, transparent),
+        radial-gradient(1.2px 1.2px at 35% 45%, rgba(255, 255, 255, 0.8) 100%, transparent),
+        radial-gradient(2.2px 2.2px at 75% 15%, #ffd166 100%, transparent),
+        radial-gradient(1.8px 1.8px at 85% 65%, #c77dff 100%, transparent),
+        radial-gradient(1.5px 1.5px at 50% 80%, rgba(255, 255, 255, 0.9) 100%, transparent),
+        radial-gradient(1.2px 1.2px at 20% 90%, rgba(255, 255, 255, 0.6) 100%, transparent),
+        radial-gradient(1.8px 1.8px at 60% 30%, rgba(255, 255, 255, 0.8) 100%, transparent),
+        radial-gradient(2.5px 2.5px at 90% 40%, rgba(255, 200, 80, 0.9) 100%, transparent);
+      background-repeat: repeat;
+      background-size: 360px 360px;
+      animation: driftStars 60s linear infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes floatOrb1 {
+      0% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(60px, 40px) scale(1.15); }
+      100% { transform: translate(-40px, 20px) scale(0.95); }
+    }
+
+    @keyframes floatOrb2 {
+      0% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(40px, -50px) scale(1.1); }
+      100% { transform: translate(-30px, 30px) scale(0.9); }
+    }
+
+    @keyframes floatOrb3 {
+      0% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(-50px, -40px) scale(1.2); }
+      100% { transform: translate(30px, 20px) scale(1); }
+    }
+
+    @keyframes driftStars {
+      0% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-25px) rotate(1deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    /* Board Area */
+    :root {
+      /* Dynamic size that fits comfortably on any screen */
+      --plate-size: min(150px, 14vw, 22vh);
+      --gap: min(20px, 1.8vw);
+      /* Ratio 444 / 500 = 88.8% */
+      --bonus-ratio: 0.888;
+    }
+
+    .board-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--gap);
+    }
+
+    .plate-row {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--gap);
+      /* Default z-index base */
+      z-index: 10;
+    }
+
+    /* Plate Slot */
+    .plate-slot {
+      position: relative;
+      width: var(--plate-size);
+      height: var(--plate-size);
+      cursor: pointer;
+      /* Default slot z-index base */
+      z-index: 2;
+    }
+
+    /* Plate Card (Front) - 500x500 scale */
+    .plate-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      z-index: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .plate-slot:hover .plate-img {
+      transform: scale(1.03);
+    }
+
+    /* Bonus Card (Behind) - 444x444 scale (88.8% of plate) */
+    .bonus-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: calc(100% * var(--bonus-ratio));
+      height: calc(100% * var(--bonus-ratio));
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.75));
+      /* Initial state: completely hidden behind plate */
+      z-index: 1;
+      opacity: 0;
+      transform: translateX(0) scale(0.95);
+      /* Faster & crisper animation transition */
+      transition: transform 0.25s cubic-bezier(0.25, 1.15, 0.5, 1), opacity 0.15s ease;
+    }
+
+    /* State 1: Revealed - slides out to the right */
+    .plate-slot.revealed .bonus-img {
+      opacity: 1;
+      z-index: 5;
+      /* Slide completely outside to the right + margin */
+      transform: translateX(calc(var(--plate-size) + min(16px, 1.5vw))) scale(1);
+    }
+
+    /* State 2: Covered - bonus moves to top-left of plate, overlapping it */
+    .plate-slot.covered .bonus-img {
+      opacity: 1;
+      z-index: 8;
+      /* Placed directly at top: 0, left: 0 so bottom-right of plate shows (as in Image 2) */
+      transform: translateX(0) translateY(0) scale(1);
+    }
+
+    /* Controls Panel - Bottom Right */
+    .controls-panel {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .ctrl-btn {
+      appearance: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 30px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ctrl-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    .ctrl-btn:active {
+      transform: translateY(1px) scale(0.97);
+    }
+
+    .btn-random {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border: 1px solid rgba(167, 139, 250, 0.4);
+    }
+    .btn-random:hover {
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-showall {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .btn-showall:hover {
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+    }
+    .btn-reset:hover {
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    }
+
+    .ctrl-btn svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 12vtuber Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="cosmic-orb-1"></div>
+    <div class="cosmic-orb-2"></div>
+    <div class="cosmic-orb-3"></div>
+    <div class="cosmic-stars"></div>
+  </div>
+
+  <!-- Board with 3 rows: 1-5, 6-9, 10-12 -->
+  <div class="board-container" id="board">
+    <div class="plate-row" id="row-1"></div>
+    <div class="plate-row" id="row-2"></div>
+    <div class="plate-row" id="row-3"></div>
+  </div>
+
+  <!-- Bottom-right controls: Random, Reset, Show All -->
+  <div class="controls-panel">
+    <button class="ctrl-btn btn-random" id="btnRandom" onclick="handleRandom()">
+      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+      Random
+    </button>
+    <button class="ctrl-btn btn-showall" id="btnShowAll" onclick="handleShowAll()">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Show All
+    </button>
+    <button class="ctrl-btn btn-reset" id="btnReset" onclick="handleReset()">
+      <svg viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+      Reset
+    </button>
+  </div>
+
+  <script>
+    const TOTAL = 12;
+    const IMG_DIR = '/assets/bonus12/';
+
+    // Row splits according to Image 1: Row 1 = 1-5, Row 2 = 6-9, Row 3 = 10-12
+    const ROWS = [
+      [1, 2, 3, 4, 5],
+      [6, 7, 8, 9],
+      [10, 11, 12]
+    ];
+
+    // State per slot (0 to 11): 0 = 'idle', 1 = 'revealed' (slid right), 2 = 'covered' (on plate)
+    let slotStates = new Array(TOTAL).fill(0);
+
+    // Which bonus (+1 to +12) is behind each plate (0-indexed bonus ID)
+    let bonusMapping = [];
+
+    // Global Z-index counter to always float the latest active/opened plate on top
+    let activeZCounter = 100;
+
+    // Elevate a slot and its row to the very top layer
+    function elevatePlateToTop(slotIdx) {
+      activeZCounter += 2;
+      const slot = document.getElementById(`slot-${slotIdx}`);
+      if (!slot) return;
+      const parentRow = slot.closest('.plate-row');
+      if (parentRow) {
+        parentRow.style.zIndex = activeZCounter;
+      }
+      slot.style.zIndex = activeZCounter + 1;
+    }
+
+    // Shuffle bonus +1..+12
+    function shuffleBonuses() {
+      const arr = Array.from({ length: TOTAL }, (_, i) => i + 1);
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      bonusMapping = arr;
+    }
+
+    // Build the board DOM
+    function initBoard() {
+      ROWS.forEach((rowIndices, rowIdx) => {
+        const rowEl = document.getElementById(`row-${rowIdx + 1}`);
+        rowEl.innerHTML = '';
+        rowIndices.forEach(plateNum => {
+          const slotIdx = plateNum - 1;
+
+          const slot = document.createElement('div');
+          slot.className = 'plate-slot';
+          slot.id = `slot-${slotIdx}`;
+          slot.onclick = () => onPlateClick(slotIdx);
+
+          // Plate image (front)
+          const plateImg = document.createElement('img');
+          plateImg.className = 'plate-img';
+          plateImg.src = `${IMG_DIR}plate ${plateNum}.png`;
+          plateImg.alt = `Plate ${plateNum}`;
+          plateImg.draggable = false;
+
+          // Bonus image (behind, 444x444 scale)
+          const bonusImg = document.createElement('img');
+          bonusImg.className = 'bonus-img';
+          bonusImg.id = `bonus-img-${slotIdx}`;
+          bonusImg.src = `${IMG_DIR}+${bonusMapping[slotIdx]}.png`;
+          bonusImg.alt = `Bonus +${bonusMapping[slotIdx]}`;
+          bonusImg.draggable = false;
+
+          slot.appendChild(plateImg);
+          slot.appendChild(bonusImg);
+          rowEl.appendChild(slot);
+        });
+      });
+    }
+
+    // Plate click handler
+    function onPlateClick(slotIdx) {
+      const slot = document.getElementById(`slot-${slotIdx}`);
+      const curr = slotStates[slotIdx];
+
+      // Elevate to top whenever interacted, so it floats over any other card!
+      elevatePlateToTop(slotIdx);
+
+      if (curr === 0) {
+        // Step 1: Slide out to the right
+        slotStates[slotIdx] = 1;
+        slot.classList.remove('covered');
+        slot.classList.add('revealed');
+      } else if (curr === 1) {
+        // Step 2: Move back to cover the plate
+        slotStates[slotIdx] = 2;
+        slot.classList.remove('revealed');
+        slot.classList.add('covered');
+      }
+    }
+
+    // Random: Reshuffle bonus numbers behind the plates without opening them
+    function handleRandom() {
+      shuffleBonuses();
+      // Update image source for all bonuses
+      for (let i = 0; i < TOTAL; i++) {
+        const bImg = document.getElementById(`bonus-img-${i}`);
+        if (bImg) {
+          bImg.src = `${IMG_DIR}+${bonusMapping[i]}.png`;
+        }
+      }
+      // Quick button spin visual
+      const btn = document.getElementById('btnRandom');
+      btn.style.transform = 'scale(0.92) rotate(15deg)';
+      setTimeout(() => { btn.style.transform = ''; }, 180);
+    }
+
+    // Reset: Set all plates back to idle, reset z-indexes, and reshuffle
+    function handleReset() {
+      isAnimatingAll = false;
+      slotStates.fill(0);
+      activeZCounter = 100;
+      shuffleBonuses();
+
+      for (let i = 1; i <= 3; i++) {
+        const rowEl = document.getElementById(`row-${i}`);
+        if (rowEl) rowEl.style.zIndex = '';
+      }
+
+      for (let i = 0; i < TOTAL; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (slot) {
+          slot.classList.remove('revealed', 'covered');
+          slot.style.zIndex = '';
+        }
+        const bImg = document.getElementById(`bonus-img-${i}`);
+        if (bImg) {
+          bImg.src = `${IMG_DIR}+${bonusMapping[i]}.png`;
+        }
+      }
+    }
+
+    // Show All: Fast & smooth sequential animation through all 12 plates
+    let isAnimatingAll = false;
+    async function handleShowAll() {
+      if (isAnimatingAll) return;
+      isAnimatingAll = true;
+
+      // Sequential fast animation through all 12 plates
+      for (let i = 0; i < TOTAL; i++) {
+        if (!isAnimatingAll) break;
+
+        const slot = document.getElementById(`slot-${i}`);
+        if (!slot) continue;
+
+        // Bring current slot & row to the front
+        elevatePlateToTop(i);
+
+        // If not yet revealed, step 1: slide right
+        if (slotStates[i] === 0) {
+          slotStates[i] = 1;
+          slot.classList.remove('covered');
+          slot.classList.add('revealed');
+          await wait(120); // Fast wait
+        }
+
+        // If currently revealed, step 2: move to cover plate
+        if (slotStates[i] === 1) {
+          slotStates[i] = 2;
+          slot.classList.remove('revealed');
+          slot.classList.add('covered');
+          await wait(100); // Fast wait
+        }
+      }
+
+      isAnimatingAll = false;
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Initialize on load
+    shuffleBonuses();
+    initBoard();
+  </script>
+</body>
+</html>
