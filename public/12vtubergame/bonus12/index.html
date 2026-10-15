@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -122,10 +122,8 @@
 
     /* Board Area */
     :root {
-      /* Dynamic size that fits comfortably on any screen */
       --plate-size: min(150px, 14vw, 22vh);
       --gap: min(20px, 1.8vw);
-      /* Ratio 444 / 500 = 88.8% */
       --bonus-ratio: 0.888;
     }
 
@@ -136,6 +134,10 @@
       flex-direction: column;
       align-items: center;
       gap: var(--gap);
+      transform-origin: center center;
+      /* Smooth zoom & pan transition */
+      transition: transform 0.38s cubic-bezier(0.2, 0.85, 0.25, 1);
+      will-change: transform;
     }
 
     .plate-row {
@@ -144,7 +146,6 @@
       justify-content: center;
       align-items: center;
       gap: var(--gap);
-      /* Default z-index base */
       z-index: 10;
     }
 
@@ -154,11 +155,11 @@
       width: var(--plate-size);
       height: var(--plate-size);
       cursor: pointer;
-      /* Default slot z-index base */
       z-index: 2;
+      transition: outline 0.15s ease;
     }
 
-    /* Plate Card (Front) - 500x500 scale */
+    /* Plate Card (Front) - 500x500 scale - Stays in FRONT (z-index: 10) */
     .plate-img {
       position: absolute;
       top: 0;
@@ -167,7 +168,7 @@
       height: 100%;
       object-fit: contain;
       display: block;
-      z-index: 2;
+      z-index: 10;
       pointer-events: none;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
       transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -177,7 +178,7 @@
       transform: scale(1.03);
     }
 
-    /* Bonus Card (Behind) - 444x444 scale (88.8% of plate) */
+    /* Bonus Card (Behind) - 444x444 scale (88.8% of plate) - Strictly BEHIND */
     .bonus-img {
       position: absolute;
       top: 0;
@@ -188,27 +189,27 @@
       display: block;
       pointer-events: none;
       filter: drop-shadow(0 8px 18px rgba(0,0,0,0.75));
-      /* Initial state: completely hidden behind plate */
-      z-index: 1;
+      /* Initial state: completely hidden and behind front plate */
+      z-index: 2;
       opacity: 0;
+      visibility: hidden;
       transform: translateX(0) scale(0.95);
-      /* Faster & crisper animation transition */
-      transition: transform 0.25s cubic-bezier(0.25, 1.15, 0.5, 1), opacity 0.15s ease;
+      transition: transform 0.25s cubic-bezier(0.25, 1.15, 0.5, 1), opacity 0.15s ease, visibility 0.15s;
     }
 
-    /* State 1: Revealed - slides out to the right */
+    /* State 1: Revealed - slides out to the right (behind or alongside) */
     .plate-slot.revealed .bonus-img {
       opacity: 1;
-      z-index: 5;
-      /* Slide completely outside to the right + margin */
+      visibility: visible;
+      z-index: 2;
       transform: translateX(calc(var(--plate-size) + min(16px, 1.5vw))) scale(1);
     }
 
-    /* State 2: Covered - bonus moves to top-left of plate, overlapping it */
+    /* State 2: Covered - bonus moves to top-left of plate, overlapping it IN FRONT */
     .plate-slot.covered .bonus-img {
       opacity: 1;
-      z-index: 8;
-      /* Placed directly at top: 0, left: 0 so bottom-right of plate shows (as in Image 2) */
+      visibility: visible;
+      z-index: 20;
       transform: translateX(0) translateY(0) scale(1);
     }
 
@@ -287,7 +288,7 @@
     }
   </style>
 </head>
-<body>
+<body id="pageBody">
 
   <!-- 12vtuber Cosmic Background -->
   <div class="cosmic-bg">
@@ -340,6 +341,12 @@
     // Global Z-index counter to always float the latest active/opened plate on top
     let activeZCounter = 100;
 
+    // Zoom state
+    let zoomedSlotIdx = null;     // null = zoomed out, or 0..11
+    let hoveredSlotIdx = null;    // currently hovered slot
+    let lastClickedSlotIdx = 0;   // last clicked slot (default 0)
+    const ZOOM_SCALE = 2.35;
+
     // Elevate a slot and its row to the very top layer
     function elevatePlateToTop(slotIdx) {
       activeZCounter += 2;
@@ -350,6 +357,61 @@
         parentRow.style.zIndex = activeZCounter;
       }
       slot.style.zIndex = activeZCounter + 1;
+    }
+
+    // Zoom into a specific plate slot, or zoom out
+    function zoomToSlot(slotIdx) {
+      const board = document.getElementById('board');
+      const slot = document.getElementById(`slot-${slotIdx}`);
+      if (!board || !slot) return;
+
+      // Bring to top
+      elevatePlateToTop(slotIdx);
+
+      // Calculate relative position inside the unscaled board
+      let el = slot;
+      let slotX = 0;
+      let slotY = 0;
+      while (el && el !== board) {
+        slotX += el.offsetLeft;
+        slotY += el.offsetTop;
+        el = el.offsetParent;
+      }
+
+      const slotCenterX = slotX + slot.offsetWidth / 2;
+      const slotCenterY = slotY + slot.offsetHeight / 2;
+      const boardCenterX = board.offsetWidth / 2;
+      const boardCenterY = board.offsetHeight / 2;
+
+      // Distance from board center to slot center
+      let dx = slotCenterX - boardCenterX;
+      let dy = slotCenterY - boardCenterY;
+
+      // If bonus is revealed (slid to the right), shift center slightly to the right to frame both plate & bonus
+      if (slotStates[slotIdx] === 1) {
+        dx += slot.offsetWidth * 0.45;
+      }
+
+      const tx = -dx * ZOOM_SCALE;
+      const ty = -dy * ZOOM_SCALE;
+
+      board.style.transform = `translate(${tx}px, ${ty}px) scale(${ZOOM_SCALE})`;
+      zoomedSlotIdx = slotIdx;
+    }
+
+    function zoomOut() {
+      const board = document.getElementById('board');
+      if (!board) return;
+      board.style.transform = 'translate(0px, 0px) scale(1)';
+      zoomedSlotIdx = null;
+    }
+
+    function toggleZoom(slotIdx) {
+      if (zoomedSlotIdx === slotIdx) {
+        zoomOut();
+      } else {
+        zoomToSlot(slotIdx);
+      }
     }
 
     // Shuffle bonus +1..+12
@@ -373,7 +435,10 @@
           const slot = document.createElement('div');
           slot.className = 'plate-slot';
           slot.id = `slot-${slotIdx}`;
-          slot.onclick = () => onPlateClick(slotIdx);
+          
+          slot.onclick = (e) => onPlateClick(slotIdx, e);
+          slot.onmouseenter = () => { hoveredSlotIdx = slotIdx; };
+          slot.onmouseleave = () => { if (hoveredSlotIdx === slotIdx) hoveredSlotIdx = null; };
 
           // Plate image (front)
           const plateImg = document.createElement('img');
@@ -398,7 +463,15 @@
     }
 
     // Plate click handler
-    function onPlateClick(slotIdx) {
+    function onPlateClick(slotIdx, event) {
+      lastClickedSlotIdx = slotIdx;
+
+      // If Shift key is held while clicking plate, toggle zoom on that plate!
+      if (event && event.shiftKey) {
+        toggleZoom(slotIdx);
+        return;
+      }
+
       const slot = document.getElementById(`slot-${slotIdx}`);
       const curr = slotStates[slotIdx];
 
@@ -416,27 +489,52 @@
         slot.classList.remove('revealed');
         slot.classList.add('covered');
       }
+
+      // If we are currently zoomed into this slot, adjust zoom framing for the newly revealed bonus
+      if (zoomedSlotIdx === slotIdx) {
+        zoomToSlot(slotIdx);
+      }
     }
+
+    // Keyboard Shift listener to toggle zoom in/out to current plate
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Shift') {
+        // Target: hovered plate, or last clicked plate, or currently zoomed plate
+        const targetIdx = hoveredSlotIdx !== null 
+          ? hoveredSlotIdx 
+          : (zoomedSlotIdx !== null ? zoomedSlotIdx : lastClickedSlotIdx);
+
+        toggleZoom(targetIdx);
+      } else if (e.key === 'Escape') {
+        zoomOut();
+      }
+    });
+
+    // Clicking anywhere outside the board or on empty space zooms out
+    document.addEventListener('click', (e) => {
+      if (zoomedSlotIdx !== null && !e.target.closest('.plate-slot') && !e.target.closest('.controls-panel')) {
+        zoomOut();
+      }
+    });
 
     // Random: Reshuffle bonus numbers behind the plates without opening them
     function handleRandom() {
       shuffleBonuses();
-      // Update image source for all bonuses
       for (let i = 0; i < TOTAL; i++) {
         const bImg = document.getElementById(`bonus-img-${i}`);
         if (bImg) {
           bImg.src = `${IMG_DIR}+${bonusMapping[i]}.png`;
         }
       }
-      // Quick button spin visual
       const btn = document.getElementById('btnRandom');
       btn.style.transform = 'scale(0.92) rotate(15deg)';
       setTimeout(() => { btn.style.transform = ''; }, 180);
     }
 
-    // Reset: Set all plates back to idle, reset z-indexes, and reshuffle
+    // Reset: Set all plates back to idle, reset z-indexes, reset zoom, and reshuffle
     function handleReset() {
       isAnimatingAll = false;
+      zoomOut();
       slotStates.fill(0);
       activeZCounter = 100;
       shuffleBonuses();
@@ -464,31 +562,28 @@
     async function handleShowAll() {
       if (isAnimatingAll) return;
       isAnimatingAll = true;
+      zoomOut();
 
-      // Sequential fast animation through all 12 plates
       for (let i = 0; i < TOTAL; i++) {
         if (!isAnimatingAll) break;
 
         const slot = document.getElementById(`slot-${i}`);
         if (!slot) continue;
 
-        // Bring current slot & row to the front
         elevatePlateToTop(i);
 
-        // If not yet revealed, step 1: slide right
         if (slotStates[i] === 0) {
           slotStates[i] = 1;
           slot.classList.remove('covered');
           slot.classList.add('revealed');
-          await wait(120); // Fast wait
+          await wait(120);
         }
 
-        // If currently revealed, step 2: move to cover plate
         if (slotStates[i] === 1) {
           slotStates[i] = 2;
           slot.classList.remove('revealed');
           slot.classList.add('covered');
-          await wait(100); // Fast wait
+          await wait(100);
         }
       }
 
