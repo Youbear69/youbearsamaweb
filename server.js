@@ -1478,7 +1478,9 @@ app.get(['/12vtubergame/bonus12', '/12vtubergame/bonus12/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', '12vtubergame', 'bonus12', 'index.html'));
 });
 
-app.get(['/freeboard', '/freeboard/'], (req, res) => {
+app.get(['/freeboard', '/freeboard/', '/freeboard.html'], (req, res) => {
+  const p = path.join(__dirname, 'public', 'freeboard', 'index.html');
+  if (fs.existsSync(p)) return res.sendFile(p);
   res.sendFile(path.join(__dirname, 'public', 'freeboard.html'));
 });
 

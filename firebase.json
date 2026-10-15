@@ -8,6 +8,30 @@
     ],
     "rewrites": [
       {
+        "source": "/freeboard",
+        "destination": "/freeboard/index.html"
+      },
+      {
+        "source": "/freeboard/",
+        "destination": "/freeboard/index.html"
+      },
+      {
+        "source": "/freeboard/**",
+        "destination": "/freeboard/index.html"
+      },
+      {
+        "source": "/12vtubergame/bonus12",
+        "destination": "/12vtubergame/bonus12/index.html"
+      },
+      {
+        "source": "/12vtubergame/bonus12/",
+        "destination": "/12vtubergame/bonus12/index.html"
+      },
+      {
+        "source": "/12vtubergame/bonus12/**",
+        "destination": "/12vtubergame/bonus12/index.html"
+      },
+      {
         "source": "/nxzawpguesser",
         "destination": "/nxzawpguesser.html"
       },
