@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FreeBoard — ป้ายเปิดโบนัสอิสระ</title>
+  <title>FreeBoard — ป้ายเปิดโบนัสอิสระ (รองรับ 1 - 50 ป้าย)</title>
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -124,10 +124,26 @@
 
     /* Board Area Variables */
     :root {
-      --plate-size: min(140px, 13vw, 21vh);
-      --gap: min(18px, 1.6vw);
+      --plate-size: 130px;
+      --gap: 14px;
       /* ป้ายหลังขนาดเล็กกว่าป้ายใหญ่ 20% = 80% */
       --bonus-ratio: 0.80;
+      --tease-ratio: 0.30;
+      /* ระยะกึ่งกลางแนวตั้งสำหรับตอนที่ป้ายเลื่อนออก */
+      --bonus-v-center: calc(var(--plate-size) * (1 - var(--bonus-ratio)) * 0.5);
+    }
+
+    /* Viewport container to allow smooth centering and overflow control */
+    .board-viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+      position: relative;
+      z-index: 10;
+      padding: 24px;
     }
 
     .board-container {
@@ -140,6 +156,38 @@
       transform-origin: center center;
       transition: transform 0.38s cubic-bezier(0.2, 0.85, 0.25, 1);
       will-change: transform;
+      padding: 10px 32px;
+    }
+
+    /* Plate Row (แนวนอน) */
+    .plate-row {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--gap);
+      z-index: 10;
+    }
+
+    /* Plate Column Wrapper & Column (แนวตั้ง) */
+    .plate-cols-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: var(--gap);
+      z-index: 10;
+    }
+
+    .plate-col {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: var(--gap);
+      z-index: 10;
     }
 
     /* Layout 1: 3 Rows (5 - 4 - 3) */
@@ -159,6 +207,7 @@
       justify-content: center;
       gap: var(--gap);
       position: relative;
+      z-index: 10;
     }
 
     .layout-2-center-matrix {
@@ -187,6 +236,7 @@
       height: var(--plate-size);
       cursor: pointer;
       z-index: 2;
+      flex-shrink: 0;
     }
 
     /* Plate Front Card (100% Scale) - Stays in FRONT (z-index: 10) */
@@ -205,7 +255,7 @@
     }
 
     .plate-slot:hover .plate-img {
-      transform: scale(1.03);
+      transform: scale(1.04);
     }
 
     /* Bonus Card (Behind) - 80% Scale (เล็กกว่า 20%) - Strictly BEHIND (z-index: 2) */
@@ -219,36 +269,101 @@
       display: block;
       pointer-events: none;
       filter: drop-shadow(0 8px 18px rgba(0,0,0,0.75));
-      /* Initial state: completely hidden and behind front plate */
+      /* Initial state: completely hidden and behind front plate, vertically centered */
       z-index: 2;
       opacity: 0;
       visibility: hidden;
-      transform: translateX(0) scale(0.95);
+      transform: translateX(0) translateY(var(--bonus-v-center)) scale(0.95);
       transition: transform 0.25s cubic-bezier(0.25, 1.15, 0.5, 1), opacity 0.15s ease, visibility 0.15s;
     }
 
-    /* State 1: Peek (ดึงออกขวา 25-30% ของป้าย แต่ยังอยู่ข้างหลังป้ายหน้า ป้ายหน้าบังส่วนที่เหลือ) */
+    /* State 1: Peek (ดึงออกขวาตาม % ที่ตั้งไว้, เลื่อนออกตรงกลางแนวตั้ง) */
     .plate-slot.peek .bonus-img {
       opacity: 1;
       visibility: visible;
       z-index: 2; /* Still strictly BEHIND plate-img (z-index: 10) */
-      transform: translateX(calc(var(--plate-size) * 0.32)) scale(1);
+      transform: translateX(calc(var(--plate-size) * var(--tease-ratio))) translateY(var(--bonus-v-center)) scale(1);
     }
 
-    /* State 2: Revealed (ดึงออกขวาเต็มรูป 100% พ้นขอบป้ายหน้า) */
+    /* State 2: Revealed (ดึงออกขวาเต็มรูป 100% พ้นขอบป้ายหน้า, เลื่อนออกตรงกลางแนวตั้ง) */
     .plate-slot.revealed .bonus-img {
       opacity: 1;
       visibility: visible;
       z-index: 2; /* Behind or alongside plate */
-      transform: translateX(calc(var(--plate-size) + min(16px, 1.5vw))) scale(1);
+      transform: translateX(calc(var(--plate-size) + min(16px, 1.5vw))) translateY(var(--bonus-v-center)) scale(1);
     }
 
-    /* State 3: Covered (ทับบนป้ายหน้า: z-index ยกขึ้นมาอยู่หน้าสุด) */
+    /* State 3: Covered (ทับบนป้ายหน้า: z-index ยกขึ้นมาอยู่หน้าสุด, วางไว้ที่ซ้ายบนเหมือนเดิม) */
     .plate-slot.covered .bonus-img {
       opacity: 1;
       visibility: visible;
       z-index: 20; /* Overlaps IN FRONT of plate-img */
       transform: translateX(0) translateY(0) scale(1);
+    }
+
+    /* Top Badges (Top-Left) */
+    .top-nav-badges {
+      position: fixed;
+      top: 18px;
+      left: 20px;
+      z-index: 100;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .room-badge {
+      background: rgba(18, 12, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .room-badge:hover {
+      background: rgba(30, 20, 60, 0.95);
+      border-color: rgba(167, 139, 250, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .room-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .plates-badge {
+      background: rgba(18, 12, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .plates-badge:hover {
+      background: rgba(30, 20, 60, 0.95);
+      border-color: rgba(147, 197, 253, 0.6);
+      transform: translateY(-1px);
     }
 
     /* Controls Panel - Bottom Right */
@@ -275,9 +390,9 @@
       outline: none;
       cursor: pointer;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       padding: 9px 18px;
       border-radius: 30px;
@@ -295,6 +410,25 @@
 
     .ctrl-btn:active {
       transform: translateY(1px) scale(0.97);
+    }
+
+    .btn-tease {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .btn-tease:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+    .btn-tease.active {
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      border: 1px solid rgba(244, 114, 182, 0.5);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(236, 72, 153, 0.45);
+    }
+    .btn-tease.active:hover {
+      box-shadow: 0 6px 22px rgba(236, 72, 153, 0.65);
     }
 
     .btn-pencil {
@@ -336,42 +470,6 @@
       stroke-linejoin: round;
     }
 
-    /* Room Badge (Top-Left) */
-    .room-badge {
-      position: fixed;
-      top: 18px;
-      left: 20px;
-      z-index: 100;
-      background: rgba(18, 12, 38, 0.85);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(139, 92, 246, 0.35);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #c4b5fd;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .room-badge:hover {
-      background: rgba(30, 20, 60, 0.95);
-      border-color: rgba(167, 139, 250, 0.6);
-      transform: translateY(-1px);
-    }
-
-    .room-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-    }
-
     /* Modal Styling */
     .modal-backdrop {
       position: fixed;
@@ -391,8 +489,8 @@
 
     .modal-box {
       width: 95vw;
-      max-width: 820px;
-      max-height: 90vh;
+      max-width: 860px;
+      max-height: 92vh;
       background: #0f0b20;
       border: 1px solid rgba(139, 92, 246, 0.35);
       border-radius: 20px;
@@ -451,7 +549,7 @@
       background: none;
       border: none;
       color: rgba(255,255,255,0.55);
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
@@ -474,27 +572,27 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* Grid of 12 editor cards */
+    /* Grid of editor cards (1 to 50 cards) */
     .editor-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 12px;
     }
 
     .editor-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
-      padding: 10px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       position: relative;
     }
 
     .editor-card-num {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: #a78bfa;
       background: rgba(124, 58, 237, 0.25);
@@ -503,8 +601,8 @@
     }
 
     .editor-thumb-box {
-      width: 76px;
-      height: 76px;
+      width: 72px;
+      height: 72px;
       background: #18122c;
       border-radius: 8px;
       display: flex;
@@ -529,7 +627,7 @@
     .editor-thumb-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.65);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -546,7 +644,7 @@
 
     .editor-actions {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       width: 100%;
       justify-content: center;
     }
@@ -560,8 +658,10 @@
       font-size: 11px;
       cursor: pointer;
       font-weight: 600;
+      transition: all 0.15s;
     }
     .mini-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .mini-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* Batch upload bar */
     .batch-bar {
@@ -588,6 +688,7 @@
       align-items: center;
       gap: 6px;
       box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+      transition: filter 0.15s;
     }
     .upload-btn-label:hover { filter: brightness(1.1); }
 
@@ -610,16 +711,136 @@
       gap: 8px;
     }
 
+    /* Stepper Controls */
+    .total-plates-control {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .stepper-row {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .step-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.15s;
+    }
+    .step-btn:hover {
+      background: rgba(139, 92, 246, 0.4);
+      color: #fff;
+      transform: scale(1.05);
+    }
+    .step-btn:active {
+      transform: scale(0.95);
+    }
+
+    .stepper-input {
+      width: 58px;
+      height: 34px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .stepper-input::-webkit-outer-spin-button,
+    .stepper-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .stepper-unit {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      padding-right: 10px;
+      font-weight: 600;
+    }
+
+    .custom-range {
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.15);
+      outline: none;
+      accent-color: #a78bfa;
+      cursor: pointer;
+    }
+
+    .quick-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .chips-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+    }
+
+    .chip-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-btn:hover {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: #a78bfa;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .chip-btn.active {
+      background: #7c3aed;
+      border-color: #a78bfa;
+      color: #fff;
+    }
+    .chip-btn.chip-auto {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(124, 58, 237, 0.3));
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+
+    /* Layout Selection */
     .layout-picker {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
     }
 
     .layout-opt {
       border: 2px solid rgba(255,255,255,0.1);
       border-radius: 12px;
-      padding: 12px;
+      padding: 10px 12px;
       cursor: pointer;
       background: rgba(0,0,0,0.2);
       transition: all 0.15s;
@@ -646,13 +867,103 @@
       color: rgba(255,255,255,0.5);
     }
 
+    /* Direction Toggle */
+    .direction-toggle-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .dir-btn {
+      background: rgba(0,0,0,0.25);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .dir-btn svg {
+      color: #94a3b8;
+      transition: color 0.15s;
+    }
+    .dir-btn span:first-of-type {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dir-btn .dir-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .dir-btn:hover {
+      border-color: rgba(167, 139, 250, 0.4);
+    }
+    .dir-btn.selected {
+      border-color: #a78bfa;
+      background: rgba(139, 92, 246, 0.16);
+    }
+    .dir-btn.selected svg {
+      color: #a78bfa;
+    }
+
+    .grid-controls-box {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .setting-sub-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .sub-label {
+      font-size: 13px;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sub-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: #a78bfa;
+    }
+
+    .grid-stat-banner {
+      margin-top: 14px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.15));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #c4b5fd;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
     .checkbox-row {
       display: flex;
       align-items: center;
       gap: 10px;
       cursor: pointer;
       user-select: none;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
     }
 
@@ -724,25 +1035,38 @@
     <div class="cosmic-stars"></div>
   </div>
 
-  <!-- Room Indicator (Click to open settings) -->
-  <div class="room-badge" id="roomBadge" onclick="openModal('settings')">
-    <div class="room-dot"></div>
-    <span id="roomLabel">Room: main</span>
+  <!-- Top Navigation Badges (Click to open settings) -->
+  <div class="top-nav-badges">
+    <div class="room-badge" id="roomBadge" onclick="openModal('settings')" title="คลิกเพื่อตั้งค่าห้อง">
+      <div class="room-dot"></div>
+      <span id="roomLabel">Room: main</span>
+    </div>
+    <div class="plates-badge" id="platesBadge" onclick="openModal('settings')" title="คลิกเพื่อปรับจำนวนป้าย & Layout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span id="platesBadgeLabel">12 ป้าย (5×3)</span>
+    </div>
   </div>
 
-  <!-- Board Container (Zoom/Pan happens here) -->
-  <div class="board-container layout-1" id="board"></div>
+  <!-- Board Viewport (Center & Pan) -->
+  <div class="board-viewport" id="boardViewport">
+    <!-- Board Container (Zoom/Pan happens here) -->
+    <div class="board-container layout-1" id="board"></div>
+  </div>
 
   <!-- Controls Panel - Bottom Right -->
   <div class="controls-panel">
     <div class="btn-row">
+      <button class="ctrl-btn btn-tease" id="btnTeaseToggle" onclick="toggleTwoStepPullQuick()" title="สลับเปิด/ปิดระบบแง้มป้ายสองจังหวะ">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span id="teaseToggleText">แง้ม: ปิด</span>
+      </button>
       <button class="ctrl-btn btn-pencil" onclick="openModal('front')" title="แก้ไขรูปและปรับแต่งบอร์ด">
         <svg viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
         Custom
       </button>
-      <button class="ctrl-btn btn-layout" id="btnLayoutToggle" onclick="toggleLayout()" title="สลับ Layout 1 / Layout 2">
+      <button class="ctrl-btn btn-layout" id="btnLayoutToggle" onclick="toggleLayout()" title="สลับ Layout / แนวนอน / แนวตั้ง">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Layout <span id="layoutNumText">1</span>
+        <span id="layoutBtnText">Layout 1</span>
       </button>
     </div>
     <div class="btn-row">
@@ -767,7 +1091,7 @@
       <div class="modal-header">
         <div class="modal-title">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          ปรับแต่งบอร์ด (FreeBoard)
+          ปรับแต่งบอร์ด (FreeBoard — สูงสุด 50 ป้าย)
         </div>
         <button class="modal-close-btn" onclick="closeModal()">&times;</button>
       </div>
@@ -775,17 +1099,17 @@
       <div class="modal-tabs">
         <button class="tab-btn active" id="tabBtnFront" onclick="switchTab('front')">ป้ายหน้า (1 - 12)</button>
         <button class="tab-btn" id="tabBtnBack" onclick="switchTab('back')">ป้ายหลัง (1 - 12)</button>
-        <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">ตั้งค่า & เซิฟเวอร์ (ห้อง)</button>
+        <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">ตั้งค่าบอร์ด & ห้อง</button>
       </div>
 
       <div class="modal-body">
         <!-- Tab: Front Plates -->
         <div class="tab-content active" id="tabContentFront">
           <div class="batch-bar">
-            <span>เปลี่ยนรูปป้ายหน้าทั้งหมด (12 ไฟล์) พร้อมกัน:</span>
+            <span id="batchFrontText">เปลี่ยนรูปป้ายหน้าทั้งหมด (12 ไฟล์) พร้อมกัน:</span>
             <label class="upload-btn-label">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              เลือก 12 รูป
+              <span id="batchFrontBtnText">เลือก 12 รูป</span>
               <input type="file" id="batchFrontInput" multiple accept="image/*" style="display:none" onchange="handleBatchUpload('front', event)">
             </label>
           </div>
@@ -795,10 +1119,10 @@
         <!-- Tab: Back Plates -->
         <div class="tab-content" id="tabContentBack">
           <div class="batch-bar">
-            <span>เปลี่ยนรูปป้ายหลังทั้งหมด (12 ไฟล์) พร้อมกัน:</span>
+            <span id="batchBackText">เปลี่ยนรูปป้ายหลังทั้งหมด (12 ไฟล์) พร้อมกัน:</span>
             <label class="upload-btn-label">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              เลือก 12 รูป
+              <span id="batchBackBtnText">เลือก 12 รูป</span>
               <input type="file" id="batchBackInput" multiple accept="image/*" style="display:none" onchange="handleBatchUpload('back', event)">
             </label>
           </div>
@@ -807,33 +1131,195 @@
 
         <!-- Tab: Settings & Server Room -->
         <div class="tab-content" id="tabContentSettings">
-          <!-- Layout Selection -->
+          
+          <!-- 1. Total Plates (1 - 50) -->
           <div class="setting-group">
-            <div class="setting-group-title">รูปแบบ Layout การจัดวางป้าย</div>
-            <div class="layout-picker">
-              <div class="layout-opt selected" id="optLayout1" onclick="selectLayoutSetting(1)">
-                <div class="layout-opt-title">แบบที่ 1 (บน)</div>
-                <div class="layout-opt-desc">แถว 1: 5 ป้าย · แถว 2: 4 ป้าย · แถว 3: 3 ป้าย</div>
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              จำนวนป้ายทั้งหมด (1 - 50 ป้าย)
+            </div>
+            <div class="total-plates-control">
+              <div class="stepper-row">
+                <button class="step-btn" onclick="stepTotalPlates(-1)" title="ลด 1 ป้าย">−</button>
+                <input type="number" id="totalPlatesInput" class="stepper-input" min="1" max="50" value="12" onchange="onTotalPlatesInputChange(event)">
+                <button class="step-btn" onclick="stepTotalPlates(1)" title="เพิ่ม 1 ป้าย">+</button>
+                <span class="stepper-unit">ป้าย</span>
               </div>
-              <div class="layout-opt" id="optLayout2" onclick="selectLayoutSetting(2)">
-                <div class="layout-opt-title">แบบที่ 2 (ล่าง)</div>
-                <div class="layout-opt-desc">ป้าย 1 ซ้าย · 2-6 บน · 7-11 ล่าง · 12 ขวา</div>
+              <input type="range" id="totalPlatesSlider" class="custom-range" min="1" max="50" value="12" oninput="onTotalPlatesSliderChange(event)">
+            </div>
+            <div class="quick-chips-row">
+              <span class="chips-label">เลือกด่วน:</span>
+              <button class="chip-btn" onclick="setTotalPlates(12, true)">12</button>
+              <button class="chip-btn" onclick="setTotalPlates(16, true)">16</button>
+              <button class="chip-btn" onclick="setTotalPlates(20, true)">20</button>
+              <button class="chip-btn" onclick="setTotalPlates(24, true)">24</button>
+              <button class="chip-btn" onclick="setTotalPlates(30, true)">30</button>
+              <button class="chip-btn" onclick="setTotalPlates(36, true)">36</button>
+              <button class="chip-btn" onclick="setTotalPlates(40, true)">40</button>
+              <button class="chip-btn" onclick="setTotalPlates(50, true)">50 ป้าย (สูงสุด)</button>
+            </div>
+          </div>
+
+          <!-- 2. Rows & Columns Layout (แนวนอน / แนวตั้ง) -->
+          <div class="setting-group">
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3v18h18V3z"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+              รูปแบบการจัดวาง (แถวแนวนอน / แนวตั้ง)
+            </div>
+
+            <!-- Classic 12 Presets (Shown when 12 plates) -->
+            <div id="classic12LayoutBox" class="classic-12-box" style="display:none; margin-bottom:14px;">
+              <div style="font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:8px; font-weight:600;">พรีเซ็ตดั้งเดิมสำหรับ 12 ป้าย:</div>
+              <div class="layout-picker">
+                <div class="layout-opt" id="optLayout1" onclick="selectClassicLayout(1)">
+                  <div class="layout-opt-title">แบบที่ 1 (พีระมิด 5-4-3)</div>
+                  <div class="layout-opt-desc">แถว 1: 5 ป้าย · แถว 2: 4 ป้าย · แถว 3: 3 ป้าย</div>
+                </div>
+                <div class="layout-opt" id="optLayout2" onclick="selectClassicLayout(2)">
+                  <div class="layout-opt-title">แบบที่ 2 (ขนาบข้าง 1+5x2+1)</div>
+                  <div class="layout-opt-desc">ป้าย 1 ซ้าย · 2-6 บน · 7-11 ล่าง · 12 ขวา</div>
+                </div>
+                <div class="layout-opt" id="optLayoutGrid12" onclick="selectClassicLayout('grid')">
+                  <div class="layout-opt-title">แบบตารางอิสระ (Custom Grid)</div>
+                  <div class="layout-opt-desc">ปรับแถวและคอลัมน์ได้อย่างอิสระ</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Direction Toggle: Horizontal (Row) vs Vertical (Column) -->
+            <div class="direction-toggle-row">
+              <div class="dir-btn selected" id="dirBtnRow" onclick="setGridFlow('row')">
+                <span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  จัดเรียงแนวนอน (Row Flow)
+                </span>
+                <span class="dir-desc">เรียงซ้ายไปขวา ทีละแถว</span>
+              </div>
+              <div class="dir-btn" id="dirBtnCol" onclick="setGridFlow('column')">
+                <span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                  จัดเรียงแนวตั้ง (Column Flow)
+                </span>
+                <span class="dir-desc">เรียงบนลงล่าง ทีละคอลัมน์</span>
+              </div>
+            </div>
+
+            <!-- Grid Cols & Rows controls -->
+            <div class="grid-controls-box" id="gridControlsBox">
+              <!-- When Row Flow is active: user tunes Columns per row -->
+              <div id="rowFlowSettings">
+                <div class="setting-sub-row">
+                  <div class="sub-label">
+                    <span>จำนวนคอลัมน์ (แนวตั้ง / ช่องต่อแถว):</span>
+                    <span class="sub-val" id="gridColsValDisplay">5 คอลัมน์</span>
+                  </div>
+                  <div class="stepper-row">
+                    <button class="step-btn" onclick="stepGridCols(-1)">−</button>
+                    <input type="number" id="gridColsInput" class="stepper-input" min="1" max="15" value="5" onchange="onGridColsInputChange(event)">
+                    <button class="step-btn" onclick="stepGridCols(1)">+</button>
+                  </div>
+                </div>
+                <input type="range" id="gridColsSlider" class="custom-range" min="1" max="15" value="5" oninput="onGridColsSliderChange(event)">
+              </div>
+
+              <!-- When Column Flow is active: user tunes Rows per column -->
+              <div id="colFlowSettings" style="display:none;">
+                <div class="setting-sub-row">
+                  <div class="sub-label">
+                    <span>จำนวนแถว (แนวนอน / ช่องต่อคอลัมน์):</span>
+                    <span class="sub-val" id="gridRowsValDisplay">5 แถว</span>
+                  </div>
+                  <div class="stepper-row">
+                    <button class="step-btn" onclick="stepGridRows(-1)">−</button>
+                    <input type="number" id="gridRowsInput" class="stepper-input" min="1" max="15" value="5" onchange="onGridRowsInputChange(event)">
+                    <button class="step-btn" onclick="stepGridRows(1)">+</button>
+                  </div>
+                </div>
+                <input type="range" id="gridRowsSlider" class="custom-range" min="1" max="15" value="5" oninput="onGridRowsSliderChange(event)">
+              </div>
+
+              <!-- Quick presets for columns -->
+              <div class="quick-chips-row" style="margin-top:12px;">
+                <span class="chips-label">คอลัมน์ด่วน:</span>
+                <button class="chip-btn" onclick="setQuickCols(3)">3</button>
+                <button class="chip-btn" onclick="setQuickCols(4)">4</button>
+                <button class="chip-btn" onclick="setQuickCols(5)">5</button>
+                <button class="chip-btn" onclick="setQuickCols(6)">6</button>
+                <button class="chip-btn" onclick="setQuickCols(8)">8</button>
+                <button class="chip-btn" onclick="setQuickCols(10)">10</button>
+                <button class="chip-btn chip-auto" onclick="setAutoGrid()">⚡ จัดสมดุลอัตโนมัติ (Auto)</button>
+              </div>
+
+              <!-- Grid Stat Banner -->
+              <div class="grid-stat-banner" id="gridStatBanner">
+                5 แถวแนวนอน × 10 คอลัมน์แนวตั้ง = 50 ป้าย
               </div>
             </div>
           </div>
 
-          <!-- Two-step pull checkbox -->
+          <!-- 3. Plate Sizing & Auto-Fit -->
           <div class="setting-group">
-            <div class="setting-group-title">ระบบดึงป้าย (Tease Pull)</div>
-            <label class="checkbox-row">
-              <input type="checkbox" id="checkTwoStepPull" onchange="onTwoStepChange(event)">
-              <span>เปิดระบบดึงป้ายสองครั้ง (กดครั้งแรกแง้ม 30% · กดอีกครั้งเปิดเต็ม)</span>
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+              ขนาดป้ายบนหน้าจอ (Plate Sizing)
+            </div>
+            <label class="checkbox-row" style="margin-bottom:12px;">
+              <input type="checkbox" id="checkAutoFit" checked onchange="onAutoFitChange(event)">
+              <span>⚡ ปรับขนาดพอดีหน้าจออัตโนมัติ (Auto-Fit Responsive)</span>
             </label>
+            <div id="manualSizeBox" style="display:none; padding-top:6px;">
+              <div class="setting-sub-row">
+                <span style="font-size:12px; color:rgba(255,255,255,0.7);">ปรับขนาดป้ายด้วยตนเอง (Manual Size):</span>
+                <span id="manualSizeText" class="sub-val">110 px</span>
+              </div>
+              <input type="range" id="plateSizeSlider" class="custom-range" min="40" max="170" value="110" oninput="onPlateSizeSliderChange(event)">
+            </div>
           </div>
 
-          <!-- Multi-Server Room Isolation -->
+          <!-- 4. Two-step pull checkbox & distance settings -->
           <div class="setting-group">
-            <div class="setting-group-title">ห้องส่วนตัว (แยกเซิฟเป็นของใครของมัน)</div>
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              ระบบดึงป้ายสองจังหวะ (Tease Pull)
+            </div>
+            <label class="checkbox-row" style="margin-bottom:12px;">
+              <input type="checkbox" id="checkTwoStepPull" onchange="onTwoStepChange(event)">
+              <span>เปิดระบบดึงป้ายสองครั้ง (กดครั้งแรกแง้ม · กดอีกครั้งเปิดเต็ม 100% · กดอีกครั้งปิดทับ)</span>
+            </label>
+            <!-- Adjustable Tease Distance (ตัว 30% ให้ปรับได้) -->
+            <div id="teaseSettingsPanel" style="display:none; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px;">
+              <div class="setting-sub-row">
+                <div class="sub-label">
+                  <span>ระยะดึงแง้ม (Tease Distance):</span>
+                  <span class="sub-val" id="teaseValDisplay">30%</span>
+                </div>
+                <div class="stepper-row">
+                  <button class="step-btn" onclick="stepTeasePercent(-5)">−</button>
+                  <input type="number" id="teasePercentInput" class="stepper-input" min="5" max="95" step="5" value="30" onchange="onTeasePercentInputChange(event)">
+                  <button class="step-btn" onclick="stepTeasePercent(5)">+</button>
+                  <span class="stepper-unit">%</span>
+                </div>
+              </div>
+              <input type="range" id="teasePercentSlider" class="custom-range" min="5" max="95" step="5" value="30" oninput="onTeasePercentSliderChange(event)">
+              <div class="quick-chips-row" style="margin-top:10px;">
+                <span class="chips-label">เลือกระยะด่วน:</span>
+                <button class="chip-btn" onclick="setTeasePercent(15)">15%</button>
+                <button class="chip-btn" onclick="setTeasePercent(25)">25%</button>
+                <button class="chip-btn" onclick="setTeasePercent(30)">30% (ปกติ)</button>
+                <button class="chip-btn" onclick="setTeasePercent(40)">40%</button>
+                <button class="chip-btn" onclick="setTeasePercent(50)">50% (ตรงกลาง)</button>
+                <button class="chip-btn" onclick="setTeasePercent(65)">65%</button>
+                <button class="chip-btn" onclick="setTeasePercent(80)">80%</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Multi-Server Room Isolation -->
+          <div class="setting-group">
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              ห้องส่วนตัว (แยกเซิฟเป็นของใครของมัน)
+            </div>
             <p style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:8px;">
               เปลี่ยนชื่อห้องเพื่อสลับไปบอร์ดของคนอื่น หรือตั้งชื่อห้องของตัวเอง ข้อมูลรูปภาพและการตั้งค่าจะถูกแยกเป็นอิสระต่อกัน:
             </p>
@@ -844,11 +1330,11 @@
             </div>
           </div>
 
-          <!-- Reset Default -->
+          <!-- 6. Reset Default -->
           <div class="setting-group" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <div style="font-size:13px; font-weight:700;">รีเซ็ตข้อมูลห้องนี้เป็นค่าเริ่มต้น</div>
-              <div style="font-size:11px; color:rgba(255,255,255,0.5);">คืนค่ารูปภาพ 1-12 และการตั้งค่าทั้งหมดกลับเป็นเริ่มต้น</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.5);">คืนค่ารูปภาพทั้งหมด และการตั้งค่ากลับเป็นเริ่มต้น</div>
             </div>
             <button class="mini-btn" style="background:#dc2626; padding:6px 14px;" onclick="resetCurrentRoomDefaults()">รีเซ็ตค่าเริ่มต้น</button>
           </div>
@@ -869,7 +1355,9 @@
   <input type="file" id="singleFileInput" accept="image/*" style="display:none">
 
   <script>
-    const TOTAL = 12;
+    const MIN_PLATES = 1;
+    const MAX_PLATES = 50;
+    const DEFAULT_TOTAL = 12;
     const DEFAULT_IMG_DIR = '/assets/bonus12/';
 
     // Room ID from URL query (?room=...) or 'main'
@@ -877,31 +1365,133 @@
 
     // Room State Configuration
     let roomConfig = {
-      layout: 1,           // 1 or 2
-      twoStepPull: false,  // true = 30% peek -> 100% full -> cover; false = full -> cover
-      frontImages: Array.from({ length: TOTAL }, (_, i) => `${DEFAULT_IMG_DIR}plate ${i + 1}.png`),
-      backImages:  Array.from({ length: TOTAL }, (_, i) => `${DEFAULT_IMG_DIR}+${i + 1}.png`),
-      bonusMapping: Array.from({ length: TOTAL }, (_, i) => i) // map slotIdx -> backImages index
+      totalPlates: 12,       // 1 - 50
+      layout: 1,             // 1 (preset1), 2 (preset2), or 'grid'
+      gridCols: 5,           // columns in row flow
+      gridRows: 3,           // rows in column flow
+      gridFlow: 'row',       // 'row' (แนวนอน) or 'column' (แนวตั้ง)
+      plateSizeMode: 'auto', // 'auto' or 'manual'
+      customPlateSize: 110,  // px (used when manual)
+      twoStepPull: false,    // true = peek -> 100% full -> cover; false = full -> cover
+      teasePercent: 30,      // custom tease distance % (default 30)
+      frontImages: [],
+      backImages: [],
+      bonusMapping: []
     };
 
     // Slot runtime states:
     // When twoStepPull is false: 0 = idle, 1 = revealed (100%), 2 = covered
     // When twoStepPull is true:  0 = idle, 1 = peek (30%), 2 = revealed (100%), 3 = covered
-    let slotStates = new Array(TOTAL).fill(0);
+    let slotStates = [];
 
     // Zoom State
     let zoomedSlotIdx = null;
     let hoveredSlotIdx = null;
     let lastClickedSlotIdx = 0;
     let activeZCounter = 100;
-    const ZOOM_SCALE = 2.3;
 
     // Single upload target tracker
-    let singleUploadTarget = null; // { type: 'front'|'back', index: 0..11 }
+    let singleUploadTarget = null; // { type: 'front'|'back', index: 0..N }
 
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
+    }
+
+    /* ==============================================================
+       BEAUTIFUL STANDALONE SVG GENERATOR FOR PLATES 13 - 50
+       ============================================================== */
+    function generatePlateSVG(number, isFront = true) {
+      const palettes = [
+        { start: '#7c3aed', end: '#4f46e5', accent: '#c4b5fd', border: '#a78bfa' },
+        { start: '#0284c7', end: '#06b6d4', accent: '#7dd3fc', border: '#38bdf8' },
+        { start: '#d97706', end: '#ea580c', accent: '#fde047', border: '#fbbf24' },
+        { start: '#059669', end: '#10b981', accent: '#6ee7b7', border: '#34d399' },
+        { start: '#db2777', end: '#9333ea', accent: '#f472b6', border: '#e879f9' }
+      ];
+      const pal = palettes[(number - 1) % palettes.length];
+
+      if (isFront) {
+        // Front Plate: Cosmic neon card with glowing plate number
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+          <defs>
+            <linearGradient id="frontBg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1f143d"/>
+              <stop offset="50%" stop-color="#110a24"/>
+              <stop offset="100%" stop-color="#080414"/>
+            </linearGradient>
+            <linearGradient id="frontBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="${pal.border}"/>
+              <stop offset="50%" stop-color="${pal.start}"/>
+              <stop offset="100%" stop-color="${pal.end}"/>
+            </linearGradient>
+            <filter id="fGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3.5" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+          <rect x="8" y="8" width="184" height="184" rx="26" fill="url(#frontBg)" stroke="url(#frontBorder)" stroke-width="4.5" filter="url(#fGlow)"/>
+          <rect x="18" y="18" width="164" height="164" rx="18" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-dasharray="6,4"/>
+          <circle cx="34" cy="34" r="2.5" fill="${pal.accent}" opacity="0.8"/>
+          <circle cx="166" cy="34" r="2" fill="#fff" opacity="0.7"/>
+          <circle cx="34" cy="166" r="2" fill="#fff" opacity="0.7"/>
+          <circle cx="166" cy="166" r="2.5" fill="${pal.accent}" opacity="0.8"/>
+          <text x="100" y="54" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="800" fill="${pal.accent}" letter-spacing="3">PLATE</text>
+          <text x="100" y="132" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="${number > 99 ? '52' : (number > 9 ? '64' : '72')}" font-weight="900" fill="#ffffff" filter="url(#fGlow)">${number}</text>
+        </svg>`;
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+      } else {
+        // Back Plate (Bonus Card): Glowing gold/neon reward badge
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+          <defs>
+            <linearGradient id="backBg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2a1645"/>
+              <stop offset="50%" stop-color="#160c30"/>
+              <stop offset="100%" stop-color="#090517"/>
+            </linearGradient>
+            <linearGradient id="backGold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fde047"/>
+              <stop offset="45%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#d97706"/>
+            </linearGradient>
+            <filter id="bGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4.5" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+          <rect x="8" y="8" width="184" height="184" rx="26" fill="url(#backBg)" stroke="url(#backGold)" stroke-width="4.5" filter="url(#bGlow)"/>
+          <rect x="18" y="18" width="164" height="164" rx="18" fill="none" stroke="rgba(253,224,71,0.25)" stroke-width="1.5"/>
+          <polygon points="100,28 103,38 114,38 105,45 109,56 100,49 91,56 95,45 86,38 97,38" fill="#fde047" opacity="0.9"/>
+          <text x="100" y="78" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="800" fill="#fde047" letter-spacing="3">BONUS</text>
+          <text x="100" y="136" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="${number > 99 ? '48' : (number > 9 ? '58' : '66')}" font-weight="900" fill="url(#backGold)" filter="url(#bGlow)">+${number}</text>
+        </svg>`;
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+      }
+    }
+
+    function getDefaultImage(number, type) {
+      if (number <= 12) {
+        return type === 'front' 
+          ? `${DEFAULT_IMG_DIR}plate ${number}.png` 
+          : `${DEFAULT_IMG_DIR}+${number}.png`;
+      }
+      return generatePlateSVG(number, type === 'front');
+    }
+
+    function calculateDefaultCols(total) {
+      if (total <= 4) return total;
+      if (total <= 6) return 3;
+      if (total <= 8) return 4;
+      if (total <= 10) return 5;
+      if (total <= 12) return 5;
+      if (total <= 16) return 4;
+      if (total <= 20) return 5;
+      if (total <= 25) return 5;
+      if (total <= 30) return 6;
+      if (total <= 36) return 6;
+      if (total <= 42) return 7;
+      if (total <= 48) return 8;
+      return 10; // For 49-50 plates: 10 columns x 5 rows
     }
 
     /* ==============================================================
@@ -972,22 +1562,69 @@
 
       const saved = await loadRoomFromDB(currentRoom);
       if (saved) {
-        roomConfig.layout = saved.layout ?? 1;
+        const total = Math.min(MAX_PLATES, Math.max(MIN_PLATES, saved.totalPlates || (saved.frontImages ? saved.frontImages.length : 12)));
+        roomConfig.totalPlates = total;
+        roomConfig.layout = saved.layout ?? (total === 12 ? 1 : 'grid');
+        roomConfig.gridCols = saved.gridCols || calculateDefaultCols(total);
+        roomConfig.gridRows = saved.gridRows || Math.ceil(total / roomConfig.gridCols);
+        roomConfig.gridFlow = saved.gridFlow || 'row';
+        roomConfig.plateSizeMode = saved.plateSizeMode || 'auto';
+        roomConfig.customPlateSize = saved.customPlateSize || 110;
         roomConfig.twoStepPull = saved.twoStepPull ?? false;
-        if (saved.frontImages && saved.frontImages.length === TOTAL) roomConfig.frontImages = saved.frontImages;
-        if (saved.backImages && saved.backImages.length === TOTAL) roomConfig.backImages = saved.backImages;
-        if (saved.bonusMapping && saved.bonusMapping.length === TOTAL) roomConfig.bonusMapping = saved.bonusMapping;
+        roomConfig.teasePercent = saved.teasePercent || 30;
+
+        ensureImageArraysLength(saved.frontImages, saved.backImages, saved.bonusMapping);
+      } else {
+        roomConfig.totalPlates = 12;
+        roomConfig.layout = 1;
+        roomConfig.gridCols = 5;
+        roomConfig.gridRows = 3;
+        roomConfig.gridFlow = 'row';
+        roomConfig.plateSizeMode = 'auto';
+        roomConfig.customPlateSize = 110;
+        roomConfig.twoStepPull = false;
+        roomConfig.teasePercent = 30;
+        ensureImageArraysLength(null, null, null);
+      }
+
+      slotStates = new Array(roomConfig.totalPlates).fill(0);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateEditorModal();
+      updateBadges();
+      updateTeaseUI();
+    }
+
+    function ensureImageArraysLength(savedFront, savedBack, savedMapping) {
+      const total = roomConfig.totalPlates;
+      roomConfig.frontImages = [];
+      roomConfig.backImages = [];
+
+      for (let i = 0; i < total; i++) {
+        if (savedFront && savedFront[i]) {
+          roomConfig.frontImages[i] = savedFront[i];
+        } else {
+          roomConfig.frontImages[i] = getDefaultImage(i + 1, 'front');
+        }
+
+        if (savedBack && savedBack[i]) {
+          roomConfig.backImages[i] = savedBack[i];
+        } else {
+          roomConfig.backImages[i] = getDefaultImage(i + 1, 'back');
+        }
+      }
+
+      if (savedMapping && savedMapping.length === total) {
+        roomConfig.bonusMapping = [...savedMapping];
       } else {
         shuffleBonusMapping();
       }
-
-      applyLayoutUI();
-      renderBoard();
-      updateEditorModal();
     }
 
     function shuffleBonusMapping() {
-      const arr = Array.from({ length: TOTAL }, (_, i) => i);
+      const total = roomConfig.totalPlates || 12;
+      const arr = Array.from({ length: total }, (_, i) => i);
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -1000,7 +1637,6 @@
       const newUrl = `${window.location.pathname}?room=${clean}`;
       window.history.pushState({}, '', newUrl);
       currentRoom = clean;
-      slotStates.fill(0);
       zoomOut();
       initRoom();
       showToast(`สลับไปยังห้อง: ${clean}`);
@@ -1023,82 +1659,471 @@
 
     function resetCurrentRoomDefaults() {
       if (!confirm(`ต้องการรีเซ็ตห้อง ${currentRoom} เป็นค่าเริ่มต้นหรือไม่?`)) return;
+      const total = roomConfig.totalPlates || 12;
       roomConfig = {
-        layout: 1,
+        totalPlates: total,
+        layout: total === 12 ? 1 : 'grid',
+        gridCols: calculateDefaultCols(total),
+        gridRows: Math.ceil(total / calculateDefaultCols(total)),
+        gridFlow: 'row',
+        plateSizeMode: 'auto',
+        customPlateSize: 110,
         twoStepPull: false,
-        frontImages: Array.from({ length: TOTAL }, (_, i) => `${DEFAULT_IMG_DIR}plate ${i + 1}.png`),
-        backImages:  Array.from({ length: TOTAL }, (_, i) => `${DEFAULT_IMG_DIR}+${i + 1}.png`),
-        bonusMapping: Array.from({ length: TOTAL }, (_, i) => i)
+        teasePercent: 30,
+        frontImages: Array.from({ length: total }, (_, i) => getDefaultImage(i + 1, 'front')),
+        backImages:  Array.from({ length: total }, (_, i) => getDefaultImage(i + 1, 'back')),
+        bonusMapping: Array.from({ length: total }, (_, i) => i)
       };
       shuffleBonusMapping();
+      slotStates = new Array(total).fill(0);
       saveRoomToDB(currentRoom, roomConfig);
       applyLayoutUI();
+      updatePlateSize();
       renderBoard();
       updateEditorModal();
+      updateBadges();
       showToast('รีเซ็ตห้องเรียบร้อย 🔄');
     }
 
     /* ==============================================================
-       BOARD RENDERING & LAYOUTS
+       TOTAL PLATES & GRID DIMENSIONS LOGIC
        ============================================================== */
-    function applyLayoutUI() {
-      const board = document.getElementById('board');
-      board.classList.remove('layout-1', 'layout-2');
-      board.classList.add(`layout-${roomConfig.layout}`);
+    function getGridDimensions() {
+      const total = roomConfig.totalPlates || 12;
+      if (total === 12 && roomConfig.layout === 1) {
+        return { cols: 5, rows: 3 };
+      }
+      if (total === 12 && roomConfig.layout === 2) {
+        return { cols: 7, rows: 2 };
+      }
 
-      document.getElementById('layoutNumText').textContent = roomConfig.layout;
-      document.getElementById('optLayout1').classList.toggle('selected', roomConfig.layout === 1);
-      document.getElementById('optLayout2').classList.toggle('selected', roomConfig.layout === 2);
-      document.getElementById('checkTwoStepPull').checked = !!roomConfig.twoStepPull;
+      if (roomConfig.gridFlow === 'row') {
+        const cols = Math.max(1, Math.min(15, roomConfig.gridCols || calculateDefaultCols(total)));
+        const rows = Math.ceil(total / cols);
+        return { cols, rows };
+      } else {
+        const rows = Math.max(1, Math.min(15, roomConfig.gridRows || Math.ceil(total / calculateDefaultCols(total))));
+        const cols = Math.ceil(total / rows);
+        return { cols, rows };
+      }
+    }
+
+    function setTotalPlates(val, forceRecalculateCols = false) {
+      val = Math.min(MAX_PLATES, Math.max(MIN_PLATES, parseInt(val) || 12));
+      if (val === roomConfig.totalPlates && !forceRecalculateCols) return;
+
+      roomConfig.totalPlates = val;
+      if (val !== 12 && (roomConfig.layout === 1 || roomConfig.layout === 2)) {
+        roomConfig.layout = 'grid';
+      }
+
+      if (roomConfig.gridFlow === 'row') {
+        if (forceRecalculateCols || !roomConfig.gridCols || roomConfig.gridCols > val) {
+          roomConfig.gridCols = calculateDefaultCols(val);
+        }
+      } else {
+        if (forceRecalculateCols || !roomConfig.gridRows || roomConfig.gridRows > val) {
+          roomConfig.gridRows = Math.ceil(val / calculateDefaultCols(val));
+        }
+      }
+
+      ensureImageArraysLength(roomConfig.frontImages, roomConfig.backImages, null);
+      slotStates = new Array(val).fill(0);
+      zoomOut();
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateEditorModal();
+      updateBadges();
+      showToast(`ปรับจำนวนป้ายเป็น ${val} ป้าย`);
+    }
+
+    function stepTotalPlates(delta) {
+      const current = roomConfig.totalPlates || 12;
+      setTotalPlates(current + delta);
+    }
+
+    function onTotalPlatesInputChange(e) {
+      setTotalPlates(e.target.value);
+    }
+
+    function onTotalPlatesSliderChange(e) {
+      setTotalPlates(e.target.value);
+    }
+
+    /* Grid Row & Column Adjustment */
+    function setGridFlow(flow) {
+      roomConfig.gridFlow = flow;
+      if (roomConfig.totalPlates !== 12) {
+        roomConfig.layout = 'grid';
+      }
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+      showToast(flow === 'row' ? 'จัดเรียง: แนวนอน (ซ้ายไปขวา)' : 'จัดเรียง: แนวตั้ง (บนลงล่าง)');
+    }
+
+    function stepGridCols(delta) {
+      const current = roomConfig.gridCols || calculateDefaultCols(roomConfig.totalPlates);
+      const next = Math.max(1, Math.min(15, current + delta));
+      roomConfig.gridCols = next;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function onGridColsInputChange(e) {
+      const val = Math.max(1, Math.min(15, parseInt(e.target.value) || 5));
+      roomConfig.gridCols = val;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function onGridColsSliderChange(e) {
+      const val = parseInt(e.target.value) || 5;
+      roomConfig.gridCols = val;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function stepGridRows(delta) {
+      const current = roomConfig.gridRows || Math.ceil(roomConfig.totalPlates / calculateDefaultCols(roomConfig.totalPlates));
+      const next = Math.max(1, Math.min(15, current + delta));
+      roomConfig.gridRows = next;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function onGridRowsInputChange(e) {
+      const val = Math.max(1, Math.min(15, parseInt(e.target.value) || 5));
+      roomConfig.gridRows = val;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function onGridRowsSliderChange(e) {
+      const val = parseInt(e.target.value) || 5;
+      roomConfig.gridRows = val;
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    function setQuickCols(cols) {
+      roomConfig.gridCols = cols;
+      roomConfig.gridFlow = 'row';
+      roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+      showToast(`ตั้งค่า ${cols} คอลัมน์ต่อแถว`);
+    }
+
+    function setAutoGrid() {
+      const total = roomConfig.totalPlates || 12;
+      roomConfig.gridCols = calculateDefaultCols(total);
+      roomConfig.gridRows = Math.ceil(total / roomConfig.gridCols);
+      roomConfig.gridFlow = 'row';
+      if (total === 12) roomConfig.layout = 1;
+      else roomConfig.layout = 'grid';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+      showToast('จัดตารางสมดุลอัตโนมัติแล้ว ✨');
+    }
+
+    function selectClassicLayout(num) {
+      roomConfig.layout = num;
+      saveRoomToDB(currentRoom, roomConfig);
+      applyLayoutUI();
+      updatePlateSize();
+      renderBoard();
+      updateBadges();
+    }
+
+    /* ==============================================================
+       PLATE SIZING & RESPONSIVE AUTO-FIT
+       ============================================================== */
+    function updatePlateSize() {
+      const root = document.documentElement;
+
+      if (roomConfig.plateSizeMode === 'manual' && roomConfig.customPlateSize) {
+        root.style.setProperty('--plate-size', `${roomConfig.customPlateSize}px`);
+        root.style.setProperty('--gap', `${Math.max(6, Math.round(roomConfig.customPlateSize * 0.12))}px`);
+        return;
+      }
+
+      // Auto-fit responsive calculation
+      const { cols, rows } = getGridDimensions();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Available area reserved for badges and bottom panel
+      const availW = Math.max(300, vw - 140);
+      const availH = Math.max(280, vh - 110);
+
+      // Desired gap
+      const gap = cols > 8 || rows > 5 ? 10 : (cols > 5 ? 12 : 16);
+      const maxW = (availW - (cols - 1) * gap) / cols;
+      const maxH = (availH - (rows - 1) * gap) / rows;
+
+      let optimal = Math.floor(Math.min(maxW, maxH));
+      optimal = Math.max(42, Math.min(145, optimal));
+
+      root.style.setProperty('--plate-size', `${optimal}px`);
+      root.style.setProperty('--gap', `${gap}px`);
+    }
+
+    window.addEventListener('resize', updatePlateSize);
+
+    function onAutoFitChange(e) {
+      roomConfig.plateSizeMode = e.target.checked ? 'auto' : 'manual';
+      document.getElementById('manualSizeBox').style.display = e.target.checked ? 'none' : 'block';
+      updatePlateSize();
+      saveRoomToDB(currentRoom, roomConfig);
+    }
+
+    function onPlateSizeSliderChange(e) {
+      const sz = parseInt(e.target.value) || 110;
+      roomConfig.customPlateSize = sz;
+      document.getElementById('manualSizeText').textContent = `${sz} px`;
+      updatePlateSize();
+      saveRoomToDB(currentRoom, roomConfig);
+    }
+
+    /* ==============================================================
+       BOARD RENDERING & DOM GENERATION
+       ============================================================== */
+    function updateBadges() {
+      const total = roomConfig.totalPlates || 12;
+      const { cols, rows } = getGridDimensions();
+      const badge = document.getElementById('platesBadgeLabel');
+      if (badge) {
+        if (total === 12 && roomConfig.layout === 1) {
+          badge.textContent = `12 ป้าย (5-4-3)`;
+        } else if (total === 12 && roomConfig.layout === 2) {
+          badge.textContent = `12 ป้าย (ขนาบข้าง)`;
+        } else {
+          const flowText = roomConfig.gridFlow === 'row' ? 'แนวนอน' : 'แนวตั้ง';
+          badge.textContent = `${total} ป้าย (${rows} แถว × ${cols} คอลัมน์)`;
+        }
+      }
+
+      const layoutBtnText = document.getElementById('layoutBtnText');
+      if (layoutBtnText) {
+        if (total === 12 && roomConfig.layout === 1) {
+          layoutBtnText.textContent = `Layout 1`;
+        } else if (total === 12 && roomConfig.layout === 2) {
+          layoutBtnText.textContent = `Layout 2`;
+        } else {
+          const flowText = roomConfig.gridFlow === 'row' ? 'แนวนอน' : 'แนวตั้ง';
+          layoutBtnText.textContent = `${rows}×${cols} ${flowText}`;
+        }
+      }
+
+      const statBanner = document.getElementById('gridStatBanner');
+      if (statBanner) {
+        const flowText = roomConfig.gridFlow === 'row' ? 'เรียงตามแนวนอน (ซ้ายไปขวา)' : 'เรียงตามแนวตั้ง (บนลงล่าง)';
+        statBanner.innerHTML = `✨ <strong>${rows} แถวแนวนอน</strong> × <strong>${cols} คอลัมน์แนวตั้ง</strong> = <strong>${total} ป้าย</strong> (${flowText})`;
+      }
+    }
+
+    function applyLayoutUI() {
+      const total = roomConfig.totalPlates || 12;
+      const is12 = total === 12;
+
+      // Inputs & Steppers
+      document.getElementById('totalPlatesInput').value = total;
+      document.getElementById('totalPlatesSlider').value = total;
+
+      // Classic 12 layouts block
+      const classicBox = document.getElementById('classic12LayoutBox');
+      classicBox.style.display = is12 ? 'block' : 'none';
+      if (is12) {
+        document.getElementById('optLayout1').classList.toggle('selected', roomConfig.layout === 1);
+        document.getElementById('optLayout2').classList.toggle('selected', roomConfig.layout === 2);
+        document.getElementById('optLayoutGrid12').classList.toggle('selected', roomConfig.layout === 'grid');
+      }
+
+      // Direction buttons
+      document.getElementById('dirBtnRow').classList.toggle('selected', roomConfig.gridFlow === 'row');
+      document.getElementById('dirBtnCol').classList.toggle('selected', roomConfig.gridFlow === 'column');
+
+      // Panels
+      document.getElementById('rowFlowSettings').style.display = roomConfig.gridFlow === 'row' ? 'block' : 'none';
+      document.getElementById('colFlowSettings').style.display = roomConfig.gridFlow === 'column' ? 'block' : 'none';
+
+      // Current values
+      const cols = roomConfig.gridCols || calculateDefaultCols(total);
+      const rows = roomConfig.gridRows || Math.ceil(total / calculateDefaultCols(total));
+      document.getElementById('gridColsInput').value = cols;
+      document.getElementById('gridColsSlider').value = cols;
+      document.getElementById('gridColsValDisplay').textContent = `${cols} คอลัมน์`;
+
+      document.getElementById('gridRowsInput').value = rows;
+      document.getElementById('gridRowsSlider').value = rows;
+      document.getElementById('gridRowsValDisplay').textContent = `${rows} แถว`;
+
+      // Auto fit & sizes
+      const isAutoFit = roomConfig.plateSizeMode !== 'manual';
+      document.getElementById('checkAutoFit').checked = isAutoFit;
+      document.getElementById('manualSizeBox').style.display = isAutoFit ? 'none' : 'block';
+      document.getElementById('plateSizeSlider').value = roomConfig.customPlateSize || 110;
+      document.getElementById('manualSizeText').textContent = `${roomConfig.customPlateSize || 110} px`;
+
+      // Tease pull
+      updateTeaseUI();
     }
 
     function toggleLayout() {
-      roomConfig.layout = roomConfig.layout === 1 ? 2 : 1;
+      const total = roomConfig.totalPlates || 12;
+      if (total === 12) {
+        if (roomConfig.layout === 1) {
+          roomConfig.layout = 2;
+          showToast('เปลี่ยนเป็น Layout 2 (ขนาบข้าง)');
+        } else if (roomConfig.layout === 2) {
+          roomConfig.layout = 'grid';
+          showToast('เปลี่ยนเป็น Layout Grid (ตาราง)');
+        } else {
+          roomConfig.layout = 1;
+          showToast('เปลี่ยนเป็น Layout 1 (พีระมิด 5-4-3)');
+        }
+      } else {
+        roomConfig.layout = 'grid';
+        roomConfig.gridFlow = roomConfig.gridFlow === 'row' ? 'column' : 'row';
+        showToast(roomConfig.gridFlow === 'row' ? 'จัดเรียง: แนวนอน (ซ้ายไปขวา)' : 'จัดเรียง: แนวตั้ง (บนลงล่าง)');
+      }
+
       saveRoomToDB(currentRoom, roomConfig);
       applyLayoutUI();
+      updatePlateSize();
       renderBoard();
-      showToast(`เปลี่ยนเป็น Layout ${roomConfig.layout}`);
+      updateBadges();
     }
 
-    function selectLayoutSetting(layoutNum) {
-      roomConfig.layout = layoutNum;
-      applyLayoutUI();
-      renderBoard();
+    function toggleTwoStepPullQuick() {
+      roomConfig.twoStepPull = !roomConfig.twoStepPull;
       saveRoomToDB(currentRoom, roomConfig);
+      updateTeaseUI();
+      showToast(roomConfig.twoStepPull ? `เปิดระบบแง้มป้าย (${roomConfig.teasePercent || 30}%) 🎯` : 'ปิดระบบแง้มป้าย (เปิดเต็ม)');
     }
 
     function onTwoStepChange(e) {
       roomConfig.twoStepPull = e.target.checked;
       saveRoomToDB(currentRoom, roomConfig);
-      showToast(roomConfig.twoStepPull ? 'เปิดระบบดึงป้ายสองครั้ง (แง้ม 30%)' : 'ปิดระบบดึงป้ายสองครั้ง');
+      updateTeaseUI();
+      showToast(roomConfig.twoStepPull ? `เปิดระบบแง้มป้าย (${roomConfig.teasePercent || 30}%) 🎯` : 'ปิดระบบแง้มป้าย (เปิดเต็ม)');
     }
 
-    // Render Board DOM according to Layout 1 or Layout 2
+    function setTeasePercent(val) {
+      val = Math.max(5, Math.min(95, parseInt(val) || 30));
+      roomConfig.teasePercent = val;
+      saveRoomToDB(currentRoom, roomConfig);
+      updateTeaseUI();
+      showToast(`ตั้งระยะแง้มป้ายเป็น ${val}%`);
+    }
+
+    function stepTeasePercent(delta) {
+      const curr = roomConfig.teasePercent || 30;
+      setTeasePercent(curr + delta);
+    }
+
+    function onTeasePercentInputChange(e) {
+      setTeasePercent(e.target.value);
+    }
+
+    function onTeasePercentSliderChange(e) {
+      const val = parseInt(e.target.value) || 30;
+      roomConfig.teasePercent = val;
+      saveRoomToDB(currentRoom, roomConfig);
+      updateTeaseUI();
+    }
+
+    function updateTeaseUI() {
+      const isTease = !!roomConfig.twoStepPull;
+      const pct = roomConfig.teasePercent || 30;
+
+      const btn = document.getElementById('btnTeaseToggle');
+      const btnText = document.getElementById('teaseToggleText');
+      if (btn && btnText) {
+        btn.classList.toggle('active', isTease);
+        btnText.textContent = isTease ? `แง้ม: ${pct}%` : 'แง้ม: ปิด';
+      }
+
+      const check = document.getElementById('checkTwoStepPull');
+      if (check) check.checked = isTease;
+
+      const teasePanel = document.getElementById('teaseSettingsPanel');
+      if (teasePanel) teasePanel.style.display = isTease ? 'block' : 'none';
+
+      const valDisplay = document.getElementById('teaseValDisplay');
+      if (valDisplay) valDisplay.textContent = `${pct}%`;
+
+      const slider = document.getElementById('teasePercentSlider');
+      if (slider) slider.value = pct;
+
+      const input = document.getElementById('teasePercentInput');
+      if (input) input.value = pct;
+
+      document.documentElement.style.setProperty('--tease-ratio', (pct / 100).toString());
+    }
+
     function renderBoard() {
       const board = document.getElementById('board');
+      if (!board) return;
       board.innerHTML = '';
+      board.className = 'board-container';
 
-      if (roomConfig.layout === 1) {
-        // Layout 1: 3 Rows (1-5, 6-9, 10-12)
+      const total = roomConfig.totalPlates || 12;
+
+      if (total === 12 && roomConfig.layout === 1) {
+        board.classList.add('layout-1');
         const rowsConfig = [
           [1, 2, 3, 4, 5],
           [6, 7, 8, 9],
           [10, 11, 12]
         ];
-
         rowsConfig.forEach((rowIndices, rIdx) => {
           const rowEl = document.createElement('div');
           rowEl.className = 'plate-row';
           rowEl.id = `row-${rIdx + 1}`;
           rowIndices.forEach(plateNum => {
-            const slotIdx = plateNum - 1;
-            rowEl.appendChild(createSlotElement(slotIdx));
+            rowEl.appendChild(createSlotElement(plateNum - 1));
           });
           board.appendChild(rowEl);
         });
 
-      } else {
-        // Layout 2: Left 1, Center Matrix (Top 2-6, Bottom 7-11), Right 12
+      } else if (total === 12 && roomConfig.layout === 2) {
+        board.classList.add('layout-2');
         const wrapper = document.createElement('div');
         wrapper.className = 'layout-2-wrapper';
 
@@ -1112,13 +2137,11 @@
         const centerMatrix = document.createElement('div');
         centerMatrix.className = 'layout-2-center-matrix';
 
-        // Row 1: Plates 2, 3, 4, 5, 6 (indices 1, 2, 3, 4, 5)
         const topRow = document.createElement('div');
         topRow.className = 'layout-2-row';
         [1, 2, 3, 4, 5].forEach(idx => topRow.appendChild(createSlotElement(idx)));
         centerMatrix.appendChild(topRow);
 
-        // Row 2: Plates 7, 8, 9, 10, 11 (indices 6, 7, 8, 9, 10)
         const botRow = document.createElement('div');
         botRow.className = 'layout-2-row';
         [6, 7, 8, 9, 10].forEach(idx => botRow.appendChild(createSlotElement(idx)));
@@ -1133,7 +2156,55 @@
         wrapper.appendChild(rightFlank);
 
         board.appendChild(wrapper);
+
+      } else {
+        // Grid Mode (1 to 50 plates)
+        board.classList.add('layout-grid');
+
+        if (roomConfig.gridFlow === 'row') {
+          // Row Flow: Horizontal (Left to Right, Row by Row)
+          const cols = Math.max(1, roomConfig.gridCols || calculateDefaultCols(total));
+          const numRows = Math.ceil(total / cols);
+
+          for (let r = 0; r < numRows; r++) {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'plate-row';
+            rowEl.id = `grid-row-${r + 1}`;
+
+            for (let c = 0; c < cols; c++) {
+              const slotIdx = r * cols + c;
+              if (slotIdx < total) {
+                rowEl.appendChild(createSlotElement(slotIdx));
+              }
+            }
+            board.appendChild(rowEl);
+          }
+        } else {
+          // Column Flow: Vertical (Top to Bottom, Column by Column)
+          const rows = Math.max(1, roomConfig.gridRows || Math.ceil(total / calculateDefaultCols(total)));
+          const numCols = Math.ceil(total / rows);
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'plate-cols-wrapper';
+
+          for (let c = 0; c < numCols; c++) {
+            const colEl = document.createElement('div');
+            colEl.className = 'plate-col';
+            colEl.id = `grid-col-${c + 1}`;
+
+            for (let r = 0; r < rows; r++) {
+              const slotIdx = c * rows + r;
+              if (slotIdx < total) {
+                colEl.appendChild(createSlotElement(slotIdx));
+              }
+            }
+            wrapper.appendChild(colEl);
+          }
+          board.appendChild(wrapper);
+        }
       }
+
+      updateBadges();
     }
 
     function createSlotElement(slotIdx) {
@@ -1141,8 +2212,7 @@
       slot.className = 'plate-slot';
       slot.id = `slot-${slotIdx}`;
       
-      // Restore existing state visual classes
-      const state = slotStates[slotIdx];
+      const state = slotStates[slotIdx] || 0;
       if (roomConfig.twoStepPull) {
         if (state === 1) slot.classList.add('peek');
         else if (state === 2) slot.classList.add('revealed');
@@ -1160,18 +2230,24 @@
       const frontImg = document.createElement('img');
       frontImg.className = 'plate-img';
       frontImg.id = `front-img-${slotIdx}`;
-      frontImg.src = roomConfig.frontImages[slotIdx];
+      frontImg.src = roomConfig.frontImages[slotIdx] || getDefaultImage(slotIdx + 1, 'front');
       frontImg.alt = `Plate ${slotIdx + 1}`;
       frontImg.draggable = false;
+      frontImg.onerror = () => {
+        frontImg.src = generatePlateSVG(slotIdx + 1, true);
+      };
 
-      // Back bonus image (80% scale)
+      // Back bonus image
       const backImg = document.createElement('img');
       backImg.className = 'bonus-img';
       backImg.id = `back-img-${slotIdx}`;
-      const backImgIdx = roomConfig.bonusMapping[slotIdx];
-      backImg.src = roomConfig.backImages[backImgIdx] || roomConfig.backImages[slotIdx];
+      const backImgIdx = roomConfig.bonusMapping[slotIdx] !== undefined ? roomConfig.bonusMapping[slotIdx] : slotIdx;
+      backImg.src = roomConfig.backImages[backImgIdx] || getDefaultImage(backImgIdx + 1, 'back');
       backImg.alt = `Bonus ${backImgIdx + 1}`;
       backImg.draggable = false;
+      backImg.onerror = () => {
+        backImg.src = generatePlateSVG(backImgIdx + 1, false);
+      };
 
       slot.appendChild(frontImg);
       slot.appendChild(backImg);
@@ -1185,8 +2261,8 @@
       activeZCounter += 2;
       const slot = document.getElementById(`slot-${slotIdx}`);
       if (!slot) return;
-      const parentRow = slot.closest('.plate-row') || slot.closest('.layout-2-wrapper');
-      if (parentRow) parentRow.style.zIndex = activeZCounter;
+      const parentRowOrCol = slot.closest('.plate-row') || slot.closest('.plate-col') || slot.closest('.layout-2-wrapper');
+      if (parentRowOrCol) parentRowOrCol.style.zIndex = activeZCounter;
       slot.style.zIndex = activeZCounter + 1;
     }
 
@@ -1204,7 +2280,7 @@
       elevatePlateToTop(slotIdx);
 
       const isTwoStep = !!roomConfig.twoStepPull;
-      const curr = slotStates[slotIdx];
+      const curr = slotStates[slotIdx] || 0;
 
       if (isTwoStep) {
         // State cycle: 0 (idle) -> 1 (peek 30%) -> 2 (revealed 100%) -> 3 (covered)
@@ -1242,6 +2318,11 @@
     /* ==============================================================
        ZOOM SYSTEM (SHIFT KEY)
        ============================================================== */
+    function getOptimalZoomScale(plateWidth) {
+      const pw = plateWidth || 100;
+      return Math.max(1.8, Math.min(3.4, 250 / pw));
+    }
+
     function zoomToSlot(slotIdx) {
       const board = document.getElementById('board');
       const slot = document.getElementById(`slot-${slotIdx}`);
@@ -1270,13 +2351,15 @@
       // Adjust camera slightly if plate is pulled to the right
       const state = slotStates[slotIdx];
       const isTwoStep = !!roomConfig.twoStepPull;
-      if (isTwoStep && state === 1) dx += slot.offsetWidth * 0.15;
+      const teaseRatio = (roomConfig.teasePercent || 30) / 100;
+      if (isTwoStep && state === 1) dx += slot.offsetWidth * (teaseRatio * 0.5);
       else if ((isTwoStep && state === 2) || (!isTwoStep && state === 1)) dx += slot.offsetWidth * 0.45;
 
-      const tx = -dx * ZOOM_SCALE;
-      const ty = -dy * ZOOM_SCALE;
+      const scale = getOptimalZoomScale(slot.offsetWidth);
+      const tx = -dx * scale;
+      const ty = -dy * scale;
 
-      board.style.transform = `translate(${tx}px, ${ty}px) scale(${ZOOM_SCALE})`;
+      board.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
       zoomedSlotIdx = slotIdx;
     }
 
@@ -1304,7 +2387,7 @@
     });
 
     document.addEventListener('click', (e) => {
-      if (zoomedSlotIdx !== null && !e.target.closest('.plate-slot') && !e.target.closest('.controls-panel') && !e.target.closest('.modal-backdrop') && !e.target.closest('.room-badge')) {
+      if (zoomedSlotIdx !== null && !e.target.closest('.plate-slot') && !e.target.closest('.controls-panel') && !e.target.closest('.modal-backdrop') && !e.target.closest('.top-nav-badges')) {
         zoomOut();
       }
     });
@@ -1315,11 +2398,12 @@
     function handleRandom() {
       shuffleBonusMapping();
       saveRoomToDB(currentRoom, roomConfig);
-      for (let i = 0; i < TOTAL; i++) {
+      const total = roomConfig.totalPlates || 12;
+      for (let i = 0; i < total; i++) {
         const bImg = document.getElementById(`back-img-${i}`);
         if (bImg) {
           const backIdx = roomConfig.bonusMapping[i];
-          bImg.src = roomConfig.backImages[backIdx];
+          bImg.src = roomConfig.backImages[backIdx] || roomConfig.backImages[i];
         }
       }
       const btn = document.getElementById('btnRandom');
@@ -1331,12 +2415,13 @@
     function handleReset() {
       isAnimatingAll = false;
       zoomOut();
-      slotStates.fill(0);
+      const total = roomConfig.totalPlates || 12;
+      slotStates = new Array(total).fill(0);
       activeZCounter = 100;
       shuffleBonusMapping();
       saveRoomToDB(currentRoom, roomConfig);
 
-      for (let i = 0; i < TOTAL; i++) {
+      for (let i = 0; i < total; i++) {
         const slot = document.getElementById(`slot-${i}`);
         if (slot) {
           slot.classList.remove('peek', 'revealed', 'covered');
@@ -1345,10 +2430,10 @@
         const bImg = document.getElementById(`back-img-${i}`);
         if (bImg) {
           const backIdx = roomConfig.bonusMapping[i];
-          bImg.src = roomConfig.backImages[backIdx];
+          bImg.src = roomConfig.backImages[backIdx] || roomConfig.backImages[i];
         }
       }
-      showToast('รีเซ็ตป้ายทั้งหมด 🔄');
+      showToast(`รีเซ็ตป้ายทั้งหมด ${total} ป้าย 🔄`);
     }
 
     let isAnimatingAll = false;
@@ -1357,9 +2442,13 @@
       isAnimatingAll = true;
       zoomOut();
 
+      const total = roomConfig.totalPlates || 12;
       const isTwoStep = !!roomConfig.twoStepPull;
 
-      for (let i = 0; i < TOTAL; i++) {
+      // Adjust animation speed so revealing 50 plates is swift and lively
+      const stepDelay = Math.max(25, Math.min(100, Math.floor(1400 / total)));
+
+      for (let i = 0; i < total; i++) {
         if (!isAnimatingAll) break;
         const slot = document.getElementById(`slot-${i}`);
         if (!slot) continue;
@@ -1371,32 +2460,32 @@
             slotStates[i] = 1;
             slot.classList.remove('revealed', 'covered');
             slot.classList.add('peek');
-            await wait(80);
+            await wait(stepDelay);
           }
           if (slotStates[i] === 1) {
             slotStates[i] = 2;
             slot.classList.remove('peek', 'covered');
             slot.classList.add('revealed');
-            await wait(100);
+            await wait(stepDelay);
           }
           if (slotStates[i] === 2) {
             slotStates[i] = 3;
             slot.classList.remove('peek', 'revealed');
             slot.classList.add('covered');
-            await wait(80);
+            await wait(stepDelay);
           }
         } else {
           if (slotStates[i] === 0) {
             slotStates[i] = 1;
             slot.classList.remove('covered');
             slot.classList.add('revealed');
-            await wait(110);
+            await wait(stepDelay);
           }
           if (slotStates[i] === 1) {
             slotStates[i] = 2;
             slot.classList.remove('revealed');
             slot.classList.add('covered');
-            await wait(90);
+            await wait(stepDelay);
           }
         }
       }
@@ -1412,6 +2501,7 @@
     function openModal(defaultTab = 'front') {
       zoomOut();
       updateEditorModal();
+      applyLayoutUI();
       switchTab(defaultTab);
       document.getElementById('customModal').classList.add('show');
     }
@@ -1422,6 +2512,7 @@
 
     function saveAndCloseModal() {
       saveRoomToDB(currentRoom, roomConfig);
+      updatePlateSize();
       renderBoard();
       closeModal();
       showToast('บันทึกการตั้งค่าแล้ว ✨');
@@ -1435,6 +2526,17 @@
     }
 
     function updateEditorModal() {
+      const total = roomConfig.totalPlates || 12;
+
+      document.getElementById('tabBtnFront').textContent = `ป้ายหน้า (1 - ${total})`;
+      document.getElementById('tabBtnBack').textContent = `ป้ายหลัง (1 - ${total})`;
+
+      document.getElementById('batchFrontText').textContent = `เปลี่ยนรูปป้ายหน้าทั้งหมด (${total} ไฟล์) พร้อมกัน:`;
+      document.getElementById('batchFrontBtnText').textContent = `เลือก ${total} รูป`;
+
+      document.getElementById('batchBackText').textContent = `เปลี่ยนรูปป้ายหลังทั้งหมด (${total} ไฟล์) พร้อมกัน:`;
+      document.getElementById('batchBackBtnText').textContent = `เลือก ${total} รูป`;
+
       renderEditorGrid('front');
       renderEditorGrid('back');
     }
@@ -1443,8 +2545,10 @@
       const container = document.getElementById(`${type}Grid`);
       container.innerHTML = '';
       const list = type === 'front' ? roomConfig.frontImages : roomConfig.backImages;
+      const total = roomConfig.totalPlates || 12;
 
-      list.forEach((imgSrc, idx) => {
+      for (let idx = 0; idx < total; idx++) {
+        const imgSrc = list[idx] || getDefaultImage(idx + 1, type);
         const card = document.createElement('div');
         card.className = 'editor-card';
 
@@ -1460,6 +2564,7 @@
         const img = document.createElement('img');
         img.src = imgSrc;
         img.alt = `${type} ${idx + 1}`;
+        img.onerror = () => { img.src = generatePlateSVG(idx + 1, type === 'front'); };
 
         const overlay = document.createElement('div');
         overlay.className = 'editor-thumb-overlay';
@@ -1468,7 +2573,7 @@
         thumbBox.appendChild(img);
         thumbBox.appendChild(overlay);
 
-        // Move Left/Right Order buttons
+        // Move Left / Reset / Right Order buttons
         const actions = document.createElement('div');
         actions.className = 'editor-actions';
 
@@ -1479,25 +2584,46 @@
         btnLeft.disabled = idx === 0;
         btnLeft.onclick = () => swapOrder(type, idx, idx - 1);
 
+        const btnResetImg = document.createElement('button');
+        btnResetImg.className = 'mini-btn';
+        btnResetImg.textContent = '🔄';
+        btnResetImg.title = 'คืนค่าภาพเริ่มต้นป้ายนี้';
+        btnResetImg.onclick = () => resetSingleImage(type, idx);
+
         const btnRight = document.createElement('button');
         btnRight.className = 'mini-btn';
         btnRight.textContent = '▶';
         btnRight.title = 'เลื่อนไปขวา';
-        btnRight.disabled = idx === TOTAL - 1;
+        btnRight.disabled = idx === total - 1;
         btnRight.onclick = () => swapOrder(type, idx, idx + 1);
 
         actions.appendChild(btnLeft);
+        actions.appendChild(btnResetImg);
         actions.appendChild(btnRight);
 
         card.appendChild(num);
         card.appendChild(thumbBox);
         card.appendChild(actions);
         container.appendChild(card);
-      });
+      }
+    }
+
+    function resetSingleImage(type, idx) {
+      const defaultImg = getDefaultImage(idx + 1, type);
+      if (type === 'front') {
+        roomConfig.frontImages[idx] = defaultImg;
+      } else {
+        roomConfig.backImages[idx] = defaultImg;
+      }
+      saveRoomToDB(currentRoom, roomConfig);
+      renderEditorGrid(type);
+      renderBoard();
+      showToast(`คืนค่าเริ่มต้นป้าย ${idx + 1} แล้ว`);
     }
 
     function swapOrder(type, fromIdx, toIdx) {
-      if (toIdx < 0 || toIdx >= TOTAL) return;
+      const total = roomConfig.totalPlates || 12;
+      if (toIdx < 0 || toIdx >= total) return;
       const list = type === 'front' ? roomConfig.frontImages : roomConfig.backImages;
       const temp = list[fromIdx];
       list[fromIdx] = list[toIdx];
@@ -1544,8 +2670,9 @@
 
       files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
+      const total = roomConfig.totalPlates || 12;
+      const totalToLoad = Math.min(files.length, total);
       let loadedCount = 0;
-      const totalToLoad = Math.min(files.length, TOTAL);
 
       for (let i = 0; i < totalToLoad; i++) {
         const reader = new FileReader();
@@ -1582,4 +2709,3 @@
   </script>
 </body>
 </html>
-

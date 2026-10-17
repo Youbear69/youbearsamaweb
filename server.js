@@ -1654,6 +1654,14 @@ app.get([
   res.sendFile(path.join(__dirname, 'public', 'setting12vote.html'));
 });
 
+// Freeboard page routes
+app.get([
+  '/freeboard', '/freeboard/',
+  '/12vtubergame/freeboard', '/12vtubergame/freeboard/'
+], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'freeboard', 'index.html'));
+});
+
 // Socket.IO for vote system
 io.on('connection', (socket) => {
   // Admin joins room for full live vote feeds
@@ -1716,5 +1724,6 @@ httpServer.listen(PORT, () => {
   console.log(`Admin:      http://localhost:${PORT}/12vtubergame/adminpanel`);
   console.log(`Vote:       http://localhost:${PORT}/12vtubervotesite`);
   console.log(`Vote Admin: http://localhost:${PORT}/setting12vote`);
+  console.log(`FreeBoard:  http://localhost:${PORT}/freeboard`);
   console.log(`====================================================`);
 });
