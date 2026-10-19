@@ -1263,6 +1263,9 @@ async function initAdminPage() {
     if (tabKey === 'random12' && typeof window.loadRandom12Logs === 'function') {
       window.loadRandom12Logs();
     }
+    if (tabKey === 'roster' && typeof window.loadAdminRoster === 'function') {
+      window.loadAdminRoster();
+    }
   }
   window.switchAdminMainTab = switchAdminMainTab;
 
@@ -1456,6 +1459,318 @@ async function initAdminPage() {
     // Initial load
     loadRandom12Logs();
   }
+
+  // ==========================================
+  // 12 Zodiac Roster Management
+  // ==========================================
+  let adminRosterData = { registered: {}, nominated: {} };
+  let adminRosterCat = 'registered';
+  let activePickTarget = null; // { zodiacKey, index }
+
+  async function loadAdminRoster() {
+    try {
+      const res = await fetch('/api/roster');
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.data) {
+          adminRosterData = json.data;
+          if (!adminRosterData.registered) adminRosterData.registered = {};
+          if (!adminRosterData.nominated) adminRosterData.nominated = {};
+
+          // Count total
+          let totalCount = 0;
+          Object.values(adminRosterData.registered || {}).forEach(arr => totalCount += (arr || []).length);
+          Object.values(adminRosterData.nominated || {}).forEach(arr => totalCount += (arr || []).length);
+          const badge = document.getElementById('tab-badge-roster');
+          if (badge) badge.textContent = totalCount;
+
+          renderAdminRoster();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load admin roster:', err);
+      showToast('ไม่สามารถดึงข้อมูลรายชื่อผู้ได้เล่นได้', 'error');
+    }
+  }
+  window.loadAdminRoster = loadAdminRoster;
+
+  function switchAdminRosterCategory(cat) {
+    adminRosterCat = cat;
+    const btnReg = document.getElementById('admin-roster-tab-registered');
+    const btnNom = document.getElementById('admin-roster-tab-nominated');
+
+    if (cat === 'registered') {
+      if (btnReg) {
+        btnReg.className = 'btn-secondary active';
+        btnReg.style.background = 'rgba(168, 85, 247, 0.2)';
+        btnReg.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+        btnReg.style.color = '#fff';
+      }
+      if (btnNom) {
+        btnNom.className = 'btn-secondary';
+        btnNom.style.background = 'transparent';
+        btnNom.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        btnNom.style.color = '#cbd5e1';
+      }
+    } else {
+      if (btnNom) {
+        btnNom.className = 'btn-secondary active';
+        btnNom.style.background = 'rgba(236, 72, 153, 0.2)';
+        btnNom.style.borderColor = 'rgba(244, 114, 182, 0.6)';
+        btnNom.style.color = '#fff';
+      }
+      if (btnReg) {
+        btnReg.className = 'btn-secondary';
+        btnReg.style.background = 'transparent';
+        btnReg.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        btnReg.style.color = '#cbd5e1';
+      }
+    }
+    renderAdminRoster();
+  }
+  window.switchAdminRosterCategory = switchAdminRosterCategory;
+
+  function renderAdminRoster() {
+    const grid = document.getElementById('admin-roster-zodiac-grid');
+    if (!grid) return;
+
+    const currentCatData = adminRosterData[adminRosterCat] || {};
+
+    grid.innerHTML = ZODIAC_LIST.map(z => {
+      const players = currentCatData[z.key] || [];
+      const count = players.length;
+
+      let playersHtml = players.map((p, idx) => {
+        const avatar = p.imageUrl || '/assets/images/mascot/not-speak.png';
+        return `
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(168,85,247,0.5); flex-shrink: 0;">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.92rem;" placeholder="ชื่อ VTuber" value="${escapeHtml(p.displayName || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'displayName', this.value)">
+                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.85rem;" placeholder="ลิงก์ X หรือ @username" value="${escapeHtml(p.xAccount || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'xAccount', this.value)">
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="text" class="form-input" style="padding: 3px 8px; font-size: 0.82rem; flex: 1;" placeholder="URL รูปภาพโปรไฟล์" value="${escapeHtml(p.imageUrl || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'imageUrl', this.value)">
+              <button type="button" class="btn-secondary" style="padding: 3px 10px; font-size: 0.8rem; white-space: nowrap;" onclick="openRosterPickModal('${z.key}', ${idx})">
+                👥 ดึง
+              </button>
+              <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 0.8rem; color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);" onclick="removeAdminRosterPlayer('${z.key}', ${idx})" title="ลบ">
+                ✕
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (players.length === 0) {
+        playersHtml = `<div style="text-align: center; color: var(--text-muted); padding: 1rem 0; font-size: 0.9rem;">ยังไม่มีผู้เล่นในราศีนี้</div>`;
+      }
+
+      return `
+        <div class="admin-card" style="padding: 1rem; border: 1.5px solid rgba(139, 92, 246, 0.3); border-radius: 16px; background: rgba(18, 12, 38, 0.65);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <img src="/assets/images/white/${z.icon}" style="width: 20px; height: 20px; object-fit: contain;">
+              <strong style="color: #fff; font-size: 1.05rem;">${z.th}</strong>
+              <span style="color: #a78bfa; font-size: 0.88rem;">(${z.en})</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="background: rgba(139, 92, 246, 0.25); color: #cbd5e1; padding: 2px 8px; border-radius: 12px; font-size: 0.82rem; font-weight: 700;">${count} คน</span>
+              <button type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.82rem; font-weight: 700;" onclick="addAdminRosterPlayer('${z.key}')">
+                + เพิ่ม
+              </button>
+            </div>
+          </div>
+          <div>${playersHtml}</div>
+        </div>
+      `;
+    }).join('');
+  }
+  window.renderAdminRoster = renderAdminRoster;
+
+  window.updateRosterField = function(zodiacKey, idx, field, val) {
+    if (!adminRosterData[adminRosterCat]) adminRosterData[adminRosterCat] = {};
+    if (!adminRosterData[adminRosterCat][zodiacKey]) adminRosterData[adminRosterCat][zodiacKey] = [];
+    if (adminRosterData[adminRosterCat][zodiacKey][idx]) {
+      adminRosterData[adminRosterCat][zodiacKey][idx][field] = val;
+    }
+  };
+
+  window.addAdminRosterPlayer = function(zodiacKey) {
+    if (!adminRosterData[adminRosterCat]) adminRosterData[adminRosterCat] = {};
+    if (!adminRosterData[adminRosterCat][zodiacKey]) adminRosterData[adminRosterCat][zodiacKey] = [];
+    adminRosterData[adminRosterCat][zodiacKey].push({
+      id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      displayName: '',
+      xAccount: '',
+      imageUrl: ''
+    });
+    renderAdminRoster();
+  };
+
+  window.removeAdminRosterPlayer = function(zodiacKey, idx) {
+    if (adminRosterData[adminRosterCat] && adminRosterData[adminRosterCat][zodiacKey]) {
+      adminRosterData[adminRosterCat][zodiacKey].splice(idx, 1);
+      renderAdminRoster();
+    }
+  };
+
+  window.openRosterPickModal = function(zodiacKey, idx) {
+    activePickTarget = { zodiacKey, index: idx };
+    const modal = document.getElementById('roster-pick-modal');
+    if (!modal) return;
+    modal.classList.add('show');
+    const searchInput = document.getElementById('roster-pick-search');
+    if (searchInput) searchInput.value = '';
+    renderRosterPickList('');
+  };
+
+  window.closeRosterPickModal = function() {
+    const modal = document.getElementById('roster-pick-modal');
+    if (modal) modal.classList.remove('show');
+    activePickTarget = null;
+  };
+
+  window.filterRosterApplicants = function(query) {
+    renderRosterPickList(query);
+  };
+
+  function renderRosterPickList(query) {
+    const listEl = document.getElementById('roster-pick-list');
+    if (!listEl) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const all = [
+      ...(allRegistrations || []).map(r => ({ ...r, source: 'ลงทะเบียน' })),
+      ...(allProposals || []).map(p => ({ ...p, source: 'เสนอชื่อ' }))
+    ];
+
+    const filtered = all.filter(item => {
+      if (!q) return true;
+      const name = (item.displayName || '').toLowerCase();
+      const xAcc = (item.xAccount || '').toLowerCase();
+      const zod = (item.zodiacNameTh || '').toLowerCase();
+      return name.includes(q) || xAcc.includes(q) || zod.includes(q);
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">ไม่พบผู้สมัครที่ตรงกับ "${escapeHtml(q)}"</div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.slice(0, 50).map(item => {
+      const avatar = item.imageUrl || '/assets/images/mascot/not-speak.png';
+      const zodLabel = item.zodiacNameTh || 'ไม่ทราบราศี';
+      const isTargetZodiac = activePickTarget && item.zodiacKey === activePickTarget.zodiacKey;
+
+      return `
+        <div onclick="selectApplicantForRoster('${item.id}', '${item.source}')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${isTargetZodiac ? 'rgba(168,85,247,0.5)' : 'rgba(255,255,255,0.08)'}; border-radius: 10px; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 700; color: #fff; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.displayName || 'VTuber')}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.xAccount || '')}</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+            <span style="font-size: 0.78rem; background: ${isTargetZodiac ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}; color: ${isTargetZodiac ? '#c4b5fd' : '#94a3b8'}; padding: 2px 6px; border-radius: 10px;">${escapeHtml(zodLabel)}</span>
+            <span style="font-size: 0.72rem; color: ${item.source === 'ลงทะเบียน' ? '#38bdf8' : '#fbbf24'};">${item.source}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.selectApplicantForRoster = function(id, source) {
+    if (!activePickTarget) return;
+    const { zodiacKey, index } = activePickTarget;
+
+    const list = (source === 'ลงทะเบียน') ? allRegistrations : allProposals;
+    const applicant = list.find(m => m.id === id);
+    if (!applicant) return;
+
+    if (!adminRosterData[adminRosterCat]) adminRosterData[adminRosterCat] = {};
+    if (!adminRosterData[adminRosterCat][zodiacKey]) adminRosterData[adminRosterCat][zodiacKey] = [];
+    if (adminRosterData[adminRosterCat][zodiacKey][index]) {
+      adminRosterData[adminRosterCat][zodiacKey][index].displayName = applicant.displayName || '';
+      adminRosterData[adminRosterCat][zodiacKey][index].xAccount = applicant.xAccount || '';
+      adminRosterData[adminRosterCat][zodiacKey][index].imageUrl = applicant.imageUrl || '';
+    }
+
+    closeRosterPickModal();
+    renderAdminRoster();
+    showToast(`เลือก "${applicant.displayName}" สำเร็จ`, 'success');
+  };
+
+  window.saveAdminRoster = async function() {
+    const btn = document.getElementById('btn-save-roster');
+    try {
+      if (btn) btn.disabled = true;
+
+      const user = fbAuth.currentUser;
+      let token = '';
+      if (user) {
+        token = await user.getIdToken();
+      }
+
+      const res = await fetch('/api/roster', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-dev': 'true',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ roster: adminRosterData })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        showToast('บันทึกรายชื่อผู้ได้เล่นสำเร็จเรียบร้อย!', 'success');
+      } else {
+        showToast('เกิดข้อผิดพลาด: ' + (json.message || 'ไม่สามารถบันทึกได้'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  window.resetAdminRosterToDefault = async function() {
+    if (!confirm('คุณต้องการรีเซ็ตรายชื่อผู้ได้เล่นเป็นค่าเริ่มต้นตามภาพตัวอย่างใช่หรือไม่?\n(ข้อมูลที่แก้ไขไว้จะถูกแทนที่ด้วยข้อมูลตั้งต้น)')) {
+      return;
+    }
+
+    try {
+      const user = fbAuth.currentUser;
+      let token = '';
+      if (user) {
+        token = await user.getIdToken();
+      }
+
+      const res = await fetch('/api/roster/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-dev': 'true',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        adminRosterData = json.data;
+        renderAdminRoster();
+        showToast('รีเซ็ตรายชื่อเป็นค่าเริ่มต้นสำเร็จ!', 'success');
+      } else {
+        showToast('เกิดข้อผิดพลาด: ' + (json.message || 'ไม่สามารถรีเซ็ตได้'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    }
+  };
 
   // Toggle Profanity Filter List accordion
   window.toggleProfanityList = function() {

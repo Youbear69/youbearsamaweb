@@ -306,131 +306,126 @@
       position: fixed;
       top: 18px;
       left: 20px;
-      z-index: 100;
+      z-index: 9999;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
+      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
     }
 
-    .room-badge {
+    .top-nav-badges.ui-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-14px);
+    }
+
+    .room-badge, .plates-badge {
       background: rgba(18, 12, 38, 0.85);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(139, 92, 246, 0.35);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: 18px;
+      font-size: 11.5px;
       font-weight: 600;
       color: #c4b5fd;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,0.4);
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .room-badge:hover {
+    .room-badge:hover, .plates-badge:hover {
       background: rgba(30, 20, 60, 0.95);
       border-color: rgba(167, 139, 250, 0.6);
       transform: translateY(-1px);
     }
 
     .room-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #10b981;
       box-shadow: 0 0 8px #10b981;
     }
 
     .plates-badge {
-      background: rgba(18, 12, 38, 0.85);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(139, 92, 246, 0.35);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
       color: #93c5fd;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-      cursor: pointer;
-      transition: all 0.2s;
     }
 
-    .plates-badge:hover {
-      background: rgba(30, 20, 60, 0.95);
-      border-color: rgba(147, 197, 253, 0.6);
-      transform: translateY(-1px);
+    /* Custom Background Image layer */
+    .custom-board-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
     }
 
-    /* Controls Panel - Bottom Right */
+    .custom-bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, var(--custom-bg-dim, 0.4));
+      backdrop-filter: blur(var(--custom-bg-blur, 0px));
+      -webkit-backdrop-filter: blur(var(--custom-bg-blur, 0px));
+    }
+
+    /* Controls Panel - Bottom Right (Compact Modern Design) */
     .controls-panel {
       position: fixed;
       right: 20px;
-      bottom: 64px;
+      bottom: 20px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 6px;
       align-items: flex-end;
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
     }
+
     .controls-panel.ui-hidden {
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
-      transform: translateY(16px);
+      transform: translateY(14px);
     }
 
-    /* Hide UI Toggle Button - always visible */
-    .btn-hide-ui {
+    .unhide-trigger {
       position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 10001;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.18);
-      background: rgba(10, 5, 25, 0.7);
-      backdrop-filter: blur(8px);
-      color: rgba(255,255,255,0.5);
-      cursor: pointer;
-      display: flex;
+      right: 18px;
+      bottom: 18px;
+      z-index: 9999;
+      background: rgba(18, 12, 38, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(139, 92, 246, 0.4);
+      color: #c4b5fd;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      display: none;
       align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    .btn-hide-ui:hover {
-      background: rgba(30, 15, 60, 0.9);
-      border-color: rgba(167, 139, 250, 0.5);
-      color: #a78bfa;
-      transform: scale(1.1);
-    }
-    .btn-hide-ui svg {
-      width: 15px;
-      height: 15px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    /* When UI is hidden, the toggle moves down */
-    .btn-hide-ui.ui-showing {
-      color: rgba(255,255,255,0.35);
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .top-nav-badges.ui-hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-16px);
+    .unhide-trigger.show {
+      display: flex;
     }
-    .top-nav-badges {
-      transition: opacity 0.3s ease, transform 0.3s ease;
+
+    .unhide-trigger:hover {
+      background: rgba(30, 20, 60, 0.98);
+      border-color: rgba(167, 139, 250, 0.7);
+      transform: translateY(-2px);
+      color: #fff;
     }
 
     .btn-row {
@@ -447,21 +442,20 @@
       font-family: inherit;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      padding: 7px 12px;
+      padding: 6px 13px;
       border-radius: 20px;
       color: #fff;
       display: flex;
       align-items: center;
       gap: 5px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.45);
       transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
-      position: relative;
     }
 
     .ctrl-btn:hover {
-      transform: translateY(-2px) scale(1.04);
+      transform: translateY(-1.5px) scale(1.02);
     }
 
     .ctrl-btn:active {
@@ -471,7 +465,7 @@
     .btn-tease {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.75);
     }
     .btn-tease:hover {
       background: rgba(255, 255, 255, 0.16);
@@ -481,19 +475,29 @@
       background: linear-gradient(135deg, #ec4899, #8b5cf6);
       border: 1px solid rgba(244, 114, 182, 0.5);
       color: #fff;
-      box-shadow: 0 3px 14px rgba(236, 72, 153, 0.45);
+      box-shadow: 0 4px 18px rgba(236, 72, 153, 0.45);
     }
     .btn-tease.active:hover {
-      box-shadow: 0 5px 18px rgba(236, 72, 153, 0.65);
+      box-shadow: 0 6px 22px rgba(236, 72, 153, 0.65);
+    }
+
+    .btn-hideui {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.75);
+    }
+    .btn-hideui:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
     }
 
     .btn-pencil {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       border: 1px solid rgba(251, 191, 36, 0.5);
-      box-shadow: 0 3px 12px rgba(245, 158, 11, 0.4);
+      box-shadow: 0 3px 14px rgba(245, 158, 11, 0.35);
     }
     .btn-pencil:hover {
-      box-shadow: 0 5px 16px rgba(245, 158, 11, 0.6);
+      box-shadow: 0 5px 18px rgba(245, 158, 11, 0.55);
     }
 
     .btn-layout {
@@ -524,7 +528,6 @@
       stroke-width: 2.2;
       stroke-linecap: round;
       stroke-linejoin: round;
-      flex-shrink: 0;
     }
 
     /* Modal Styling */
@@ -1092,6 +1095,11 @@
     <div class="cosmic-stars"></div>
   </div>
 
+  <!-- Custom Background Container -->
+  <div class="custom-board-bg" id="customBoardBg" style="display: none;">
+    <div class="custom-bg-overlay" id="customBgOverlay"></div>
+  </div>
+
   <!-- Top Navigation Badges (Click to open settings) -->
   <div class="top-nav-badges">
     <div class="room-badge" id="roomBadge" onclick="openModal('settings')" title="คลิกเพื่อตั้งค่าห้อง">
@@ -1111,39 +1119,45 @@
   </div>
 
   <!-- Controls Panel - Bottom Right -->
-  <!-- Hide UI Toggle (always visible) -->
-  <button class="btn-hide-ui ui-showing" id="btnHideUI" onclick="toggleHideUI()" title="ซ่อน/แสดง UI ควบคุม">
-    <svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-  </button>
-  <div class="controls-panel" id="controlsPanel">
+  <div class="controls-panel">
     <div class="btn-row">
       <button class="ctrl-btn btn-tease" id="btnTeaseToggle" onclick="toggleTwoStepPullQuick()" title="สลับเปิด/ปิดระบบแง้มป้ายสองจังหวะ">
         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span id="teaseToggleText">แง้ม</span>
+        <span id="teaseToggleText">แง้ม: ปิด</span>
       </button>
       <button class="ctrl-btn btn-pencil" onclick="openModal('front')" title="แก้ไขรูปและปรับแต่งบอร์ด">
         <svg viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
         Custom
       </button>
-      <button class="ctrl-btn btn-layout" id="btnLayoutToggle" onclick="openModal('settings')" title="ตั้งค่า Layout">
-        <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        ตั้งค่า
+      <button class="ctrl-btn btn-layout" id="btnLayoutToggle" onclick="toggleLayout()" title="สลับ Layout / แนวนอน / แนวตั้ง">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span id="layoutBtnText">Layout 1</span>
+      </button>
+      <button class="ctrl-btn btn-hideui" id="btnHideUI" onclick="toggleHideUI()" title="ซ่อน UI แถบควบคุมและ Badge ทั้งหมด (กด H เพื่อซ่อน/แสดง)">
+        <svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <span>ซ่อน UI</span>
       </button>
     </div>
     <div class="btn-row">
       <button class="ctrl-btn btn-random" id="btnRandom" onclick="handleRandom()" title="สลับสุ่มป้ายหลังใหม่">
         <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-        สุ่ม
+        Random
       </button>
       <button class="ctrl-btn btn-showall" id="btnShowAll" onclick="handleShowAll()" title="เปิดทั้งหมด">
         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        เปิดทั้งหมด
+        Show All
       </button>
       <button class="ctrl-btn btn-reset" id="btnReset" onclick="handleReset()" title="รีเซ็ตป้ายทั้งหมด">
         <svg viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
-        รีเซ็ต
+        Reset
       </button>
     </div>
+  </div>
+
+  <!-- Floating Unhide Trigger (shown when UI is hidden) -->
+  <div id="unhideTrigger" class="unhide-trigger" onclick="toggleHideUI()" title="คลิก หรือกด H เพื่อแสดง UI">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>แสดง UI (H)</span>
   </div>
 
   <!-- Customization Modal -->
@@ -1375,7 +1389,35 @@
             </div>
           </div>
 
-          <!-- 5. Multi-Server Room Isolation -->
+          <!-- 5. Custom Background Image -->
+          <div class="setting-group">
+            <div class="setting-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              ภาพพื้นหลังของกระดาน (Custom Background)
+            </div>
+            <p style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:10px;">
+              เลือกรูปภาพจากเครื่องเพื่อใช้เป็นภาพพื้นหลังของบอร์ด (บันทึกแยกรายห้อง):
+            </p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+              <label class="upload-btn-label" style="padding:7px 14px; font-size:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>เลือกภาพพื้นหลัง</span>
+                <input type="file" id="bgFileInput" accept="image/*" style="display:none" onchange="handleBgFileUpload(event)">
+              </label>
+              <button class="mini-btn" style="background:#dc2626; padding:6px 14px;" id="btnRemoveCustomBg" onclick="removeCustomBackground()">ลบภาพ / คืนค่า Cosmic</button>
+            </div>
+            <div class="setting-sub-row" style="margin-bottom:8px;">
+              <span style="font-size:12px; color:rgba(255,255,255,0.7);">ความมืดเงาทับ (Darkness Overlay):</span>
+              <span id="bgDimDisplay" class="sub-val">40%</span>
+            </div>
+            <input type="range" id="bgDimSlider" class="custom-range" min="0" max="90" step="5" value="40" oninput="onBgDimSliderChange(event)">
+            <div id="bgPreviewWrap" style="margin-top:10px; display:none; align-items:center; gap:10px;">
+              <span style="font-size:11px; color:rgba(255,255,255,0.5);">รูปปัจจุบัน:</span>
+              <img id="bgThumbnail" style="width:70px; height:45px; object-fit:cover; border-radius:6px; border:1px solid rgba(139,92,246,0.4);">
+            </div>
+          </div>
+
+          <!-- 6. Multi-Server Room Isolation -->
           <div class="setting-group">
             <div class="setting-group-title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -1389,30 +1431,6 @@
               <button class="ctrl-btn btn-random" style="padding:8px 14px; font-size:12px;" onclick="switchRoomFromInput()">เข้าห้องนี้</button>
               <button class="ctrl-btn btn-showall" style="padding:8px 14px; font-size:12px;" onclick="copyRoomLink()">แชร์ลิงก์</button>
             </div>
-          </div>
-
-          <!-- BG Image: Custom Background -->
-          <div class="setting-group">
-            <div class="setting-group-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              พื้นหลังบอร์ด (Custom Background)
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
-              <label class="upload-btn-label" style="font-size:12px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                เลือกรูปพื้นหลัง
-                <input type="file" id="bgImageInput" accept="image/*" style="display:none" onchange="handleBgImageUpload(event)">
-              </label>
-              <button class="mini-btn" onclick="clearBgImage()" style="font-size:11px; padding:5px 12px;">ลบพื้นหลัง</button>
-            </div>
-            <div id="bgImagePreview" style="display:none; border-radius:10px; overflow:hidden; max-height:100px; border:1px solid rgba(255,255,255,0.1);">
-              <img id="bgPreviewImg" src="" alt="preview" style="width:100%; height:100px; object-fit:cover;">
-            </div>
-            <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;">
-              <span style="font-size:12px; color:rgba(255,255,255,0.6);">ความมืดพื้นหลัง (Overlay):</span>
-              <span class="sub-val" id="bgDimDisplay">50%</span>
-            </div>
-            <input type="range" id="bgDimSlider" class="custom-range" min="0" max="100" value="50" oninput="onBgDimChange(event)">
           </div>
 
           <!-- 6. Reset Default -->
@@ -1459,6 +1477,8 @@
       customPlateSize: 110,  // px (used when manual)
       twoStepPull: false,    // true = peek -> 100% full -> cover; false = full -> cover
       teasePercent: 30,      // custom tease distance % (default 30)
+      customBg: '',          // custom background image (data URL or http)
+      customBgDim: 40,       // overlay darkness % (0-90)
       frontImages: [],
       backImages: [],
       bonusMapping: []
@@ -1657,8 +1677,8 @@
         roomConfig.customPlateSize = saved.customPlateSize || 110;
         roomConfig.twoStepPull = saved.twoStepPull ?? false;
         roomConfig.teasePercent = saved.teasePercent || 30;
-        roomConfig.bgImage = saved.bgImage || null;
-        roomConfig.bgDim = saved.bgDim !== undefined ? saved.bgDim : 50;
+        roomConfig.customBg = saved.customBg || '';
+        roomConfig.customBgDim = (saved.customBgDim !== undefined) ? saved.customBgDim : 40;
 
         ensureImageArraysLength(saved.frontImages, saved.backImages, saved.bonusMapping);
       } else {
@@ -1671,26 +1691,19 @@
         roomConfig.customPlateSize = 110;
         roomConfig.twoStepPull = false;
         roomConfig.teasePercent = 30;
-        roomConfig.bgImage = null;
-        roomConfig.bgDim = 50;
+        roomConfig.customBg = '';
+        roomConfig.customBgDim = 40;
         ensureImageArraysLength(null, null, null);
       }
 
       slotStates = new Array(roomConfig.totalPlates).fill(0);
       applyLayoutUI();
+      applyCustomBackground();
       updatePlateSize();
       renderBoard();
       updateEditorModal();
       updateBadges();
       updateTeaseUI();
-
-      // Apply saved background image if any
-      if (roomConfig.bgImage) applyBgImage(roomConfig.bgImage);
-      // Update bgDim slider
-      const bgDimSlider = document.getElementById('bgDimSlider');
-      const bgDimDisplay = document.getElementById('bgDimDisplay');
-      if (bgDimSlider) bgDimSlider.value = roomConfig.bgDim;
-      if (bgDimDisplay) bgDimDisplay.textContent = (roomConfig.bgDim || 50) + '%';
     }
 
     function ensureImageArraysLength(savedFront, savedBack, savedMapping) {
@@ -1767,6 +1780,8 @@
         customPlateSize: 110,
         twoStepPull: false,
         teasePercent: 30,
+        customBg: '',
+        customBgDim: 40,
         frontImages: Array.from({ length: total }, (_, i) => getDefaultImage(i + 1, 'front')),
         backImages:  Array.from({ length: total }, (_, i) => getDefaultImage(i + 1, 'back')),
         bonusMapping: Array.from({ length: total }, (_, i) => i)
@@ -1775,6 +1790,7 @@
       slotStates = new Array(total).fill(0);
       saveRoomToDB(currentRoom, roomConfig);
       applyLayoutUI();
+      applyCustomBackground();
       updatePlateSize();
       renderBoard();
       updateEditorModal();
@@ -2131,91 +2147,7 @@
       roomConfig.twoStepPull = !roomConfig.twoStepPull;
       saveRoomToDB(currentRoom, roomConfig);
       updateTeaseUI();
-      const btn = document.getElementById('btnTeaseToggle');
-      if (btn) btn.classList.toggle('active', roomConfig.twoStepPull);
       showToast(roomConfig.twoStepPull ? `เปิดระบบแง้มป้าย (${roomConfig.teasePercent || 30}%) 🎯` : 'ปิดระบบแง้มป้าย (เปิดเต็ม)');
-    }
-
-    // ===== HIDE / SHOW UI =====
-    let _uiVisible = true;
-    function toggleHideUI() {
-      _uiVisible = !_uiVisible;
-      const panel = document.getElementById('controlsPanel');
-      const badges = document.querySelector('.top-nav-badges');
-      const btn = document.getElementById('btnHideUI');
-      if (panel) panel.classList.toggle('ui-hidden', !_uiVisible);
-      if (badges) badges.classList.toggle('ui-hidden', !_uiVisible);
-      if (btn) {
-        // When UI is visible -> show eye-slash (to hide it); when hidden -> show eye (to show it)
-        if (_uiVisible) {
-          btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-          btn.classList.add('ui-showing');
-          btn.title = 'ซ่อน UI ควบคุม';
-        } else {
-          btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-          btn.classList.remove('ui-showing');
-          btn.title = 'แสดง UI ควบคุม';
-        }
-      }
-    }
-
-    // ===== CUSTOM BACKGROUND =====
-    function handleBgImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        applyBgImage(dataUrl);
-        // Store in roomConfig
-        roomConfig.bgImage = dataUrl;
-        saveRoomToDB(currentRoom, roomConfig);
-        showToast('ตั้งรูปพื้นหลังเรียบร้อย 🖼️');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function clearBgImage() {
-      roomConfig.bgImage = null;
-      delete roomConfig.bgImage;
-      saveRoomToDB(currentRoom, roomConfig);
-      applyBgImage(null);
-      showToast('ลบรูปพื้นหลังแล้ว');
-    }
-
-    function applyBgImage(url) {
-      const cosmicBg = document.querySelector('.cosmic-bg');
-      const pageBody = document.getElementById('pageBody');
-      const dim = roomConfig.bgDim !== undefined ? roomConfig.bgDim : 50;
-      if (url) {
-        document.documentElement.style.setProperty('--custom-bg-url', `url('${url}')`);
-        document.body.style.backgroundImage = `url('${url}')`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundRepeat = 'no-repeat';
-        // Dim overlay using cosmic-bg opacity
-        if (cosmicBg) cosmicBg.style.opacity = (1 - dim / 100) * 0.8 + 0.1;
-        // Update preview
-        const preview = document.getElementById('bgImagePreview');
-        const previewImg = document.getElementById('bgPreviewImg');
-        if (preview && previewImg) {
-          previewImg.src = url;
-          preview.style.display = 'block';
-        }
-      } else {
-        document.body.style.backgroundImage = '';
-        if (cosmicBg) cosmicBg.style.opacity = '';
-        const preview = document.getElementById('bgImagePreview');
-        if (preview) preview.style.display = 'none';
-      }
-    }
-
-    function onBgDimChange(event) {
-      const val = parseInt(event.target.value);
-      roomConfig.bgDim = val;
-      document.getElementById('bgDimDisplay').textContent = val + '%';
-      if (roomConfig.bgImage) applyBgImage(roomConfig.bgImage);
-      saveRoomToDB(currentRoom, roomConfig);
     }
 
     function onTwoStepChange(e) {
@@ -2884,6 +2816,102 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
     }
+
+    /* UI Visibility (Hide / Show UI) */
+    let isUIHidden = false;
+    function toggleHideUI() {
+      isUIHidden = !isUIHidden;
+      const controls = document.querySelector('.controls-panel');
+      const badges = document.querySelector('.top-nav-badges');
+      const unhide = document.getElementById('unhideTrigger');
+
+      if (controls) controls.classList.toggle('ui-hidden', isUIHidden);
+      if (badges) badges.classList.toggle('ui-hidden', isUIHidden);
+      if (unhide) unhide.classList.toggle('show', isUIHidden);
+
+      if (isUIHidden) {
+        showToast('ซ่อน UI เรียบร้อย (กด H หรือคลิกที่ปุ่มมุมจอเพื่อแสดง)');
+      } else {
+        showToast('แสดง UI แล้ว');
+      }
+    }
+
+    /* Custom Background Management */
+    function applyCustomBackground() {
+      const bgEl = document.getElementById('customBoardBg');
+      const dimOverlay = document.getElementById('customBgOverlay');
+      const cosmicBg = document.querySelector('.cosmic-bg');
+      const previewWrap = document.getElementById('bgPreviewWrap');
+      const thumb = document.getElementById('bgThumbnail');
+      const dimSlider = document.getElementById('bgDimSlider');
+      const dimText = document.getElementById('bgDimDisplay');
+
+      const customBg = roomConfig.customBg || '';
+      const dim = (roomConfig.customBgDim !== undefined) ? roomConfig.customBgDim : 40;
+
+      if (dimSlider) dimSlider.value = dim;
+      if (dimText) dimText.textContent = `${dim}%`;
+
+      if (customBg) {
+        if (bgEl) {
+          bgEl.style.display = 'block';
+          bgEl.style.backgroundImage = `url("${customBg}")`;
+        }
+        if (dimOverlay) {
+          dimOverlay.style.background = `rgba(0, 0, 0, ${dim / 100})`;
+        }
+        if (cosmicBg) cosmicBg.style.opacity = '0.08';
+        if (previewWrap) {
+          previewWrap.style.display = 'flex';
+          if (thumb) thumb.src = customBg;
+        }
+      } else {
+        if (bgEl) bgEl.style.display = 'none';
+        if (cosmicBg) cosmicBg.style.opacity = '1';
+        if (previewWrap) previewWrap.style.display = 'none';
+      }
+    }
+
+    function handleBgFileUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        roomConfig.customBg = e.target.result;
+        saveRoomToDB(currentRoom, roomConfig);
+        applyCustomBackground();
+        showToast('อัปเดตภาพพื้นหลังบอร์ดเรียบร้อย 🖼️');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeCustomBackground() {
+      roomConfig.customBg = '';
+      saveRoomToDB(currentRoom, roomConfig);
+      applyCustomBackground();
+      showToast('คืนค่าพื้นหลัง Cosmic เรียบร้อย 🌌');
+    }
+
+    function onBgDimSliderChange(event) {
+      const val = parseInt(event.target.value, 10);
+      roomConfig.customBgDim = val;
+      const dimDisplay = document.getElementById('bgDimDisplay');
+      if (dimDisplay) dimDisplay.textContent = `${val}%`;
+      const dimOverlay = document.getElementById('customBgOverlay');
+      if (dimOverlay) dimOverlay.style.background = `rgba(0, 0, 0, ${val / 100})`;
+      saveRoomToDB(currentRoom, roomConfig);
+    }
+
+    // Keyboard Shortcuts: 'H' for hide/unhide UI
+    document.addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.key === 'h' || e.key === 'H') {
+        toggleHideUI();
+      } else if (e.key === 'Escape' && isUIHidden) {
+        toggleHideUI();
+      }
+    });
 
     // Initialize application
     initRoom();

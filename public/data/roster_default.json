@@ -1,0 +1,474 @@
+{
+  "registered": {
+    "aquarius": [
+      {
+        "id": "reg_shiro",
+        "displayName": "Shiro",
+        "xAccount": "https://x.com/ShiroPIRII",
+        "handle": "@ShiroPIRII",
+        "imageUrl": "/uploads/avatars/shiropirii.jpg?v=1788683727573"
+      },
+      {
+        "id": "reg_sebastos",
+        "displayName": "น้อนเซบ",
+        "xAccount": "https://x.com/Sebastos_vt_r",
+        "handle": "@Sebastos_vt_r",
+        "imageUrl": "/uploads/avatars/sebastos_vt_r.jpg?v=1788683712084"
+      }
+    ],
+    "pisces": [
+      {
+        "id": "reg_elbrynboo",
+        "displayName": "บู (ElbrynBoo Ch.)",
+        "xAccount": "https://x.com/Elbrynboo1982",
+        "handle": "@Elbrynboo1982",
+        "imageUrl": "/uploads/avatars/elbrynboo1982.jpg?v=1788683713702"
+      },
+      {
+        "id": "reg_kuriimu",
+        "displayName": "คุรีมุ / ครีม / ครีมมุ",
+        "xAccount": "https://x.com/kuriimu_vtuber",
+        "handle": "@kuriimu_vtuber",
+        "imageUrl": "/uploads/avatars/kuriimu_vtuber.jpg?v=1788699912640"
+      }
+    ],
+    "aries": [
+      {
+        "id": "reg_moia",
+        "displayName": "โมเอีย",
+        "xAccount": "@moia_lnwza55",
+        "handle": "@moia_lnwza55",
+        "imageUrl": "/uploads/avatars/moia_lnwza55.jpg?v=1788683717534"
+      },
+      {
+        "id": "reg_callidora",
+        "displayName": "คาลิ",
+        "xAccount": "@callidoraangeni",
+        "handle": "@callidoraangeni",
+        "imageUrl": "/uploads/avatars/callidoraangeni.jpg?v=1788683716229"
+      }
+    ],
+    "taurus": [
+      {
+        "id": "reg_aoi",
+        "displayName": "อาโอะ (Aoi Nekomori)",
+        "xAccount": "https://x.com/aoinekomori?s=11",
+        "handle": "@aoinekomori",
+        "imageUrl": "/uploads/avatars/aoinekomori.jpg?v=1788732312150"
+      },
+      {
+        "id": "reg_minchimo",
+        "displayName": "minchimo",
+        "xAccount": "https://x.com/minchipeachjam_",
+        "handle": "@minchipeachjam_",
+        "imageUrl": "/uploads/avatars/minchipeachjam_.jpg?v=1788683721803"
+      }
+    ],
+    "gemini": [
+      {
+        "id": "reg_nagirin",
+        "displayName": "นากิริน",
+        "xAccount": "https://x.com/Nagirin_res",
+        "handle": "@Nagirin_res",
+        "imageUrl": "/uploads/avatars/nagirin_res.jpg?v=1788696312008"
+      },
+      {
+        "id": "reg_maewmon",
+        "displayName": "แมวม่อน",
+        "xAccount": "https://x.com/maewmon_25",
+        "handle": "@maewmon_25",
+        "imageUrl": "/uploads/avatars/maewmon_25.jpg?v=1788683718078"
+      }
+    ],
+    "cancer": [
+      {
+        "id": "reg_venus",
+        "displayName": "วีนัส / Venus",
+        "xAccount": "https://x.com/VenusLapis",
+        "handle": "@VenusLapis",
+        "imageUrl": "/uploads/avatars/venuslapis.jpg?v=1788683722100"
+      },
+      {
+        "id": "reg_kaamoria",
+        "displayName": "คาโมเลีย หรือ ม่อน",
+        "xAccount": "https://x.com/kaamoria",
+        "handle": "@kaamoria",
+        "imageUrl": "/uploads/avatars/kaamoria.jpg?v=1788714312170"
+      }
+    ],
+    "leo": [
+      {
+        "id": "reg_cybersonny",
+        "displayName": "บันนี่จิ๋ว",
+        "xAccount": "https://x.com/cyber_sonny",
+        "handle": "@cyber_sonny",
+        "imageUrl": "/uploads/avatars/cyber_sonny.jpg?v=1788683718607"
+      },
+      {
+        "id": "reg_alteria",
+        "displayName": "อัล ( Alteria Channel )",
+        "xAccount": "https://x.com/Alteria_Vtuber",
+        "handle": "@Alteria_Vtuber",
+        "imageUrl": "/uploads/avatars/alteria_vtuber.jpg?v=1788683724390"
+      }
+    ],
+    "virgo": [
+      {
+        "id": "reg_valentina",
+        "displayName": "Valentina - ValentinaValentineVTH",
+        "xAccount": "https://x.com/valentinaval3n?s=11",
+        "handle": "@valentinaval3n",
+        "imageUrl": "/uploads/avatars/valentinaval3n.jpg?v=1788984329499"
+      },
+      {
+        "id": "reg_yideng",
+        "displayName": "หลินคั้บ YT: @yideng_png",
+        "xAccount": "https://x.com/yideng_png?s=11",
+        "handle": "@yideng_png",
+        "imageUrl": "/uploads/avatars/yideng_png.jpg?v=1788984328386"
+      }
+    ],
+    "libra": [
+      {
+        "id": "reg_orinnia",
+        "displayName": "Orinnia Luminarae",
+        "xAccount": "https://x.com/orinnia_vtuber?s=11",
+        "handle": "@orinnia_vtuber",
+        "imageUrl": "/uploads/avatars/orinnia_vtuber.jpg?v=1788683723887"
+      },
+      {
+        "id": "reg_owlman",
+        "displayName": "OwlMan",
+        "xAccount": "https://x.com/OwlManCh",
+        "handle": "@OwlManCh",
+        "imageUrl": "/uploads/avatars/owlmanch.jpg?v=1788683727947"
+      }
+    ],
+    "scorpio": [
+      {
+        "id": "reg_vivalaidya",
+        "displayName": "วีว่า",
+        "xAccount": "@VivaLaidya",
+        "handle": "@VivaLaidya",
+        "imageUrl": "/uploads/avatars/vivalaidya.jpg?v=1788694512577"
+      },
+      {
+        "id": "reg_benibana",
+        "displayName": "Benibanashi Gento",
+        "xAccount": "@BenibanaGento",
+        "handle": "@BenibanaGento",
+        "imageUrl": "/uploads/avatars/benibanagento.jpg?v=1788699913402"
+      }
+    ],
+    "sagittarius": [
+      {
+        "id": "reg_keroriraika",
+        "displayName": "กบ Kerori Raika",
+        "xAccount": "https://x.com/keroraika",
+        "handle": "@keroraika",
+        "imageUrl": "/uploads/avatars/keroraika.jpg?v=1788768312789"
+      },
+      {
+        "id": "reg_josephine",
+        "displayName": "โจเซฟิน (JosephineCres)",
+        "xAccount": "https://x.com/josephine_cres?s=11",
+        "handle": "@josephine_cres",
+        "imageUrl": "/uploads/avatars/josephine_cres.jpg?v=1788690912269"
+      }
+    ],
+    "capricorn": [
+      {
+        "id": "reg_chloe",
+        "displayName": "โคลอี้/Chloe J. Park Ch. | VTUBER",
+        "xAccount": "@ChloeJParkV2ber",
+        "handle": "@ChloeJParkV2ber",
+        "imageUrl": "/uploads/avatars/chloejparkv2ber.jpg?v=1788683713060"
+      },
+      {
+        "id": "reg_zinfandel",
+        "displayName": "ชิน @Zinfandel_ZTP",
+        "xAccount": "https://x.com/zinfandel_ztp",
+        "handle": "@zinfandel_ztp",
+        "imageUrl": "/uploads/avatars/zinfandel_ztp.jpg?v=1789039053719"
+      }
+    ]
+  },
+  "nominated": {
+    "aquarius": [
+      {
+        "id": "prop_sisira",
+        "displayName": "Sisira Hydrangea",
+        "xAccount": "https://x.com/SSR_Hydrangea",
+        "handle": "@SSR_Hydrangea",
+        "imageUrl": "/uploads/avatars/ssr_hydrangea.jpg?v=1788683740199"
+      },
+      {
+        "id": "prop_monarica",
+        "displayName": "Monarica",
+        "xAccount": "https://x.com/mona_vvitch",
+        "handle": "@mona_vvitch",
+        "imageUrl": "/uploads/avatars/mona_vvitch.jpg?v=1791720118405"
+      },
+      {
+        "id": "prop_ziika",
+        "displayName": "Ziika VZ",
+        "xAccount": "https://x.com/MU_Ziika",
+        "handle": "@MU_Ziika",
+        "imageUrl": "/uploads/avatars/mu_ziika.jpg?v=1788764712971"
+      }
+    ],
+    "pisces": [
+      {
+        "id": "prop_koemi",
+        "displayName": "Koemi Eimii",
+        "xAccount": "https://x.com/Eimiichan__",
+        "handle": "@Eimiichan__",
+        "imageUrl": "/uploads/avatars/eimiichan__.jpg?v=1788683751095"
+      },
+      {
+        "id": "prop_lnw",
+        "displayName": "เทพมังกรเนื้อทอง",
+        "xAccount": "https://x.com/lnw_neuatong",
+        "handle": "@lnw_neuatong",
+        "imageUrl": "/uploads/avatars/lnw_neuatong.jpg?v=1788683729186"
+      },
+      {
+        "id": "prop_liviana",
+        "displayName": "ริเวียอาน่า",
+        "xAccount": "https://x.com/Liviana_VWitch",
+        "handle": "@Liviana_VWitch",
+        "imageUrl": "/uploads/avatars/liviana_vwitch.jpg?v=1788683738333"
+      }
+    ],
+    "aries": [
+      {
+        "id": "prop_morr",
+        "displayName": "Morr ARP",
+        "xAccount": "@Morr_ARP",
+        "handle": "@Morr_ARP",
+        "imageUrl": "/uploads/avatars/morr_arp.jpg?v=1788703513093"
+      },
+      {
+        "id": "prop_shinonome",
+        "displayName": "Shinonome",
+        "xAccount": "https://x.com/ShinonomeKone",
+        "handle": "@ShinonomeKone",
+        "imageUrl": "/uploads/avatars/shinonomekone.jpg?v=1788683740510"
+      },
+      {
+        "id": "prop_sistra",
+        "displayName": "Sistra",
+        "xAccount": "https://x.com/Sistra_OTL",
+        "handle": "@Sistra_OTL",
+        "imageUrl": "/uploads/avatars/sistra_otl.jpg?v=1788683739890"
+      }
+    ],
+    "taurus": [
+      {
+        "id": "prop_cayla",
+        "displayName": "CaylaAkira",
+        "xAccount": "https://x.com/caylaakira?s=11",
+        "handle": "@caylaakira",
+        "imageUrl": "/uploads/avatars/caylaakira.jpg?v=1788984343380"
+      },
+      {
+        "id": "prop_bdy",
+        "displayName": "B-DY",
+        "xAccount": "https://x.com/BADD30CODE",
+        "handle": "@BADD30CODE",
+        "imageUrl": "/uploads/avatars/badd30code.jpg?v=1788987925111"
+      },
+      {
+        "id": "prop_rei",
+        "displayName": "aqxat1crei (Rei)",
+        "xAccount": "https://x.com/aqxat1crei?s=11",
+        "handle": "@aqxat1crei",
+        "imageUrl": "/uploads/avatars/aqxat1crei.jpg?v=1788984337289"
+      }
+    ],
+    "gemini": [
+      {
+        "id": "prop_fylinn",
+        "displayName": "Fylinn",
+        "xAccount": "https://x.com/fuufylinn?s=11",
+        "handle": "@fuufylinn",
+        "imageUrl": "/uploads/avatars/fuufylinn.jpg?v=1788984341229"
+      },
+      {
+        "id": "prop_omoro",
+        "displayName": "พรีโอม Omoro The Bunny",
+        "xAccount": "https://x.com/OmoroTheBunny",
+        "handle": "@OmoroTheBunny",
+        "imageUrl": "/uploads/avatars/omorothebunny.jpg?v=1788683754463"
+      },
+      {
+        "id": "prop_baabel",
+        "displayName": "บาเบล",
+        "xAccount": "https://x.com/Baabel_ARP",
+        "handle": "@Baabel_ARP",
+        "imageUrl": "/uploads/avatars/baabel_arp.jpg?v=1788683731675"
+      }
+    ],
+    "cancer": [
+      {
+        "id": "prop_zona",
+        "displayName": "โซน่า",
+        "xAccount": "https://x.com/ZonaPLG",
+        "handle": "@ZonaPLG",
+        "imageUrl": "/uploads/avatars/zonaplg.jpg?v=1791720120730"
+      },
+      {
+        "id": "prop_esra",
+        "displayName": "Esra",
+        "xAccount": "https://x.com/Esra_epr",
+        "handle": "@Esra_epr",
+        "imageUrl": "/uploads/avatars/esra_epr.jpg?v=1788683737344"
+      },
+      {
+        "id": "prop_alexeiv",
+        "displayName": "AlexeivVladnov",
+        "xAccount": "https://x.com/alexeivdisguise?s=11",
+        "handle": "@alexeivdisguise",
+        "imageUrl": "/uploads/avatars/alexeivdisguise.jpg?v=1788703515041"
+      }
+    ],
+    "leo": [
+      {
+        "id": "prop_tako",
+        "displayName": "ทาโกะ",
+        "xAccount": "https://www.youtube.com/channel/UC4JQ9apR_7oHuqn05Zzy1KA",
+        "handle": "@Takoch",
+        "imageUrl": "/uploads/avatars/channel.jpg?v=1788683739586"
+      },
+      {
+        "id": "prop_sienna",
+        "displayName": "เซียน่า",
+        "xAccount": "https://x.com/sienna_res",
+        "handle": "@sienna_res",
+        "imageUrl": "/uploads/avatars/sienna_res.jpg?v=1788683756332"
+      },
+      {
+        "id": "prop_reilim",
+        "displayName": "Reilim",
+        "xAccount": "https://x.com/Reilimiella",
+        "handle": "@Reilimiella",
+        "imageUrl": "/uploads/avatars/reilimiella.jpg?v=1788701713593"
+      }
+    ],
+    "virgo": [
+      {
+        "id": "prop_prettybob",
+        "displayName": "PrettyBob",
+        "xAccount": "https://x.com/PrettyB0b",
+        "handle": "@PrettyB0b",
+        "imageUrl": "/uploads/avatars/prettyb0b.jpg?v=1789747036336"
+      },
+      {
+        "id": "prop_pekorin",
+        "displayName": "Pekorin SSR",
+        "xAccount": "https://x.com/Pekorin_SSR",
+        "handle": "@Pekorin_SSR",
+        "imageUrl": "/uploads/avatars/pekorin_ssr.jpg?v=1788683758337"
+      },
+      {
+        "id": "prop_nebula",
+        "displayName": "NebulaFaragonda",
+        "xAccount": "https://x.com/NebulaFaragonda",
+        "handle": "@NebulaFaragonda",
+        "imageUrl": "/uploads/avatars/nebulafaragonda.jpg?v=1788987924113"
+      }
+    ],
+    "libra": [
+      {
+        "id": "prop_vixe",
+        "displayName": "Vixe Sol ch. Euphora วิกเซ่",
+        "xAccount": "https://x.com/VixeSol_EPR?s=20",
+        "handle": "@VixeSol_EPR",
+        "imageUrl": "/uploads/avatars/vixesol_epr.jpg?v=1788683748183"
+      },
+      {
+        "id": "prop_heiman",
+        "displayName": "เหมันต์",
+        "xAccount": "@heiman_vtuber",
+        "handle": "@heiman_vtuber",
+        "imageUrl": "/uploads/avatars/heiman_vtuber.jpg?v=1788683730588"
+      },
+      {
+        "id": "prop_bakurin",
+        "displayName": "บาคุริน",
+        "xAccount": "https://x.com/BakurinS",
+        "handle": "@BakurinS",
+        "imageUrl": "/uploads/avatars/bakurins.jpg?v=1788683752038"
+      }
+    ],
+    "scorpio": [
+      {
+        "id": "prop_phrak",
+        "displayName": "Phrak 『 VTG 』 (พราก)",
+        "xAccount": "https://x.com/PHRAK_VTG?s=20",
+        "handle": "@PHRAK_VTG",
+        "imageUrl": "/uploads/avatars/phrak_vtg.jpg?v=1788683745582"
+      },
+      {
+        "id": "prop_aela",
+        "displayName": "เอล่า",
+        "xAccount": "https://x.com/_LnwAelaEC19/with_replies",
+        "handle": "@_LnwAelaEC19",
+        "imageUrl": "/uploads/avatars/_lnwaelaec19.jpg?v=1790414034414"
+      },
+      {
+        "id": "prop_mamimumei",
+        "displayName": "MamiMumei",
+        "xAccount": "https://x.com/MamiMumei_Ch",
+        "handle": "@MamiMumei_Ch",
+        "imageUrl": "/uploads/avatars/mamimumei_ch.jpg?v=1788683730154"
+      }
+    ],
+    "sagittarius": [
+      {
+        "id": "prop_mosant",
+        "displayName": "โมซองค์",
+        "xAccount": "https://x.com/MosantXD",
+        "handle": "@MosantXD",
+        "imageUrl": "/uploads/avatars/mosantxd.jpg?v=1788683755430"
+      },
+      {
+        "id": "prop_aelisse",
+        "displayName": "Aelisse เอลิเซ่",
+        "xAccount": "https://x.com/Aelisse_EPR?s=20",
+        "handle": "@Aelisse_EPR",
+        "imageUrl": "/uploads/avatars/aelisse_epr.jpg?v=1788683748544"
+      },
+      {
+        "id": "prop_toru",
+        "displayName": "Toru Kuma",
+        "xAccount": "https://x.com/kuma_toru",
+        "handle": "@kuma_toru",
+        "imageUrl": "/uploads/avatars/kuma_toru.jpg?v=1788991526029"
+      }
+    ],
+    "capricorn": [
+      {
+        "id": "prop_chaay",
+        "displayName": "ชาเอม",
+        "xAccount": "https://x.com/ChaAYMeiei",
+        "handle": "@ChaAYMeiei",
+        "imageUrl": "/uploads/avatars/chaaymeiei.jpg?v=1788683744815"
+      },
+      {
+        "id": "prop_tiwa",
+        "displayName": "คุณทิวา TIWa_SAMA Ch.",
+        "xAccount": "https://x.com/TIWaSaMa0",
+        "handle": "@TIWaSaMa0",
+        "imageUrl": "/uploads/avatars/tiwasama0.jpg?v=1788984349910"
+      },
+      {
+        "id": "prop_hoku",
+        "displayName": "โฮคุ",
+        "xAccount": "https://x.com/HokuPLG",
+        "handle": "@HokuPLG",
+        "imageUrl": "/uploads/avatars/hokuplg.jpg?v=1791720119939"
+      }
+    ]
+  }
+}

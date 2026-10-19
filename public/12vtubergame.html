@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ลงทะเบียนเล่น ศึก 12 วีทูบเบอร์</title>
+  <title>รายชื่อผู้ได้เล่น ศึก 12 วีทูบเบอร์</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/random12.css">
+  <link rel="stylesheet" href="/css/roster.css">
 </head>
 <body class="page-home">
   <!-- Moving Cosmic Background -->
@@ -49,7 +50,7 @@
     </div>
   </header>
 
-  <!-- Main Content Locked to Viewport without scroll -->
+  <!-- Main Content Showcase -->
   <main class="main-content home-content" id="view-12vtuber">
     <div class="home-top-section">
       <!-- Collab Logo Header (12 v x EasyDonate) -->
@@ -63,66 +64,39 @@
         </a>
       </div>
 
-      <!-- Action Buttons (4-button redesigned bar) -->
-      <div class="btn-group-4" id="home-btn-group">
-        <button type="button" class="btn-dark-action" id="btn-chat-home" onclick="openChatModal()">
-          <span class="btn-main-text">💬 แชทสด / เสนอ-คุยเล่น</span>
-        </button>
-        <button type="button" class="btn-primary-featured" id="btn-register-home" onclick="openRegisterModal()">
-          <span class="btn-main-text">ลงทะเบียน</span>
-          <span class="btn-sub-text">ลงทะเบียนสำหรับเล่นเอง</span>
-        </button>
-        <button type="button" class="btn-propose-featured" id="btn-propose-home" onclick="openProposeModal()">
-          <span class="btn-main-text">เสนอวีทูบเบอร์</span>
-          <span class="btn-sub-text">เสนอวีทูบเบอร์ แนะนำให้ทางทีมงาน</span>
-        </button>
-        <button type="button" class="btn-dark-action" id="btn-allzodiac-home" onclick="openQuotaModal()">
-          <span class="btn-main-text">ผู้ลงสมัคร / ลงทะเบียนราศีทั้งหมด</span>
-        </button>
-        <div id="home-registration-closed-box" class="registration-closed-box" style="display: none;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span id="home-closed-msg-text">ขณะนี้ได้ปิดรับลงทะเบียนเรียบร้อย</span>
-        </div>
+      <!-- Live Date Countdown Banner -->
+      <div class="roster-live-banner">
+        <span class="roster-live-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</span>
+        <span class="roster-live-timer" id="live-countdown">ไลฟ์ในอีก : -- เดือน -- วัน -- ชั่วโมง -- นาที -- วินาที</span>
       </div>
 
-
-      <!-- Two Countdown / Time Badges -->
-      <div class="time-badges-container">
-        <!-- Close Date Badge -->
-        <div class="countdown-badge badge-deadline">
-          <span class="badge-header" id="close-date-label">ปิดรับสมัคร : 15 ตุลาคม 2569 เวลา 00:00 น.</span>
-          <span class="badge-timer" id="close-countdown">ปิดรับในอีก : xx เดือน xx วัน xx ชั่วโมง</span>
-        </div>
-
-        <!-- Live Date Badge -->
-        <div class="countdown-badge">
-          <span class="badge-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</span>
-          <span class="badge-timer" id="live-countdown">ไลฟ์ในอีก : xx เดือน xx วัน xx ชั่วโมง</span>
-        </div>
+      <!-- Roster Switcher (Segmented Control) -->
+      <div class="roster-switcher-container">
+        <button type="button" class="roster-tab-btn active" id="tab-btn-registered" onclick="switchRosterView('registered')">
+          <span>📋 ลงทะเบียน</span>
+          <span class="roster-pill-count">24 คน</span>
+        </button>
+        <button type="button" class="roster-tab-btn" id="tab-btn-nominated" onclick="switchRosterView('nominated')">
+          <span>🌟 เสนอชื่อ</span>
+          <span class="roster-pill-count">36 คน</span>
+        </button>
+        <button type="button" class="roster-tab-btn" id="tab-btn-both" onclick="switchRosterView('both')" title="ดูทั้งสองกลุ่มแบบเทียบเคียง">
+          <span>🔀 ดูทั้งหมด (เทียบเคียง)</span>
+        </button>
       </div>
 
+      <!-- 12 Zodiac Roster Showcase Container -->
+      <div id="roster-content-container" style="width: 100%;"></div>
     </div>
 
-
-    <!-- Mascot Chibi (Talk & Popup) -->
-    <div id="home-mascot-talk-section" class="home-mascot-talk-section">
-      <div class="home-mascot-inner">
-        <!-- Left Speech Bubble Popup Container -->
-        <div id="mascot-speech-bubble-container" class="mascot-speech-bubble-wrapper">
-          <img id="mascot-speech-bubble-img" 
-               src="/assets/images/popups/chat 1.png" 
-               alt="Yuubear Speech Bubble" 
-               class="mascot-speech-bubble-img" />
-        </div>
-
-        <!-- Chibi Character Link to X -->
-        <a href="https://x.com/bearuwu_001" target="_blank" rel="noopener noreferrer" class="home-mascot-chibi-link" title="ติดตาม YuuBear บน X (@bearuwu_001)">
-          <img id="home-chibi-img" 
-               src="/assets/images/mascot/not-speak.png" 
-               alt="Yuubear Chibi Mascot" 
-               class="mascot-img chibi-interactive" />
-        </a>
-      </div>
+    <!-- Floating Quick Actions Bar (แชท & สุ่ม) -->
+    <div class="roster-floating-actions">
+      <button type="button" class="roster-floating-btn" onclick="openChatModal()">
+        💬 แชทสด
+      </button>
+      <button type="button" class="roster-floating-btn" onclick="openQuotaModal()">
+        👥 ผู้สมัครทั้งหมด
+      </button>
     </div>
   </main>
 
@@ -530,10 +504,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="/js/firebase-config.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/common.js"></script>
   <script src="/js/home-modals.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/minigame.js"></script>
+  <script src="/js/roster.js"></script>
 
   <script>
     function switchMainTab(tab, event) {

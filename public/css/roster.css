@@ -1,0 +1,439 @@
+/* ==========================================================================
+   12 VTuber Roster Showcase Styles (หน้าแรกแสดงผู้ได้เล่น 12 ราศี)
+   ========================================================================== */
+
+/* Page layout override for scrollable showcase */
+body.page-home {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 100vh;
+}
+
+body.page-home .main-content.home-content {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 100vh;
+  overflow: visible !important;
+  padding: 1.5rem 1.25rem 4rem 1.25rem !important;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.home-top-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  justify-content: flex-start;
+}
+
+/* Collab Logo Header */
+.collab-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.8rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.collab-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.25s ease;
+}
+
+.collab-logo-link:hover {
+  transform: translateY(-3px) scale(1.03);
+  filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5));
+}
+
+.collab-slot-logo {
+  max-width: 280px;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.7));
+}
+
+.collab-cross {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.6);
+  user-select: none;
+}
+
+.easydonate-logo {
+  max-width: 250px;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.7));
+}
+
+/* Live Countdown Box (Centered Banner) */
+.roster-live-banner {
+  background: rgba(15, 10, 32, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-radius: 20px;
+  padding: 1rem 2.2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.2);
+  margin-bottom: 1.8rem;
+  max-width: 620px;
+  width: 90%;
+  animation: pulseGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 15px rgba(139,92,246,0.15); }
+  100% { border-color: rgba(168, 85, 247, 0.65); box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 25px rgba(168,85,247,0.35); }
+}
+
+.roster-live-header {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: 0.02em;
+}
+
+.roster-live-timer {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+/* Category View Switcher (Segmented Control) */
+.roster-switcher-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.roster-tab-btn {
+  appearance: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  background: rgba(22, 14, 46, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 0.75rem 1.6rem;
+  border-radius: 50px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.roster-tab-btn:hover {
+  background: rgba(35, 22, 75, 0.9);
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);
+}
+
+.roster-tab-btn.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  border-color: rgba(192, 132, 252, 0.8);
+  color: #ffffff;
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.roster-tab-btn.active-nominated {
+  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+  border-color: rgba(244, 114, 182, 0.8);
+  box-shadow: 0 6px 24px rgba(236, 72, 153, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.roster-pill-count {
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* Header Title Banner with dynamic text */
+.roster-header-title-wrap {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.roster-sub-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.roster-main-title {
+  font-size: 2.3rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.title-registered {
+  color: #facc15;
+  text-shadow: 0 0 20px rgba(250, 204, 21, 0.5), 0 3px 0 #b45309, 0 5px 12px rgba(0, 0, 0, 0.8);
+}
+
+.title-nominated {
+  color: #facc15;
+  text-shadow: 0 0 20px rgba(250, 204, 21, 0.5), 0 3px 0 #b45309, 0 5px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   Zodiac Cards Grid (Responsive 3 - 4 Columns)
+   ========================================================================== */
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 1280px) {
+  .roster-grid.grid-4-cols {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .roster-grid, .roster-grid.grid-4-cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .roster-grid, .roster-grid.grid-4-cols {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+}
+
+/* Comparison / Side-by-Side Mode */
+.roster-compare-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.8rem;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .roster-compare-wrapper {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roster-compare-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.roster-compare-col .roster-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 700px) {
+  .roster-compare-col .roster-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Individual Zodiac Card */
+.roster-card {
+  background: rgba(14, 9, 30, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border-radius: 18px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.22s, box-shadow 0.22s;
+  position: relative;
+  overflow: hidden;
+}
+
+.roster-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 20px rgba(147, 51, 234, 0.25);
+}
+
+/* Card Header */
+.roster-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.roster-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.roster-card-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.8));
+}
+
+.roster-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.roster-card-name span {
+  font-size: 0.9rem;
+  color: #a78bfa;
+  font-weight: 500;
+}
+
+.roster-card-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+/* Player Member Row */
+.roster-member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  text-decoration: none;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+
+.roster-member-row:hover {
+  background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(167, 139, 250, 0.45);
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* Avatar Image */
+.roster-member-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #1e1338;
+  border: 1.5px solid rgba(167, 139, 250, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Member Text Info */
+.roster-member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.roster-member-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.roster-member-handle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.15s ease;
+}
+
+.roster-member-row:hover .roster-member-handle {
+  color: #38bdf8;
+}
+
+/* Floating Quick Actions Bar (แชท & สุ่ม) */
+.roster-floating-actions {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 999;
+  display: flex;
+  gap: 10px;
+}
+
+.roster-floating-btn {
+  background: rgba(18, 12, 38, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  padding: 8px 16px;
+  border-radius: 30px;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.roster-floating-btn:hover {
+  background: rgba(30, 20, 60, 0.98);
+  border-color: rgba(168, 85, 247, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(124, 58, 237, 0.4);
+}

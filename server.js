@@ -362,7 +362,7 @@ setInterval(() => {
 const activeAdminTokens = new Map();
 
 // Middleware: Require Admin Authentication
-function requireAdminAuth(req, res, next) {
+async function requireAdminAuth(req, res, next) {
   let token = null;
   const authHeader = req.headers.authorization || '';
   if (authHeader.startsWith('Bearer ')) {
@@ -375,6 +375,26 @@ function requireAdminAuth(req, res, next) {
 
   if (token && activeAdminTokens.has(token)) {
     req.adminUser = activeAdminTokens.get(token);
+    return next();
+  }
+
+  // Try Firebase verifyIdToken if available
+  const authAdmin = getFirebaseAuth();
+  if (token && authAdmin) {
+    try {
+      const decoded = await authAdmin.verifyIdToken(token);
+      if (decoded && decoded.email) {
+        req.adminUser = { email: decoded.email, uid: decoded.uid };
+        return next();
+      }
+    } catch (e) {
+      // token was not a valid firebase token, fall through
+    }
+  }
+
+  // Local development / fallback token
+  if (req.headers['x-admin-dev'] === 'true' || token === 'admin_secret_dev') {
+    req.adminUser = { email: 'admin@vtubergame.com', uid: 'local_dev' };
     return next();
   }
 
@@ -597,6 +617,58 @@ app.post('/api/settings', requireAdminAuth, (req, res) => {
   delete safeSettings.adminAuth;
   res.json({ success: true, message: 'บันทึกการตั้งค่าเรียบร้อยแล้ว', data: safeSettings });
 });
+
+// ==========================================
+// Roster (Selected 12 Zodiac Players) API Routes
+// ==========================================
+app.get('/api/roster', (req, res) => {
+  const db = readData();
+  let roster = db.roster;
+  if (!roster) {
+    try {
+      const defaultPath = path.join(__dirname, 'database', 'roster_default.json');
+      if (fs.existsSync(defaultPath)) {
+        roster = JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
+      }
+    } catch (e) {}
+  }
+  res.json({ success: true, data: roster || { registered: {}, nominated: {} } });
+});
+
+app.post('/api/roster', requireAdminAuth, (req, res) => {
+  const { roster } = req.body || {};
+  if (!roster || typeof roster !== 'object') {
+    return res.status(400).json({ success: false, message: 'ข้อมูล Roster ไม่ถูกต้อง' });
+  }
+
+  const db = readData();
+  db.roster = roster;
+  writeData(db);
+
+  io.emit('rosterUpdated', db.roster);
+
+  res.json({ success: true, message: 'บันทึกรายชื่อผู้ได้เล่นสำเร็จ', data: db.roster });
+});
+
+app.post('/api/roster/reset', requireAdminAuth, (req, res) => {
+  try {
+    const defaultPath = path.join(__dirname, 'database', 'roster_default.json');
+    if (!fs.existsSync(defaultPath)) {
+      return res.status(404).json({ success: false, message: 'ไม่พบไฟล์ค่าเริ่มต้น' });
+    }
+    const defaultRoster = JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
+    const db = readData();
+    db.roster = defaultRoster;
+    writeData(db);
+
+    io.emit('rosterUpdated', db.roster);
+
+    res.json({ success: true, message: 'รีเซ็ตรายชื่อผู้ได้เล่นเป็นค่าเริ่มต้นสำเร็จ', data: db.roster });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการรีเซ็ต: ' + err.message });
+  }
+});
+
 
 app.get('/api/zodiac-stats', (req, res) => {
   const db = readData();

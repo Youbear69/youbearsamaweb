@@ -121,6 +121,11 @@
           <span>5. ประวัติการสุ่ม 12 ราศี</span>
           <span class="admin-tab-pill-badge" id="tab-badge-random12">0</span>
         </button>
+        <button type="button" class="admin-main-tab-btn" data-tab="roster" onclick="switchAdminMainTab('roster')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+          <span>6. จัดการผู้ได้เล่น (12 ราศี)</span>
+          <span class="admin-tab-pill-badge" id="tab-badge-roster">60</span>
+        </button>
       </div>
 
       <!-- ==========================================
@@ -504,6 +509,80 @@
         </div>
       </div>
 
+      <!-- ==========================================
+           TAB GROUP 6: จัดการผู้ได้เล่น 12 ราศี (Roster Settings)
+      ========================================== -->
+      <div id="admin-pane-roster" class="admin-tab-pane" style="display: none;">
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+            <div>
+              <h2 style="font-size: 1.55rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.6rem;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+                จัดการผู้ได้เล่น 12 ราศี (Roster Management)
+              </h2>
+              <p style="color: var(--text-muted); font-size: 0.95rem;">
+                กำหนดรายชื่อผู้ได้เล่นที่จะแสดงบนหน้าแรก 12vtubergame แบ่งเป็น 2 กลุ่ม: ลงทะเบียน (24 คน) และ เสนอชื่อ (36 คน)
+              </p>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-save-roster" class="btn-primary" onclick="saveAdminRoster()" style="padding: 0.65rem 1.8rem; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                บันทึกรายชื่อผู้ได้เล่น
+              </button>
+              <button type="button" id="btn-reset-roster" class="btn-secondary" onclick="resetAdminRosterToDefault()" style="padding: 0.65rem 1.4rem; color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+                รีเซ็ตเป็นค่าเริ่มต้น
+              </button>
+            </div>
+          </div>
+
+          <!-- Category Switcher Tabs in Admin -->
+          <div style="display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary active" id="admin-roster-tab-registered" onclick="switchAdminRosterCategory('registered')" style="padding: 0.65rem 1.6rem; border-radius: 30px; font-weight: 700; border-color: rgba(168, 85, 247, 0.6); color: #fff; background: rgba(168, 85, 247, 0.2);">
+              📋 จัดการกลุ่ม "ลงทะเบียน" (24 คน / ราศีละ 2)
+            </button>
+            <button type="button" class="btn-secondary" id="admin-roster-tab-nominated" onclick="switchAdminRosterCategory('nominated')" style="padding: 0.65rem 1.6rem; border-radius: 30px; font-weight: 700; border-color: rgba(255, 255, 255, 0.15); color: #cbd5e1; background: transparent;">
+              🌟 จัดการกลุ่ม "เสนอชื่อ" (36 คน / ราศีละ 3)
+            </button>
+          </div>
+
+          <!-- 12 Zodiac Admin Cards Grid -->
+          <div id="admin-roster-zodiac-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Applicant Picker Modal for Roster -->
+    <div id="roster-pick-modal" class="app-modal-backdrop" style="z-index: 10050;">
+      <div class="app-modal-box" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+        <button type="button" class="btn-close-modal" aria-label="Close" onclick="closeRosterPickModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="modal-inner-content" style="display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
+          <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>👥</span>
+            <span>เลือกจากผู้ลงทะเบียน / เสนอชื่อในระบบ</span>
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+            คลิกเลือกเพื่อเติมข้อมูลชื่อ ลิงก์ X และรูปภาพอัตโนมัติ
+          </p>
+
+          <input type="text" id="roster-pick-search" class="form-input" placeholder="🔍 พิมพ์ค้นหาชื่อ หรือ @handle..." style="margin-bottom: 1rem;" oninput="filterRosterApplicants(this.value)">
+
+          <div id="roster-pick-list" style="overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 4px;">
+            <!-- Populated by JS -->
+          </div>
+
+          <div style="padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 1rem; text-align: right;">
+            <button type="button" class="btn-secondary" onclick="closeRosterPickModal()" style="padding: 0.55rem 1.6rem;">ปิด</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ==========================================

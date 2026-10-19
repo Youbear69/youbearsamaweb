@@ -73,6 +73,18 @@ function loadLocalFile() {
     }
     if (!parsed.settings.adminAuth) parsed.settings.adminAuth = initialData.settings.adminAuth;
     if (!parsed.proposal_likes) parsed.proposal_likes = {};
+    if (!parsed.roster) {
+      try {
+        const defaultRosterPath = path.join(DB_DIR, 'roster_default.json');
+        if (fs.existsSync(defaultRosterPath)) {
+          parsed.roster = JSON.parse(fs.readFileSync(defaultRosterPath, 'utf-8'));
+        } else {
+          parsed.roster = { registered: {}, nominated: {} };
+        }
+      } catch (e) {
+        parsed.roster = { registered: {}, nominated: {} };
+      }
+    }
     return parsed;
   } catch (err) {
     console.error('Error reading local file database:', err);
@@ -142,7 +154,8 @@ try {
           proposals: Array.isArray(val.proposals)
             ? val.proposals
             : (val.proposals ? Object.values(val.proposals) : []),
-          proposal_likes: val.proposal_likes || (memoryData ? memoryData.proposal_likes : {})
+          proposal_likes: val.proposal_likes || (memoryData ? memoryData.proposal_likes : {}),
+          roster: val.roster || (memoryData && memoryData.roster ? memoryData.roster : (loadLocalFile().roster || {}))
         };
         saveLocalFile(memoryData);
         console.log('[Firebase Realtime] Synced data from Firebase RTDB');
@@ -203,20 +216,26 @@ function writeData(data) {
   memoryData = {
     settings: data.settings || initialData.settings,
     registrations: data.registrations || [],
-    proposals: data.proposals || []
+    proposals: data.proposals || [],
+    proposal_likes: data.proposal_likes || (memoryData ? memoryData.proposal_likes : {}),
+    roster: data.roster || (memoryData ? memoryData.roster : undefined)
   };
 
   saveLocalFile(memoryData);
 
   // Asynchronously sync to Firebase Realtime Database
-  // CRITICAL: Use update() to only update settings, registrations, and proposals
+  // CRITICAL: Use update() to only update settings, registrations, proposals, and roster
   // DO NOT use set() at root '/' as that would wipe out the '/chat' node!
   if (rtdbRef) {
-    rtdbRef.update({
+    const updatePayload = {
       settings: memoryData.settings,
       registrations: memoryData.registrations,
       proposals: memoryData.proposals
-    }).catch(err => {
+    };
+    if (memoryData.roster) {
+      updatePayload.roster = memoryData.roster;
+    }
+    rtdbRef.update(updatePayload).catch(err => {
       console.error('[Firebase Realtime] Error syncing write to Firebase:', err.message);
     });
   }

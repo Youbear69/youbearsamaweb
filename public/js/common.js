@@ -317,15 +317,19 @@ async function initLiveCountdown() {
       if (liveEl) {
         const diffLive = liveTarget - now;
         if (diffLive <= 0) {
-          liveEl.textContent = 'ไลฟ์ในอีก : 00 เดือน 00 วัน';
+          liveEl.textContent = 'ไลฟ์เริ่มแล้ว!';
         } else {
-          const totalHours = Math.floor(diffLive / (1000 * 60 * 60));
+          const totalSeconds = Math.floor(diffLive / 1000);
+          const totalMinutes = Math.floor(totalSeconds / 60);
+          const totalHours = Math.floor(totalMinutes / 60);
           const totalDays = Math.floor(totalHours / 24);
           const months = Math.floor(totalDays / 30);
           const days = totalDays % 30;
           const hours = totalHours % 24;
+          const minutes = totalMinutes % 60;
+          const seconds = totalSeconds % 60;
           const pad = (n) => String(n).padStart(2, '0');
-          liveEl.textContent = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง`;
+          liveEl.textContent = `ไลฟ์ในอีก : ${pad(months)} เดือน ${pad(days)} วัน ${pad(hours)} ชั่วโมง ${pad(minutes)} นาที ${pad(seconds)} วินาที`;
         }
       }
 
@@ -347,7 +351,7 @@ async function initLiveCountdown() {
     }
 
     updateTimers();
-    setInterval(updateTimers, 60000);
+    setInterval(updateTimers, 1000);
   } catch (err) {
     console.error('Failed to load countdown settings:', err);
   }
