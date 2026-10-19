@@ -24,10 +24,11 @@ let rosterData = {
 
 let currentRosterMode = localStorage.getItem('roster_view_mode') || 'registered';
 
-// Initialize Roster on DOMContentLoaded
+// Initialize Roster & Numerical Ticker on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
   loadRosterData();
   initSocketListener();
+  initNumericalTicker();
 });
 
 // Load roster data from server API with local storage backup and static JSON fallback
@@ -125,8 +126,7 @@ function renderCurrentRoster() {
         <!-- Column 1: Registered -->
         <div class="roster-compare-col">
           <div class="roster-header-title-wrap">
-            <div class="roster-sub-title">รายชื่อผู้ประจำ 12 ราศี</div>
-            <h2 class="roster-main-title title-registered">ลงทะเบียน</h2>
+            <h2 class="roster-main-title title-registered">ลงทะเบียน (24 คน)</h2>
           </div>
           <div class="roster-grid">
             ${generateZodiacCardsHtml('registered')}
@@ -136,8 +136,7 @@ function renderCurrentRoster() {
         <!-- Column 2: Nominated -->
         <div class="roster-compare-col">
           <div class="roster-header-title-wrap">
-            <div class="roster-sub-title">รายชื่อผู้ประจำ 12 ราศี</div>
-            <h2 class="roster-main-title title-nominated">เสนอรายชื่อ</h2>
+            <h2 class="roster-main-title title-nominated">เสนอรายชื่อ (36 คน)</h2>
           </div>
           <div class="roster-grid">
             ${generateZodiacCardsHtml('nominated')}
@@ -147,15 +146,9 @@ function renderCurrentRoster() {
     `;
   } else {
     const isNom = (currentRosterMode === 'nominated');
-    const titleText = isNom ? 'เสนอรายชื่อ' : 'ลงทะเบียน';
-    const titleClass = isNom ? 'title-nominated' : 'title-registered';
     const gridColsClass = isNom ? 'grid-4-cols' : '';
 
     container.innerHTML = `
-      <div class="roster-header-title-wrap">
-        <div class="roster-sub-title">รายชื่อผู้ประจำ 12 ราศี</div>
-        <h2 class="roster-main-title ${titleClass}">${titleText}</h2>
-      </div>
       <div class="roster-grid ${gridColsClass}">
         ${generateZodiacCardsHtml(currentRosterMode)}
       </div>
@@ -163,11 +156,24 @@ function renderCurrentRoster() {
   }
 }
 
-// Generate 12 Cards HTML for category
+// Generate 12 Cards HTML for category with Gridwave diagonal wavefront
 function generateZodiacCardsHtml(categoryKey) {
   const categoryData = (rosterData && rosterData[categoryKey]) || {};
 
-  return ROSTER_ZODIACS.map(z => {
+  // Image 1: Gridwave specs (左上 → 右下へ波)
+  // Formula: delay = (row + col) * 55ms
+  let cols = 3;
+  if (currentRosterMode === 'both') {
+    cols = 2;
+  } else if (categoryKey === 'nominated') {
+    cols = 4;
+  }
+
+  return ROSTER_ZODIACS.map((z, idx) => {
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+    const waveDelay = (row + col) * 55; // (row + col) * 55ms diagonal wavefront
+
     const members = categoryData[z.key] || [];
     const countText = `${members.length} คน`;
 
@@ -208,7 +214,7 @@ function generateZodiacCardsHtml(categoryKey) {
     }
 
     return `
-      <div class="roster-card" data-zodiac="${z.key}">
+      <div class="roster-card gridwave-card" data-zodiac="${z.key}" style="animation-delay: ${waveDelay}ms;">
         <div class="roster-card-header">
           <div class="roster-card-title-group">
             <img src="/assets/images/white/${z.icon}" alt="${z.th}" class="roster-card-icon" onerror="this.style.display='none';">
@@ -220,6 +226,96 @@ function generateZodiacCardsHtml(categoryKey) {
       </div>
     `;
   }).join('');
+}
+
+// Cleanup gridwave animation once completed so hover effects are completely responsive
+document.addEventListener('animationend', (e) => {
+  if (e.animationName === 'gridWaveIn' && e.target && e.target.classList.contains('gridwave-card')) {
+    e.target.style.opacity = '1';
+    e.target.style.transform = 'none';
+    e.target.classList.remove('gridwave-card');
+  }
+});
+
+// ==========================================================================
+// Numerical Ticker Countdown (วัน · ชั่วโมง · นาที · วินาที)
+// Motion Guide: 等幅の桁 34px · easeOutCubic (cubic-bezier(0.33, 1, 0.68, 1))
+// ==========================================================================
+function initNumericalTicker() {
+  const tickerEl = document.getElementById('live-ticker-countdown');
+  if (!tickerEl) return;
+
+  // Default target: 14 พฤศจิกายน 2569 เวลา 21:00 น. (UTC+7 / GMT+7)
+  let targetTime = new Date('2026-11-14T21:00:00+07:00').getTime();
+
+  // Also check if server or common settings provide liveDate
+  if (typeof fbGetSettings === 'function') {
+    fbGetSettings().then(s => {
+      if (s && s.liveDate) {
+        targetTime = new Date(s.liveDate).getTime();
+      }
+      if (s && s.liveDateDisplay) {
+        const header = document.getElementById('live-date-label');
+        if (header) header.textContent = `วันไลฟ์ : ${s.liveDateDisplay}`;
+      }
+    }).catch(() => {});
+  }
+
+  function updateTicker() {
+    const now = Date.now();
+    const diff = Math.max(0, targetTime - now);
+
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Days digits (support 2 or 3 digits)
+    const daysStr = String(days);
+    if (days >= 100) {
+      const boxHundreds = document.querySelector('[data-digit-id="days-hundreds"]');
+      if (boxHundreds) {
+        boxHundreds.style.display = 'block';
+        setTickerDigit('days-hundreds', parseInt(daysStr[0], 10));
+        setTickerDigit('days-tens', parseInt(daysStr[1], 10));
+        setTickerDigit('days-ones', parseInt(daysStr[2], 10));
+      }
+    } else {
+      const boxHundreds = document.querySelector('[data-digit-id="days-hundreds"]');
+      if (boxHundreds) boxHundreds.style.display = 'none';
+      const paddedDays = daysStr.padStart(2, '0');
+      setTickerDigit('days-tens', parseInt(paddedDays[0], 10));
+      setTickerDigit('days-ones', parseInt(paddedDays[1], 10));
+    }
+
+    // Hours digits (2 digits)
+    const hoursStr = String(hours).padStart(2, '0');
+    setTickerDigit('hours-tens', parseInt(hoursStr[0], 10));
+    setTickerDigit('hours-ones', parseInt(hoursStr[1], 10));
+
+    // Minutes digits (2 digits)
+    const minsStr = String(minutes).padStart(2, '0');
+    setTickerDigit('mins-tens', parseInt(minsStr[0], 10));
+    setTickerDigit('mins-ones', parseInt(minsStr[1], 10));
+
+    // Seconds digits (2 digits)
+    const secsStr = String(seconds).padStart(2, '0');
+    setTickerDigit('secs-tens', parseInt(secsStr[0], 10));
+    setTickerDigit('secs-ones', parseInt(secsStr[1], 10));
+  }
+
+  function setTickerDigit(id, val) {
+    const box = document.querySelector(`[data-digit-id="${id}"]`);
+    if (!box) return;
+    const track = box.querySelector('.ticker-track');
+    if (!track) return;
+    const digit = isNaN(val) ? 0 : Math.max(0, Math.min(9, val));
+    track.style.transform = `translateY(-${digit * 10}%)`;
+  }
+
+  updateTicker();
+  setInterval(updateTicker, 1000);
 }
 
 // Utility HTML escape

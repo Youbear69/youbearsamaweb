@@ -64,10 +64,75 @@
         </a>
       </div>
 
-      <!-- Live Date Countdown Banner -->
-      <div class="roster-live-banner">
-        <span class="roster-live-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</span>
-        <span class="roster-live-timer" id="live-countdown">ไลฟ์ในอีก : -- เดือน -- วัน -- ชั่วโมง -- นาที -- วินาที</span>
+      <!-- Live Date Numerical Ticker Countdown Showcase -->
+      <div class="roster-ticker-banner">
+        <div class="roster-ticker-header" id="live-date-label">วันไลฟ์ : 14 พฤศจิกายน 2569 เวลา 21:00 น.</div>
+
+        <div class="ticker-display" id="live-ticker-countdown">
+          <!-- Days Group -->
+          <div class="ticker-group">
+            <div class="ticker-card">
+              <div class="ticker-digit-box" data-digit-id="days-hundreds" style="display:none;">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+              <div class="ticker-digit-box" data-digit-id="days-tens">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+              <div class="ticker-digit-box" data-digit-id="days-ones">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+            </div>
+            <span class="ticker-unit-label">วัน</span>
+          </div>
+
+          <div class="ticker-colon">:</div>
+
+          <!-- Hours Group -->
+          <div class="ticker-group">
+            <div class="ticker-card">
+              <div class="ticker-digit-box" data-digit-id="hours-tens">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+              <div class="ticker-digit-box" data-digit-id="hours-ones">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+            </div>
+            <span class="ticker-unit-label">ชั่วโมง</span>
+          </div>
+
+          <div class="ticker-colon">:</div>
+
+          <!-- Minutes Group -->
+          <div class="ticker-group">
+            <div class="ticker-card">
+              <div class="ticker-digit-box" data-digit-id="mins-tens">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+              <div class="ticker-digit-box" data-digit-id="mins-ones">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+            </div>
+            <span class="ticker-unit-label">นาที</span>
+          </div>
+
+          <div class="ticker-colon">:</div>
+
+          <!-- Seconds Group -->
+          <div class="ticker-group">
+            <div class="ticker-card">
+              <div class="ticker-digit-box" data-digit-id="secs-tens">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+              <div class="ticker-digit-box" data-digit-id="secs-ones">
+                <div class="ticker-track"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+              </div>
+            </div>
+            <span class="ticker-unit-label">วินาที</span>
+          </div>
+        </div>
+
+        <!-- Hidden fallback element for backward compatibility with common.js -->
+        <span id="live-countdown" style="display:none;" aria-hidden="true"></span>
       </div>
 
       <!-- Roster Switcher (Segmented Control) -->

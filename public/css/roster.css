@@ -34,8 +34,8 @@ body.page-home .main-content.home-content {
   justify-content: center;
   align-items: center;
   gap: 1.8rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1.2rem;
+  margin-top: 5.5rem; /* เว้นระยะห่างจาก Navbar ด้านบนให้โปร่งสวยงาม */
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -44,18 +44,20 @@ body.page-home .main-content.home-content {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .collab-logo-link:hover {
   transform: translateY(-3px) scale(1.03);
-  filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5));
 }
 
-.collab-slot-logo {
+.collab-slot-logo,
+.collab-slot-logo:hover,
+.collab-logo-link:hover .collab-slot-logo {
   max-width: 280px;
   height: auto;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.7));
+  filter: none !important; /* ไม่ใส่เงาตามที่ต้องการ */
+  box-shadow: none !important;
 }
 
 .collab-cross {
@@ -72,43 +74,172 @@ body.page-home .main-content.home-content {
   filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.7));
 }
 
-/* Live Countdown Box (Centered Banner) */
-.roster-live-banner {
-  background: rgba(15, 10, 32, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(139, 92, 246, 0.45);
-  border-radius: 20px;
-  padding: 1rem 2.2rem;
-  text-align: center;
+/* ==========================================================================
+   Numerical Ticker Countdown (Notifications and Reactions - Motion Guide)
+   周りのレイアウトは不動 · 等幅の桁 34px · easeOutCubic (cubic-bezier(0.33, 1, 0.68, 1))
+   ========================================================================== */
+.roster-ticker-banner {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.2);
-  margin-bottom: 1.8rem;
-  max-width: 620px;
-  width: 90%;
-  animation: pulseGlow 4s ease-in-out infinite alternate;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-bottom: 2.2rem;
+  width: 100%;
 }
 
-@keyframes pulseGlow {
-  0% { border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 15px rgba(139,92,246,0.15); }
-  100% { border-color: rgba(168, 85, 247, 0.65); box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 25px rgba(168,85,247,0.35); }
-}
-
-.roster-live-header {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  letter-spacing: 0.02em;
-}
-
-.roster-live-timer {
-  font-size: 1.05rem;
+.roster-ticker-header {
+  font-size: 0.95rem;
   font-weight: 600;
+  color: #c4b5fd;
+  letter-spacing: 0.04em;
+  text-align: center;
+  background: rgba(30, 20, 60, 0.65);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  padding: 0.38rem 1.4rem;
+  border-radius: 30px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.ticker-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  flex-wrap: nowrap;
+}
+
+.ticker-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ticker-card {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 10, 32, 0.92);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-radius: 14px;
+  padding: 6px 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 16px rgba(139, 92, 246, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ticker-card:hover {
+  border-color: rgba(192, 132, 252, 0.8);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 24px rgba(168, 85, 247, 0.35);
+}
+
+/* Fixed width digit box: 等幅の桁 34px (from Image 2 spec) */
+.ticker-digit-box {
+  width: 34px;
+  height: 54px;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ticker-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.65s cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: transform;
+}
+
+.ticker-track span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 54px;
+  font-family: 'Outfit', 'Kanit', sans-serif;
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.7);
+  user-select: none;
+  line-height: 54px;
+}
+
+.ticker-unit-label {
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #38bdf8;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+  margin-top: 0.45rem;
+  text-transform: uppercase;
+}
+
+.ticker-colon {
+  font-family: 'Outfit', 'Kanit', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #a78bfa;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.8);
+  user-select: none;
+}
+
+@media (max-width: 520px) {
+  .ticker-display {
+    gap: 0.4rem;
+  }
+  .ticker-card {
+    padding: 4px 5px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+  .ticker-digit-box {
+    width: 27px;
+    height: 44px;
+  }
+  .ticker-track span {
+    width: 27px;
+    height: 44px;
+    font-size: 1.6rem;
+    line-height: 44px;
+  }
+  .ticker-colon {
+    font-size: 1.6rem;
+    margin-bottom: 1.3rem;
+  }
+  .ticker-unit-label {
+    font-size: 0.74rem;
+    margin-top: 0.35rem;
+  }
+}
+
+/* ==========================================================================
+   List Grid: Gridwave Entrance Animation (Image 1 Specs)
+   Direction: 左上 → 右下へ波 (Upper-left to bottom-right wave)
+   Formula: delay (row + col) * 55ms
+   Transform: Y +18px -> 0, scale 0.78 -> 1, opacity 0 -> 1
+   Duration: 900ms easeOutCubic (cubic-bezier(0.33, 1, 0.68, 1))
+   ========================================================================== */
+@keyframes gridWaveIn {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.78);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gridwave-card {
+  animation-name: gridWaveIn;
+  animation-duration: 900ms;
+  animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  animation-fill-mode: both;
 }
 
 /* Category View Switcher (Segmented Control) */
