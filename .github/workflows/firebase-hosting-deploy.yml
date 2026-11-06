@@ -21,6 +21,30 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VTUBERGAME_676DC }}
         run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "### Deploy Error" >> $GITHUB_STEP_SUMMARY
+            echo "Repository secret **FIREBASE_SERVICE_ACCOUNT_VTUBERGAME_676DC** is missing or empty!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
           printf '%s\n' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-key.json"
+
+          if ! node -e "JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/firebase-key.json', 'utf8'))" 2>&1; then
+            echo "### Deploy Error" >> $GITHUB_STEP_SUMMARY
+            echo "Repository secret is not valid JSON!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
-          npx --yes firebase-tools deploy --only hosting --project vtubergame-676dc
+
+          echo "Starting Firebase deployment..."
+          if ! npx --yes firebase-tools deploy --only hosting --project vtubergame-676dc --non-interactive 2>&1 | tee deploy.log; then
+            echo "### Firebase Deploy Failed" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat deploy.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "### Firebase Deploy Succeeded!" >> $GITHUB_STEP_SUMMARY
+          echo "Site deployed successfully to Firebase Hosting." >> $GITHUB_STEP_SUMMARY
