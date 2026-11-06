@@ -38,13 +38,15 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
 
           echo "Starting Firebase deployment..."
-          if ! npx --yes firebase-tools deploy --only hosting --project vtubergame-676dc --non-interactive 2>&1 | tee deploy.log; then
-            echo "### Firebase Deploy Failed" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat deploy.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+          npx --yes firebase-tools deploy --only hosting --project vtubergame-676dc --non-interactive 2>&1 | tee deploy.log
+          DEPLOY_EXIT=${PIPESTATUS[0]}
 
-          echo "### Firebase Deploy Succeeded!" >> $GITHUB_STEP_SUMMARY
-          echo "Site deployed successfully to Firebase Hosting." >> $GITHUB_STEP_SUMMARY
+          echo "### Firebase Deploy Log" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat deploy.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          if [ $DEPLOY_EXIT -ne 0 ]; then
+            echo "Deploy failed with code $DEPLOY_EXIT"
+            exit $DEPLOY_EXIT
+          fi
