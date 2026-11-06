@@ -232,6 +232,7 @@ async function initAdminPage() {
       loadAdminData();
       initChatManagement();
       initRandom12LogsManagement();
+      loadAdminRoster();
     } else {
       if (chatListenerRef && typeof rtdb !== 'undefined') {
         rtdb.ref('chat').off('value', chatListenerRef);
@@ -1266,6 +1267,9 @@ async function initAdminPage() {
     if (tabKey === 'roster' && typeof window.loadAdminRoster === 'function') {
       window.loadAdminRoster();
     }
+    if (tabKey === 'links' && typeof window.renderAdminLinksDirectory === 'function') {
+      window.renderAdminLinksDirectory();
+    }
   }
   window.switchAdminMainTab = switchAdminMainTab;
 
@@ -1466,6 +1470,22 @@ async function initAdminPage() {
   let adminRosterData = { registered: {}, nominated: {} };
   let adminRosterCat = 'registered';
   let activePickTarget = null; // { zodiacKey, index }
+  let currentRosterPickMode = 'matching'; // 'matching' | 'all' | 'custom'
+
+  const SAFE_ZODIACS = (typeof ZODIAC_LIST !== 'undefined' && ZODIAC_LIST.length) ? ZODIAC_LIST : [
+    { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png' },
+    { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png' },
+    { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png' },
+    { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png' },
+    { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png' },
+    { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png' },
+    { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png' },
+    { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png' },
+    { key: 'libra', th: 'ตุลย์/ตุล', en: 'Libra', icon: 'libra.png' },
+    { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png' },
+    { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png' },
+    { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png' }
+  ];
 
   async function loadAdminRoster() {
     try {
@@ -1477,13 +1497,7 @@ async function initAdminPage() {
           if (!adminRosterData.registered) adminRosterData.registered = {};
           if (!adminRosterData.nominated) adminRosterData.nominated = {};
 
-          // Count total
-          let totalCount = 0;
-          Object.values(adminRosterData.registered || {}).forEach(arr => totalCount += (arr || []).length);
-          Object.values(adminRosterData.nominated || {}).forEach(arr => totalCount += (arr || []).length);
-          const badge = document.getElementById('tab-badge-roster');
-          if (badge) badge.textContent = totalCount;
-
+          updateRosterCountBadges();
           renderAdminRoster();
         }
       }
@@ -1493,6 +1507,28 @@ async function initAdminPage() {
     }
   }
   window.loadAdminRoster = loadAdminRoster;
+
+  function updateRosterCountBadges() {
+    let regCount = 0;
+    let nomCount = 0;
+    Object.values(adminRosterData.registered || {}).forEach(arr => regCount += (arr || []).length);
+    Object.values(adminRosterData.nominated || {}).forEach(arr => nomCount += (arr || []).length);
+
+    const badge = document.getElementById('tab-badge-roster');
+    if (badge) badge.textContent = regCount + nomCount;
+
+    const lblReg = document.getElementById('count-label-registered');
+    if (lblReg) lblReg.textContent = regCount;
+
+    const lblNom = document.getElementById('count-label-nominated');
+    if (lblNom) lblNom.textContent = nomCount;
+
+    const ind = document.getElementById('admin-roster-total-indicator');
+    if (ind) {
+      const curCount = (adminRosterCat === 'registered') ? regCount : nomCount;
+      ind.textContent = `รวมทั้งหมดในกลุ่มนี้: ${curCount} คน`;
+    }
+  }
 
   function switchAdminRosterCategory(cat) {
     adminRosterCat = cat;
@@ -1526,9 +1562,40 @@ async function initAdminPage() {
         btnReg.style.color = '#cbd5e1';
       }
     }
+    updateRosterCountBadges();
     renderAdminRoster();
   }
   window.switchAdminRosterCategory = switchAdminRosterCategory;
+
+  // Batch set number of player slots for all 12 signs in current category
+  window.batchSetRosterSlots = function(targetCount) {
+    if (!adminRosterData[adminRosterCat]) adminRosterData[adminRosterCat] = {};
+    const catData = adminRosterData[adminRosterCat];
+
+    SAFE_ZODIACS.forEach(z => {
+      if (!catData[z.key]) catData[z.key] = [];
+      const currentArr = catData[z.key];
+
+      if (currentArr.length < targetCount) {
+        // Add slots
+        while (currentArr.length < targetCount) {
+          currentArr.push({
+            id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            displayName: '',
+            xAccount: '',
+            imageUrl: ''
+          });
+        }
+      } else if (currentArr.length > targetCount) {
+        // Trim excess slots
+        catData[z.key] = currentArr.slice(0, targetCount);
+      }
+    });
+
+    updateRosterCountBadges();
+    renderAdminRoster();
+    showToast(`ปรับจำนวนผู้เล่นเป็นราศีละ ${targetCount} คน เรียบร้อย (อย่าลืมกดบันทึก)`, 'info');
+  };
 
   function renderAdminRoster() {
     const grid = document.getElementById('admin-roster-zodiac-grid');
@@ -1536,7 +1603,7 @@ async function initAdminPage() {
 
     const currentCatData = adminRosterData[adminRosterCat] || {};
 
-    grid.innerHTML = ZODIAC_LIST.map(z => {
+    grid.innerHTML = SAFE_ZODIACS.map(z => {
       const players = currentCatData[z.key] || [];
       const count = players.length;
 
@@ -1544,20 +1611,23 @@ async function initAdminPage() {
         const avatar = p.imageUrl || '/assets/images/mascot/not-speak.png';
         return `
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: #a78bfa;">ช่อง #${idx + 1}</span>
+              <button type="button" class="btn-secondary" style="padding: 1px 7px; font-size: 0.75rem; color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); background: rgba(239,68,68,0.08);" onclick="removeAdminRosterPlayer('${z.key}', ${idx})" title="ลบช่องนี้">
+                ✕ ลบช่อง
+              </button>
+            </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(168,85,247,0.5); flex-shrink: 0;">
+              <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(168,85,247,0.5); flex-shrink: 0;" title="${escapeHtml(p.displayName || 'VTuber')}">
               <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.92rem;" placeholder="ชื่อ VTuber" value="${escapeHtml(p.displayName || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'displayName', this.value)">
-                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.85rem;" placeholder="ลิงก์ X หรือ @username" value="${escapeHtml(p.xAccount || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'xAccount', this.value)">
+                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.92rem;" placeholder="ชื่อ VTuber" value="${escapeHtml(p.displayName || '')}" oninput="updateRosterField('${z.key}', ${idx}, 'displayName', this.value)">
+                <input type="text" class="form-input" style="padding: 4px 8px; font-size: 0.85rem;" placeholder="ลิงก์ X หรือ @username" value="${escapeHtml(p.xAccount || '')}" oninput="updateRosterField('${z.key}', ${idx}, 'xAccount', this.value)">
               </div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <input type="text" class="form-input" style="padding: 3px 8px; font-size: 0.82rem; flex: 1;" placeholder="URL รูปภาพโปรไฟล์" value="${escapeHtml(p.imageUrl || '')}" onchange="updateRosterField('${z.key}', ${idx}, 'imageUrl', this.value)">
-              <button type="button" class="btn-secondary" style="padding: 3px 10px; font-size: 0.8rem; white-space: nowrap;" onclick="openRosterPickModal('${z.key}', ${idx})">
-                👥 ดึง
-              </button>
-              <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 0.8rem; color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);" onclick="removeAdminRosterPlayer('${z.key}', ${idx})" title="ลบ">
-                ✕
+              <input type="text" class="form-input" style="padding: 3px 8px; font-size: 0.82rem; flex: 1;" placeholder="URL รูปภาพโปรไฟล์" value="${escapeHtml(p.imageUrl || '')}" oninput="updateRosterField('${z.key}', ${idx}, 'imageUrl', this.value)">
+              <button type="button" class="btn-secondary" style="padding: 3px 10px; font-size: 0.82rem; white-space: nowrap; border-color: #a855f7; color: #e9d5ff; background: rgba(168,85,247,0.15);" onclick="openRosterPickModal('${z.key}', ${idx})">
+                👥 เลือกคน
               </button>
             </div>
           </div>
@@ -1565,21 +1635,21 @@ async function initAdminPage() {
       }).join('');
 
       if (players.length === 0) {
-        playersHtml = `<div style="text-align: center; color: var(--text-muted); padding: 1rem 0; font-size: 0.9rem;">ยังไม่มีผู้เล่นในราศีนี้</div>`;
+        playersHtml = `<div style="text-align: center; color: var(--text-muted); padding: 1.2rem 0; font-size: 0.88rem;">ยังไม่มีช่องผู้เล่นในราศีนี้ (กดปุ่ม + เพิ่มช่อง)</div>`;
       }
 
       return `
         <div class="admin-card" style="padding: 1rem; border: 1.5px solid rgba(139, 92, 246, 0.3); border-radius: 16px; background: rgba(18, 12, 38, 0.65);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <img src="/assets/images/white/${z.icon}" style="width: 20px; height: 20px; object-fit: contain;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="/assets/images/white/${z.icon}" style="width: 22px; height: 22px; object-fit: contain;">
               <strong style="color: #fff; font-size: 1.05rem;">${z.th}</strong>
               <span style="color: #a78bfa; font-size: 0.88rem;">(${z.en})</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="background: rgba(139, 92, 246, 0.25); color: #cbd5e1; padding: 2px 8px; border-radius: 12px; font-size: 0.82rem; font-weight: 700;">${count} คน</span>
-              <button type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.82rem; font-weight: 700;" onclick="addAdminRosterPlayer('${z.key}')">
-                + เพิ่ม
+              <button type="button" class="btn-primary" style="padding: 3px 9px; font-size: 0.82rem; font-weight: 700;" onclick="addAdminRosterPlayer('${z.key}')">
+                + เพิ่มช่อง
               </button>
             </div>
           </div>
@@ -1607,30 +1677,104 @@ async function initAdminPage() {
       xAccount: '',
       imageUrl: ''
     });
+    updateRosterCountBadges();
     renderAdminRoster();
   };
 
   window.removeAdminRosterPlayer = function(zodiacKey, idx) {
     if (adminRosterData[adminRosterCat] && adminRosterData[adminRosterCat][zodiacKey]) {
       adminRosterData[adminRosterCat][zodiacKey].splice(idx, 1);
+      updateRosterCountBadges();
       renderAdminRoster();
     }
   };
 
+  // Open Picker Modal
   window.openRosterPickModal = function(zodiacKey, idx) {
     activePickTarget = { zodiacKey, index: idx };
     const modal = document.getElementById('roster-pick-modal');
     if (!modal) return;
+
+    const zMeta = SAFE_ZODIACS.find(z => z.key === zodiacKey) || { th: zodiacKey, en: '' };
+    const titleEl = document.getElementById('roster-pick-title');
+    if (titleEl) {
+      titleEl.textContent = `เลือกผู้เล่นสำหรับราศี${zMeta.th} (${zMeta.en}) - ช่อง #${idx + 1}`;
+    }
+
     modal.classList.add('show');
     const searchInput = document.getElementById('roster-pick-search');
     if (searchInput) searchInput.value = '';
-    renderRosterPickList('');
+
+    // Reset custom inputs
+    const cName = document.getElementById('custom-roster-name');
+    const cX = document.getElementById('custom-roster-x');
+    const cImg = document.getElementById('custom-roster-image');
+    const cPrev = document.getElementById('custom-roster-preview-img');
+    if (cName) cName.value = '';
+    if (cX) cX.value = '';
+    if (cImg) cImg.value = '';
+    if (cPrev) cPrev.src = '/assets/images/mascot/not-speak.png';
+
+    setRosterPickMode('matching');
   };
 
   window.closeRosterPickModal = function() {
     const modal = document.getElementById('roster-pick-modal');
     if (modal) modal.classList.remove('show');
     activePickTarget = null;
+  };
+
+  window.setRosterPickMode = function(mode) {
+    currentRosterPickMode = mode;
+    const btnMatch = document.getElementById('roster-mode-matching');
+    const btnAll = document.getElementById('roster-mode-all');
+    const btnCustom = document.getElementById('roster-mode-custom');
+    const listSection = document.getElementById('roster-pick-list-section');
+    const customSection = document.getElementById('roster-pick-custom-section');
+
+    const zMeta = activePickTarget ? SAFE_ZODIACS.find(z => z.key === activePickTarget.zodiacKey) : null;
+    if (btnMatch && zMeta) {
+      btnMatch.textContent = `🎯 ตรงตามราศี (${zMeta.th})`;
+    }
+
+    [btnMatch, btnAll, btnCustom].forEach(b => {
+      if (!b) return;
+      b.classList.remove('active');
+      b.style.background = 'transparent';
+      b.style.borderColor = 'rgba(255,255,255,0.15)';
+      b.style.color = '#cbd5e1';
+    });
+
+    if (mode === 'matching') {
+      if (btnMatch) {
+        btnMatch.classList.add('active');
+        btnMatch.style.background = 'rgba(168,85,247,0.25)';
+        btnMatch.style.borderColor = '#a855f7';
+        btnMatch.style.color = '#fff';
+      }
+      if (listSection) listSection.style.display = 'block';
+      if (customSection) customSection.style.display = 'none';
+      renderRosterPickList();
+    } else if (mode === 'all') {
+      if (btnAll) {
+        btnAll.classList.add('active');
+        btnAll.style.background = 'rgba(168,85,247,0.25)';
+        btnAll.style.borderColor = '#a855f7';
+        btnAll.style.color = '#fff';
+      }
+      if (listSection) listSection.style.display = 'block';
+      if (customSection) customSection.style.display = 'none';
+      renderRosterPickList();
+    } else if (mode === 'custom') {
+      if (btnCustom) {
+        btnCustom.classList.add('active');
+        btnCustom.style.background = 'rgba(56,189,248,0.25)';
+        btnCustom.style.borderColor = '#38bdf8';
+        btnCustom.style.color = '#fff';
+      }
+      if (listSection) listSection.style.display = 'none';
+      if (customSection) customSection.style.display = 'block';
+    }
   };
 
   window.filterRosterApplicants = function(query) {
@@ -1641,13 +1785,17 @@ async function initAdminPage() {
     const listEl = document.getElementById('roster-pick-list');
     if (!listEl) return;
 
-    const q = (query || '').toLowerCase().trim();
+    const q = (query !== undefined ? query : (document.getElementById('roster-pick-search')?.value || '')).toLowerCase().trim();
     const all = [
       ...(allRegistrations || []).map(r => ({ ...r, source: 'ลงทะเบียน' })),
       ...(allProposals || []).map(p => ({ ...p, source: 'เสนอชื่อ' }))
     ];
 
-    const filtered = all.filter(item => {
+    let filtered = all.filter(item => {
+      // Sign matching
+      if (currentRosterPickMode === 'matching' && activePickTarget) {
+        if (item.zodiacKey !== activePickTarget.zodiacKey) return false;
+      }
       if (!q) return true;
       const name = (item.displayName || '').toLowerCase();
       const xAcc = (item.xAccount || '').toLowerCase();
@@ -1656,24 +1804,25 @@ async function initAdminPage() {
     });
 
     if (filtered.length === 0) {
-      listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">ไม่พบผู้สมัครที่ตรงกับ "${escapeHtml(q)}"</div>`;
+      const modeText = currentRosterPickMode === 'matching' ? 'ในราศีนี้' : '';
+      listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">ไม่พบรายชื่อผู้สมัคร${modeText} ${q ? `ที่ตรงกับ "${escapeHtml(q)}"` : ''}<br><span style="font-size: 0.85rem; color: #a78bfa;">สามารถกดแท็บ "เลือกใครก็ได้" หรือ "เพิ่มคนใหม่เอง" ได้</span></div>`;
       return;
     }
 
-    listEl.innerHTML = filtered.slice(0, 50).map(item => {
+    listEl.innerHTML = filtered.slice(0, 80).map(item => {
       const avatar = item.imageUrl || '/assets/images/mascot/not-speak.png';
       const zodLabel = item.zodiacNameTh || 'ไม่ทราบราศี';
       const isTargetZodiac = activePickTarget && item.zodiacKey === activePickTarget.zodiacKey;
 
       return `
         <div onclick="selectApplicantForRoster('${item.id}', '${item.source}')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${isTargetZodiac ? 'rgba(168,85,247,0.5)' : 'rgba(255,255,255,0.08)'}; border-radius: 10px; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-          <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+          <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/assets/images/mascot/not-speak.png';" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isTargetZodiac ? '#a855f7' : 'rgba(255,255,255,0.1)'};">
           <div style="flex: 1; min-width: 0;">
             <div style="font-weight: 700; color: #fff; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.displayName || 'VTuber')}</div>
             <div style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.xAccount || '')}</div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-            <span style="font-size: 0.78rem; background: ${isTargetZodiac ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}; color: ${isTargetZodiac ? '#c4b5fd' : '#94a3b8'}; padding: 2px 6px; border-radius: 10px;">${escapeHtml(zodLabel)}</span>
+            <span style="font-size: 0.78rem; background: ${isTargetZodiac ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}; color: ${isTargetZodiac ? '#c4b5fd' : '#94a3b8'}; padding: 2px 7px; border-radius: 10px;">${escapeHtml(zodLabel)}</span>
             <span style="font-size: 0.72rem; color: ${item.source === 'ลงทะเบียน' ? '#38bdf8' : '#fbbf24'};">${item.source}</span>
           </div>
         </div>
@@ -1700,6 +1849,72 @@ async function initAdminPage() {
     closeRosterPickModal();
     renderAdminRoster();
     showToast(`เลือก "${applicant.displayName}" สำเร็จ`, 'success');
+  };
+
+  // Fetch avatar for custom VTuber form
+  window.fetchCustomRosterAvatar = async function() {
+    const xInput = document.getElementById('custom-roster-x');
+    const nameInput = document.getElementById('custom-roster-name');
+    const imgInput = document.getElementById('custom-roster-image');
+    const prevImg = document.getElementById('custom-roster-preview-img');
+
+    const xVal = (xInput ? xInput.value : '').trim();
+    const nameVal = (nameInput ? nameInput.value : '').trim();
+
+    if (!xVal) {
+      showToast('กรุณากรอกลิงก์ X หรือ @username ก่อนกดดึงรูป', 'error');
+      return;
+    }
+
+    showToast('กำลังดึงรูปโปรไฟล์จาก X...', 'info');
+    try {
+      const res = await fetch('/api/roster/fetch-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ xAccount: xVal, displayName: nameVal })
+      });
+      const data = await res.json();
+      if (data && data.success && data.imageUrl) {
+        if (imgInput) imgInput.value = data.imageUrl;
+        if (prevImg) prevImg.src = data.imageUrl;
+        showToast('ดึงรูปโปรไฟล์สำเร็จ!', 'success');
+      } else {
+        showToast('ไม่สามารถดึงรูปโปรไฟล์ได้ สามารถกรอก URL เองได้', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('เกิดข้อผิดพลาดในการดึงรูป', 'error');
+    }
+  };
+
+  window.submitCustomRosterPlayer = function() {
+    if (!activePickTarget) return;
+    const { zodiacKey, index } = activePickTarget;
+
+    const nameInput = document.getElementById('custom-roster-name');
+    const xInput = document.getElementById('custom-roster-x');
+    const imgInput = document.getElementById('custom-roster-image');
+
+    const nameVal = (nameInput ? nameInput.value : '').trim();
+    const xVal = (xInput ? xInput.value : '').trim();
+    const imgVal = (imgInput ? imgInput.value : '').trim();
+
+    if (!nameVal) {
+      showToast('กรุณาระบุชื่อ VTuber', 'error');
+      return;
+    }
+
+    if (!adminRosterData[adminRosterCat]) adminRosterData[adminRosterCat] = {};
+    if (!adminRosterData[adminRosterCat][zodiacKey]) adminRosterData[adminRosterCat][zodiacKey] = [];
+    if (adminRosterData[adminRosterCat][zodiacKey][index]) {
+      adminRosterData[adminRosterCat][zodiacKey][index].displayName = nameVal;
+      adminRosterData[adminRosterCat][zodiacKey][index].xAccount = xVal;
+      adminRosterData[adminRosterCat][zodiacKey][index].imageUrl = imgVal;
+    }
+
+    closeRosterPickModal();
+    renderAdminRoster();
+    showToast(`เพิ่ม "${nameVal}" ลงในช่องเรียบร้อย`, 'success');
   };
 
   window.saveAdminRoster = async function() {
@@ -1761,6 +1976,7 @@ async function initAdminPage() {
       const json = await res.json();
       if (json.success) {
         adminRosterData = json.data;
+        updateRosterCountBadges();
         renderAdminRoster();
         showToast('รีเซ็ตรายชื่อเป็นค่าเริ่มต้นสำเร็จ!', 'success');
       } else {
@@ -1770,6 +1986,219 @@ async function initAdminPage() {
       console.error(err);
       showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
     }
+  };
+
+  // ==========================================
+  // Links Directory (Tab 7)
+  // ==========================================
+  window.renderAdminLinksDirectory = function() {
+    const container = document.getElementById('admin-links-directory-container');
+    if (!container) return;
+
+    const origin = window.location.origin;
+
+    const sections = [
+      {
+        title: 'หน้าสำหรับคนดู / ผู้ชมทั่วไป (Public Pages)',
+        color: '#a855f7',
+        items: [
+          {
+            title: 'หน้าหลัก ศึก 12 วีทูบเบอร์ (Home)',
+            path: '/12vtubergame',
+            desc: 'หน้าหลักของกิจกรรม โชว์รายชื่อผู้ได้เล่น 12 ราศี แชทสด และปุ่มลงทะเบียน/เสนอชื่อ',
+            badge: 'หน้าหลัก'
+          },
+          {
+            title: 'หน้าโหวตราศีสำหรับคนดู (Audience Vote)',
+            path: '/12vtubergame/audience-vote',
+            desc: 'หน้าโหวตให้ผู้ชมทางบ้านเลือกราศีที่ชื่นชอบ 1 ราศี มีระบบถามชื่อและล็อคคำตอบทันที',
+            badge: 'โหวตคนดู'
+          },
+          {
+            title: 'หน้าลงทะเบียนตรงสำหรับวีทูบเบอร์ (Register)',
+            path: '/12vtubergame/register',
+            desc: 'หน้าฟอร์มลงทะเบียนเข้าร่วมกิจกรรม ศึก 12 วีทูบเบอร์',
+            badge: 'ลงทะเบียน'
+          },
+          {
+            title: 'หน้าโควต้ารวม 12 ราศี (All Zodiac Quota)',
+            path: '/12vtubergame/allzodiac',
+            desc: 'หน้าสรุปจำนวนผู้สมัครในแต่ละราศี และหมวดวีทูบเบอร์ที่ถูกเสนอชื่อ',
+            badge: 'โควต้า'
+          },
+          {
+            title: 'มินิเกม ศึก 12 วีทูบเบอร์ (Mini Game)',
+            path: '/12vtubergame/minigame',
+            desc: 'หน้าเล่นมินิเกมสะสมการ์ด/เกมทาย',
+            badge: 'เกม'
+          },
+          {
+            title: 'กระดานวาดรูปเสรี (FreeBoard)',
+            path: '/freeboard',
+            desc: 'กระดานวาดรูปออนไลน์แบบ Interactive Canvas',
+            badge: 'เครื่องมือ'
+          }
+        ]
+      },
+      {
+        title: 'หน้าควบคุมสำหรับแอดมิน (Admin Control Pages)',
+        color: '#f59e0b',
+        items: [
+          {
+            title: 'ระบบจัดการหลังบ้าน แอดมินพาเนล (Admin Panel)',
+            path: '/12vtubergame/adminpanel',
+            desc: 'จัดการรายชื่อผู้สมัคร, แชทสด, กำหนดการ, จัดการผู้ได้เล่น (Roster) และรหัสผ่าน',
+            badge: 'แอดมินหลัก'
+          },
+          {
+            title: 'แอดมินจัดการโหวตคนดู (Audience Vote Admin)',
+            path: '/12vtubergame/audience-vote-admin',
+            desc: 'ดูผลโหวตสดของคนดูแบบเรียลไทม์ เปิด/ปิดระบบโหวต รีเซ็ตการโหวต และรวมลิงก์ Stream Deck',
+            badge: 'แอดมินโหวต'
+          },
+          {
+            title: 'หน้าระบบสุ่ม 12 ราศี (Random 12 VTuber)',
+            path: '/12vtubergame/random12ad',
+            desc: 'หน้าระบบสุ่มตัวแทน 12 ราศี สำหรับเปิดไลฟ์สตรีม พร้อมเอฟเฟกต์หมุนสุ่ม',
+            badge: 'ระบบสุ่ม'
+          },
+          {
+            title: 'แอดมินควบคุมโหวตผู้เล่น 12 คน (Player Vote Admin)',
+            path: '/setting12vote',
+            desc: 'หน้าจัดการโหวตสำหรับผู้เล่น 12 คนในเกม',
+            badge: 'โหวตผู้เล่น'
+          },
+          {
+            title: 'หน้าโหวตสำหรับผู้เล่น 12 คน (Player Vote Site)',
+            path: '/12vtubervotesite',
+            desc: 'หน้าระบบโหวตลับสำหรับตัวแทน 12 ราศี',
+            badge: 'โหวตผู้เล่น'
+          }
+        ]
+      },
+      {
+        title: 'หน้า Overlay สำหรับ OBS / ไลฟ์สตรีม (OBS Browser Overlays)',
+        color: '#10b981',
+        items: [
+          {
+            title: 'Overlay ผลโหวตคนดู (Audience Vote OBS Overlay)',
+            path: '/12vtubergame/audience-vote-overlay',
+            desc: 'หน้าจอผลโหวตคนดูแบบโปร่งแสง Responsive ขยายตามขนาดหน้าจอ โชว์เฉพาะราศีที่มีคนเลือก พร้อมอนิเมชั่นตัวเลขสด ชิดขวามีขอบและเงาบาง',
+            badge: 'OBS Overlay'
+          }
+        ]
+      },
+      {
+        title: 'ลิงก์ควบคุม Stream Deck (Direct HTTP Trigger)',
+        color: '#38bdf8',
+        items: [
+          {
+            title: 'สลับเปิด/ปิดหน้าเว็บโหวต (Page Toggle)',
+            path: '/api/audience-vote/streamdeck/page-toggle',
+            desc: 'คำสั่งสลับการเข้าถึงหน้าเว็บโหวตคนดู (หากปิดไว้ คนดูจะไม่สามารถเข้าหน้าโหวตได้และซ่อนปุ่ม)',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'บังคับเปิดหน้าเว็บโหวต (Page Open)',
+            path: '/api/audience-vote/streamdeck/page-open',
+            desc: 'คำสั่งเปิดการเข้าถึงหน้าเว็บโหวตคนดู',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'บังคับปิดหน้าเว็บโหวต (Page Close)',
+            path: '/api/audience-vote/streamdeck/page-close',
+            desc: 'คำสั่งปิดการเข้าถึงหน้าเว็บโหวตคนดูและซ่อนปุ่ม',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'สลับเปิด/ปิดรอบโหวต (Round Toggle)',
+            path: '/api/audience-vote/streamdeck/toggle',
+            desc: 'คำสั่งสลับสถานะเปิด หรือ ปิดรับโหวตคนดูในรอบปัจจุบัน',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'บังคับเปิดรอบโหวต (Round Open)',
+            path: '/api/audience-vote/streamdeck/open',
+            desc: 'คำสั่งบังคับเปิดรับคะแนนโหวตคนดูในรอบปัจจุบัน',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'บังคับปิดรอบโหวต (Round Close)',
+            path: '/api/audience-vote/streamdeck/close',
+            desc: 'คำสั่งบังคับปิดรับคะแนนโหวตคนดูในรอบปัจจุบัน',
+            badge: 'Stream Deck'
+          },
+          {
+            title: 'รีเซ็ตการโหวตคนดู (Round Reset)',
+            path: '/api/audience-vote/streamdeck/reset',
+            desc: 'คำสั่งล้างข้อมูลโหวตคนดูทั้งหมดให้เริ่มรอบใหม่ทันที',
+            badge: 'Stream Deck'
+          }
+        ]
+      }
+    ];
+
+    container.innerHTML = sections.map(sec => {
+      const itemsHtml = sec.items.map(item => {
+        const fullUrl = `${origin}${item.path}`;
+        const inputId = 'copy_input_' + Math.random().toString(36).substr(2, 7);
+
+        return `
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 14px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.8rem; transition: all 0.2s;" onmouseover="this.style.borderColor='${sec.color}'; this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.09)'; this.style.background='rgba(255,255,255,0.03)'">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap;">
+              <div>
+                <strong style="color: #ffffff; font-size: 1.05rem;">${escapeHtml(item.title)}</strong>
+                <p style="color: #94a3b8; font-size: 0.88rem; margin-top: 0.2rem; line-height: 1.4;">${escapeHtml(item.desc)}</p>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: ${sec.color}; border: 1px solid ${sec.color}44;">
+                ${escapeHtml(item.badge)}
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="text" id="${inputId}" class="form-input" readonly value="${escapeHtml(fullUrl)}" style="font-size: 0.86rem; padding: 0.4rem 0.8rem; color: #7dd3fc; background: rgba(0,0,0,0.3); font-family: monospace;" onclick="this.select()">
+              <button type="button" class="btn-secondary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; white-space: nowrap; border-color: ${sec.color}66; color: #fff;" onclick="adminCopyLinkText('${inputId}', this)">
+                📋 คัดลอก
+              </button>
+              <a href="${escapeHtml(item.path)}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; white-space: nowrap; text-decoration: none;">
+                เปิด ↗
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div>
+          <h3 style="color: ${sec.color}; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>${sec.title}</span>
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem;">
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  window.adminCopyLinkText = function(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ คัดลอกแล้ว!';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#6ee7b7';
+      showToast('คัดลอกลิงก์ไปยังคลิปบอร์ดแล้ว', 'success');
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    }).catch(err => {
+      showToast('ไม่สามารถคัดลอกได้', 'error');
+    });
   };
 
   // Toggle Profanity Filter List accordion

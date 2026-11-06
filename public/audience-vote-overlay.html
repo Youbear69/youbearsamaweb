@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audience Vote OBS Overlay — ศึก 12 วีทูบเบอร์</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: transparent !important;
+      overflow: hidden;
+      font-family: 'Kanit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Fullscreen responsive overlay container aligned to the right */
+    .overlay-viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: clamp(16px, 3vw, 48px);
+    }
+
+    /* Container for the active zodiac vote items aligned to the right */
+    .overlay-items-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: clamp(16px, 2.5vw, 36px);
+      max-width: 100%;
+    }
+
+    /* Individual Zodiac Stat Item with subtle border and soft shadow */
+    .overlay-zodiac-item {
+      display: inline-flex;
+      align-items: center;
+      gap: clamp(12px, 1.8vw, 24px);
+      padding: clamp(10px, 1.2vw, 18px) clamp(16px, 2vw, 28px);
+      background: rgba(15, 10, 30, 0.65);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      border-radius: clamp(16px, 2vw, 26px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: zodiacSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .overlay-zodiac-item.fade-out {
+      animation: zodiacFadeOut 0.4s ease forwards;
+    }
+
+    @keyframes zodiacSlideIn {
+      0% {
+        opacity: 0;
+        transform: translateX(30px) scale(0.92);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes zodiacFadeOut {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(20px) scale(0.9);
+      }
+    }
+
+    /* Zodiac white icon */
+    .overlay-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .overlay-icon-img {
+      width: clamp(54px, 7vw, 110px);
+      height: clamp(54px, 7vw, 110px);
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Number & Text column */
+    .overlay-text-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .overlay-percentage-num {
+      font-family: 'Kanit', 'Outfit', sans-serif;
+      font-size: clamp(48px, 6.8vw, 108px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.7));
+      transition: all 0.3s ease;
+    }
+
+    .overlay-count-subtext {
+      font-family: 'Kanit', sans-serif;
+      font-size: clamp(18px, 2.2vw, 36px);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-top: clamp(2px, 0.4vw, 8px);
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+      letter-spacing: 0.01em;
+    }
+
+    /* Subtle pulsing effect when number updates */
+    .num-pulse {
+      animation: numBump 0.3s ease;
+    }
+    @keyframes numBump {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); color: #38bdf8; }
+      100% { transform: scale(1); color: #ffffff; }
+    }
+
+    /* Optional preview indicator when opened directly in browser without votes */
+    .empty-preview-hint {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-viewport">
+    <div id="overlay-items-row" class="overlay-items-row">
+      <!-- Zodiac vote stats rendered here dynamically -->
+    </div>
+  </div>
+
+  <div id="preview-hint" class="empty-preview-hint" style="display: none;">
+    OBS Overlay พร้อมทำงาน (ยังไม่มีการโหวต)
+  </div>
+
+  <script src="/js/audience-vote-overlay.js"></script>
+</body>
+</html>

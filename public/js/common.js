@@ -481,6 +481,23 @@ function initSeamlessNavigation() {
       return;
     }
 
+    // Do NOT intercept navigation to/from complex standalone pages or pages marked data-no-seamless
+    if (
+      link.hasAttribute('data-no-seamless') ||
+      href.includes('/audience-vote') ||
+      href.includes('/adminpanel') ||
+      href.includes('/freeboard') ||
+      href.includes('/setting12vote') ||
+      href.includes('/12vtubervotesite') ||
+      (typeof document !== 'undefined' && document.body && (
+        document.body.classList.contains('page-audience-vote') ||
+        document.body.classList.contains('page-audience-vote-admin') ||
+        document.body.classList.contains('page-admin')
+      ))
+    ) {
+      return;
+    }
+
     // Intercept internal page navigation
     e.preventDefault();
     navigateTo(href);
@@ -636,6 +653,7 @@ function containsProfanity(text) {
 }
 
 if (typeof window !== 'undefined') {
+  window.ZODIAC_LIST = ZODIAC_LIST;
   window.PROFANITY_WORDS = PROFANITY_WORDS;
   window.containsProfanity = containsProfanity;
 }

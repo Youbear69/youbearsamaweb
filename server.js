@@ -650,6 +650,19 @@ app.post('/api/roster', requireAdminAuth, (req, res) => {
   res.json({ success: true, message: 'บันทึกรายชื่อผู้ได้เล่นสำเร็จ', data: db.roster });
 });
 
+app.post('/api/roster/fetch-avatar', async (req, res) => {
+  const { xAccount, displayName } = req.body || {};
+  if (!xAccount || !xAccount.trim()) {
+    return res.status(400).json({ success: false, message: 'กรุณากรอกลิงก์หรือชื่อบัญชี X' });
+  }
+  try {
+    const imageUrl = await downloadAndCacheAvatar(xAccount.trim(), displayName ? displayName.trim() : 'vtuber');
+    res.json({ success: true, imageUrl });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.post('/api/roster/reset', requireAdminAuth, (req, res) => {
   try {
     const defaultPath = path.join(__dirname, 'database', 'roster_default.json');
@@ -1734,8 +1747,280 @@ app.get([
   res.sendFile(path.join(__dirname, 'public', 'freeboard', 'index.html'));
 });
 
+// ==========================================
+// Audience Vote System (ระบบโหวตราศีสำหรับคนดู)
+// ==========================================
+const AUDIENCE_VOTE_FILE = path.join(__dirname, 'database', 'audience_vote_state.json');
+
+function readAudienceVoteState() {
+  try {
+    if (!fs.existsSync(AUDIENCE_VOTE_FILE)) {
+      const initial = { isPageOpen: true, isOpen: true, resetEpoch: Date.now(), votes: [] };
+      fs.writeFileSync(AUDIENCE_VOTE_FILE, JSON.stringify(initial, null, 2), 'utf-8');
+      return initial;
+    }
+    const data = JSON.parse(fs.readFileSync(AUDIENCE_VOTE_FILE, 'utf-8'));
+    if (!data.votes) data.votes = [];
+    if (data.isPageOpen === undefined) data.isPageOpen = true;
+    if (data.isOpen === undefined) data.isOpen = true;
+    if (!data.resetEpoch) data.resetEpoch = Date.now();
+    return data;
+  } catch (e) {
+    console.error('Error reading audience vote state:', e);
+    return { isPageOpen: true, isOpen: true, resetEpoch: Date.now(), votes: [] };
+  }
+}
+
+function writeAudienceVoteState(state) {
+  try {
+    const dir = path.dirname(AUDIENCE_VOTE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(AUDIENCE_VOTE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing audience vote state:', e);
+  }
+}
+
+let audienceVoteState = readAudienceVoteState();
+
+function calculateAudienceVoteResults(state) {
+  const votes = state.votes || [];
+  const totalVotes = votes.length;
+  const counts = {};
+  ZODIAC_METADATA.forEach(z => { counts[z.key] = 0; });
+
+  votes.forEach(v => {
+    if (counts[v.zodiacKey] !== undefined) {
+      counts[v.zodiacKey]++;
+    }
+  });
+
+  const zodiacStats = ZODIAC_METADATA.map(z => {
+    const count = counts[z.key] || 0;
+    const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+    return {
+      key: z.key,
+      th: z.th,
+      en: z.en,
+      icon: z.icon,
+      count: count,
+      percentage: percentage
+    };
+  });
+
+  return {
+    isPageOpen: audienceVoteState.isPageOpen !== false,
+    isOpen: state.isOpen,
+    resetEpoch: state.resetEpoch,
+    totalVotes: totalVotes,
+    zodiacStats: zodiacStats,
+    votes: votes
+  };
+}
+
+// Audience Vote API Endpoints
+app.get('/api/audience-vote/state', (req, res) => {
+  res.json({ success: true, data: calculateAudienceVoteResults(audienceVoteState) });
+});
+
+app.post('/api/audience-vote/vote', (req, res) => {
+  if (!audienceVoteState.isPageOpen) {
+    return res.status(403).json({ success: false, message: 'ระบบยังไม่เปิดให้เข้าสู่หน้าโหวตในขณะนี้' });
+  }
+  if (!audienceVoteState.isOpen) {
+    return res.status(403).json({ success: false, message: 'ระบบปิดรับการโหวตอยู่ในขณะนี้' });
+  }
+
+  const { username, zodiacKey } = req.body || {};
+  if (!username || !username.trim()) {
+    return res.status(400).json({ success: false, message: 'กรุณากรอกชื่อผู้โหวต (Username)' });
+  }
+  if (!zodiacKey) {
+    return res.status(400).json({ success: false, message: 'กรุณาเลือกรังสี/ราศีที่ต้องการโหวต' });
+  }
+
+  const zMeta = ZODIAC_METADATA.find(z => z.key.toLowerCase() === zodiacKey.toLowerCase());
+  if (!zMeta) {
+    return res.status(400).json({ success: false, message: 'ไม่พบราศีที่ระบุ' });
+  }
+
+  const cleanUser = username.trim();
+  const alreadyVoted = (audienceVoteState.votes || []).some(
+    v => v.username.toLowerCase() === cleanUser.toLowerCase()
+  );
+
+  if (alreadyVoted) {
+    return res.status(400).json({ success: false, message: 'คุณได้ลงคะแนนโหวตไปแล้วในรอบนี้ ไม่สามารถแก้ไขคำตอบหรือโหวตซ้ำได้' });
+  }
+
+  const newVote = {
+    id: 'av_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+    username: cleanUser,
+    zodiacKey: zMeta.key,
+    zodiacNameTh: zMeta.th,
+    zodiacNameEn: zMeta.en,
+    timestamp: new Date().toISOString()
+  };
+
+  if (!audienceVoteState.votes) audienceVoteState.votes = [];
+  audienceVoteState.votes.push(newVote);
+  writeAudienceVoteState(audienceVoteState);
+
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:update', updatedState);
+
+  res.json({ success: true, message: 'ลงคะแนนโหวตสำเร็จเรียบร้อย', vote: newVote, data: updatedState });
+});
+
+app.post('/api/audience-vote/admin/toggle-page', (req, res) => {
+  audienceVoteState.isPageOpen = !audienceVoteState.isPageOpen;
+  writeAudienceVoteState(audienceVoteState);
+
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:pageStatus', { isPageOpen: audienceVoteState.isPageOpen });
+  io.emit('audienceVote:update', updatedState);
+
+  res.json({
+    success: true,
+    isPageOpen: audienceVoteState.isPageOpen,
+    message: audienceVoteState.isPageOpen ? 'เปิดหน้าเว็บโหวตแล้ว' : 'ปิดหน้าเว็บโหวตและซ่อนปุ่มแล้ว'
+  });
+});
+
+app.post('/api/audience-vote/admin/toggle', (req, res) => {
+  audienceVoteState.isOpen = !audienceVoteState.isOpen;
+  writeAudienceVoteState(audienceVoteState);
+
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:status', { isOpen: audienceVoteState.isOpen });
+  io.emit('audienceVote:update', updatedState);
+
+  res.json({ success: true, isOpen: audienceVoteState.isOpen, message: audienceVoteState.isOpen ? 'เปิดรับโหวตแล้ว' : 'ปิดรับโหวตแล้ว' });
+});
+
+app.post('/api/audience-vote/admin/reset', (req, res) => {
+  audienceVoteState.votes = [];
+  audienceVoteState.resetEpoch = Date.now();
+  writeAudienceVoteState(audienceVoteState);
+
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:reset', { resetEpoch: audienceVoteState.resetEpoch });
+  io.emit('audienceVote:update', updatedState);
+
+  res.json({ success: true, message: 'รีเซ็ตข้อมูลการโหวตเรียบร้อยแล้ว' });
+});
+
+// Stream Deck Endpoints (Support GET & POST for quick external triggers)
+app.all(['/api/audience-vote/streamdeck/page-toggle', '/api/audience-vote/streamdeck/page-toggle/'], (req, res) => {
+  audienceVoteState.isPageOpen = !audienceVoteState.isPageOpen;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:pageStatus', { isPageOpen: audienceVoteState.isPageOpen });
+  io.emit('audienceVote:update', updatedState);
+  const msg = audienceVoteState.isPageOpen ? 'AUDIENCE VOTE PAGE: OPEN' : 'AUDIENCE VOTE PAGE: CLOSED';
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #a855f7;border-radius:16px;"><h1>${msg}</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isPageOpen: audienceVoteState.isPageOpen, message: msg });
+});
+
+app.all(['/api/audience-vote/streamdeck/page-open', '/api/audience-vote/streamdeck/page-open/'], (req, res) => {
+  audienceVoteState.isPageOpen = true;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:pageStatus', { isPageOpen: true });
+  io.emit('audienceVote:update', updatedState);
+  const msg = 'AUDIENCE VOTE PAGE: OPEN';
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#10b981;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #10b981;border-radius:16px;"><h1>${msg}</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isPageOpen: true, message: msg });
+});
+
+app.all(['/api/audience-vote/streamdeck/page-close', '/api/audience-vote/streamdeck/page-close/'], (req, res) => {
+  audienceVoteState.isPageOpen = false;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:pageStatus', { isPageOpen: false });
+  io.emit('audienceVote:update', updatedState);
+  const msg = 'AUDIENCE VOTE PAGE: CLOSED';
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#ef4444;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #ef4444;border-radius:16px;"><h1>${msg}</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isPageOpen: false, message: msg });
+});
+
+app.all(['/api/audience-vote/streamdeck/toggle', '/api/audience-vote/streamdeck/toggle/'], (req, res) => {
+  audienceVoteState.isOpen = !audienceVoteState.isOpen;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:status', { isOpen: audienceVoteState.isOpen });
+  io.emit('audienceVote:update', updatedState);
+  const msg = audienceVoteState.isOpen ? 'AUDIENCE VOTE ROUND: OPEN' : 'AUDIENCE VOTE ROUND: CLOSED';
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #a855f7;border-radius:16px;"><h1>${msg}</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isOpen: audienceVoteState.isOpen, message: msg });
+});
+
+app.all(['/api/audience-vote/streamdeck/open', '/api/audience-vote/streamdeck/open/'], (req, res) => {
+  audienceVoteState.isOpen = true;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:status', { isOpen: true });
+  io.emit('audienceVote:update', updatedState);
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#10b981;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #10b981;border-radius:16px;"><h1>AUDIENCE VOTE ROUND: OPEN</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isOpen: true, message: 'AUDIENCE VOTE ROUND: OPEN' });
+});
+
+app.all(['/api/audience-vote/streamdeck/close', '/api/audience-vote/streamdeck/close/'], (req, res) => {
+  audienceVoteState.isOpen = false;
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:status', { isOpen: false });
+  io.emit('audienceVote:update', updatedState);
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#ef4444;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #ef4444;border-radius:16px;"><h1>AUDIENCE VOTE ROUND: CLOSED</h1><p>Triggered by Stream Deck</p></div></body>`);
+  }
+  res.json({ success: true, isOpen: false, message: 'AUDIENCE VOTE ROUND: CLOSED' });
+});
+
+app.all(['/api/audience-vote/streamdeck/reset', '/api/audience-vote/streamdeck/reset/'], (req, res) => {
+  audienceVoteState.votes = [];
+  audienceVoteState.resetEpoch = Date.now();
+  writeAudienceVoteState(audienceVoteState);
+  const updatedState = calculateAudienceVoteResults(audienceVoteState);
+  io.emit('audienceVote:reset', { resetEpoch: audienceVoteState.resetEpoch });
+  io.emit('audienceVote:update', updatedState);
+  if (req.accepts('html')) {
+    return res.send(`<body style="font-family:sans-serif;background:#0d091a;color:#38bdf8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;padding:2rem;border:2px solid #38bdf8;border-radius:16px;"><h1>AUDIENCE VOTE: RESET SUCCESSFUL</h1><p>Votes cleared. Ready for next round.</p></div></body>`);
+  }
+  res.json({ success: true, message: 'AUDIENCE VOTE: RESET SUCCESSFUL' });
+});
+
+// Audience Vote Page Routes
+app.get(['/12vtubergame/audience-vote', '/12vtubergame/audience-vote/', '/audience-vote', '/audience-vote/'], (req, res) => {
+  if (!audienceVoteState.isPageOpen && !req.query.preview && !req.query.admin) {
+    return res.redirect('/12vtubergame?vote_closed=1');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'audience-vote.html'));
+});
+
+app.get(['/12vtubergame/audience-vote-admin', '/12vtubergame/audience-vote-admin/', '/audience-vote-admin', '/audience-vote-admin/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'audience-vote-admin.html'));
+});
+
+app.get(['/12vtubergame/audience-vote-overlay', '/12vtubergame/audience-vote-overlay/', '/audience-vote-overlay', '/audience-vote-overlay/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'audience-vote-overlay.html'));
+});
+
 // Socket.IO for vote system
 io.on('connection', (socket) => {
+  // Emit current audience vote state to newly connected client
+  socket.emit('audienceVote:init', calculateAudienceVoteResults(audienceVoteState));
+
   // Admin joins room for full live vote feeds
   socket.on('admin:join', () => {
     socket.join('admin-room');

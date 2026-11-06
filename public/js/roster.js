@@ -109,16 +109,37 @@ function switchRosterView(mode) {
   const btnNom = document.getElementById('tab-btn-nominated');
   const btnBoth = document.getElementById('tab-btn-both');
 
-  if (btnReg) btnReg.className = 'roster-tab-btn' + (mode === 'registered' ? ' active' : '');
-  if (btnNom) btnNom.className = 'roster-tab-btn' + (mode === 'nominated' ? ' active-nominated' : '');
+  const regTotal = getRosterCategoryTotal('registered');
+  const nomTotal = getRosterCategoryTotal('nominated');
+
+  if (btnReg) {
+    btnReg.className = 'roster-tab-btn' + (mode === 'registered' ? ' active' : '');
+    const pill = btnReg.querySelector('.roster-pill-count');
+    if (pill) pill.textContent = `${regTotal} คน`;
+  }
+  if (btnNom) {
+    btnNom.className = 'roster-tab-btn' + (mode === 'nominated' ? ' active-nominated' : '');
+    const pill = btnNom.querySelector('.roster-pill-count');
+    if (pill) pill.textContent = `${nomTotal} คน`;
+  }
   if (btnBoth) btnBoth.className = 'roster-tab-btn' + (mode === 'both' ? ' active' : '');
 
   renderCurrentRoster();
 }
 
+function getRosterCategoryTotal(catKey) {
+  const cat = (rosterData && rosterData[catKey]) || {};
+  let total = 0;
+  Object.values(cat).forEach(arr => total += (arr || []).length);
+  return total;
+}
+
 function renderCurrentRoster() {
   const container = document.getElementById('roster-content-container');
   if (!container) return;
+
+  const regTotal = getRosterCategoryTotal('registered');
+  const nomTotal = getRosterCategoryTotal('nominated');
 
   if (currentRosterMode === 'both') {
     container.innerHTML = `
@@ -126,7 +147,7 @@ function renderCurrentRoster() {
         <!-- Column 1: Registered -->
         <div class="roster-compare-col">
           <div class="roster-header-title-wrap">
-            <h2 class="roster-main-title title-registered">ลงทะเบียน (24 คน)</h2>
+            <h2 class="roster-main-title title-registered">ลงทะเบียน (${regTotal} คน)</h2>
           </div>
           <div class="roster-grid">
             ${generateZodiacCardsHtml('registered')}
@@ -136,7 +157,7 @@ function renderCurrentRoster() {
         <!-- Column 2: Nominated -->
         <div class="roster-compare-col">
           <div class="roster-header-title-wrap">
-            <h2 class="roster-main-title title-nominated">เสนอรายชื่อ (36 คน)</h2>
+            <h2 class="roster-main-title title-nominated">เสนอรายชื่อ (${nomTotal} คน)</h2>
           </div>
           <div class="roster-grid">
             ${generateZodiacCardsHtml('nominated')}

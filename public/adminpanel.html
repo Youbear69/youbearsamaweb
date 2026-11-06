@@ -126,6 +126,10 @@
           <span>6. จัดการผู้ได้เล่น (12 ราศี)</span>
           <span class="admin-tab-pill-badge" id="tab-badge-roster">60</span>
         </button>
+        <button type="button" class="admin-main-tab-btn" data-tab="links" onclick="switchAdminMainTab('links')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>7. รวมลิงก์ทั้งหมดของเว็บ (Links Directory)</span>
+        </button>
       </div>
 
       <!-- ==========================================
@@ -539,13 +543,30 @@
           </div>
 
           <!-- Category Switcher Tabs in Admin -->
-          <div style="display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <div style="display: flex; gap: 0.8rem; margin-bottom: 1.2rem; flex-wrap: wrap;">
             <button type="button" class="btn-secondary active" id="admin-roster-tab-registered" onclick="switchAdminRosterCategory('registered')" style="padding: 0.65rem 1.6rem; border-radius: 30px; font-weight: 700; border-color: rgba(168, 85, 247, 0.6); color: #fff; background: rgba(168, 85, 247, 0.2);">
-              📋 จัดการกลุ่ม "ลงทะเบียน" (24 คน / ราศีละ 2)
+              📋 จัดการกลุ่ม "ลงทะเบียน" (<span id="count-label-registered">24</span> คน)
             </button>
             <button type="button" class="btn-secondary" id="admin-roster-tab-nominated" onclick="switchAdminRosterCategory('nominated')" style="padding: 0.65rem 1.6rem; border-radius: 30px; font-weight: 700; border-color: rgba(255, 255, 255, 0.15); color: #cbd5e1; background: transparent;">
-              🌟 จัดการกลุ่ม "เสนอชื่อ" (36 คน / ราศีละ 3)
+              🌟 จัดการกลุ่ม "เสนอชื่อ" (<span id="count-label-nominated">36</span> คน)
             </button>
+          </div>
+
+          <!-- Batch adjust slots & total count -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 14px; padding: 0.8rem 1.2rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+              <span style="font-weight: 700; color: #e9d5ff; font-size: 0.95rem;">⚡ ปรับจำนวนผู้เล่นต่อราศีในกลุ่มนี้:</span>
+              <button type="button" class="btn-secondary" onclick="batchSetRosterSlots(1)" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">1 คน</button>
+              <button type="button" class="btn-secondary" onclick="batchSetRosterSlots(2)" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">2 คน</button>
+              <button type="button" class="btn-secondary" onclick="batchSetRosterSlots(3)" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">3 คน</button>
+              <button type="button" class="btn-secondary" onclick="batchSetRosterSlots(4)" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">4 คน</button>
+              <button type="button" class="btn-secondary" onclick="batchSetRosterSlots(5)" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">5 คน</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="admin-roster-total-indicator" style="font-size: 0.92rem; color: #6ee7b7; font-weight: 600; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 4px 12px; border-radius: 9999px;">
+                รวมทั้งหมดในกลุ่มนี้: 0 คน
+              </span>
+            </div>
           </div>
 
           <!-- 12 Zodiac Admin Cards Grid -->
@@ -555,30 +576,100 @@
         </div>
       </div>
 
+      <!-- ==========================================
+           TAB GROUP 7: รวมลิงก์ทั้งหมดของเว็บ (Links Directory)
+      ========================================== -->
+      <div id="admin-pane-links" class="admin-tab-pane" style="display: none;">
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+            <div>
+              <h2 style="font-size: 1.6rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.6rem;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                สรุปรวมลิงก์ทั้งหมดของระบบ (System Links Directory)
+              </h2>
+              <p style="color: var(--text-muted); font-size: 0.95rem;">
+                รวมลิงก์ทุกหน้าในเว็บไซต์ ทั้งหน้าคนดู แอดมิน โอเวอร์เลย์ OBS และคำสั่ง Stream Deck สามารถกดเปิดหรือคัดลอกลิงก์ได้ทันที
+              </p>
+            </div>
+          </div>
+
+          <div id="admin-links-directory-container" style="display: flex; flex-direction: column; gap: 1.8rem;">
+            <!-- Populated dynamically by JS with absolute origin URLs -->
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Quick Applicant Picker Modal for Roster -->
     <div id="roster-pick-modal" class="app-modal-backdrop" style="z-index: 10050;">
-      <div class="app-modal-box" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="app-modal-box" style="max-width: 720px; max-height: 88vh; display: flex; flex-direction: column;">
         <button type="button" class="btn-close-modal" aria-label="Close" onclick="closeRosterPickModal()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div class="modal-inner-content" style="display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
-          <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>👥</span>
-            <span>เลือกจากผู้ลงทะเบียน / เสนอชื่อในระบบ</span>
+            <span id="roster-pick-title">เลือกผู้เล่นสำหรับราศี</span>
           </h2>
-          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
-            คลิกเลือกเพื่อเติมข้อมูลชื่อ ลิงก์ X และรูปภาพอัตโนมัติ
+          <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 0.8rem;">
+            สามารถเลือกคนที่ตรงตามราศี, เลือกใครก็ได้ในระบบ หรือเพิ่มวีทูบเบอร์คนใหม่โดยตรง
           </p>
 
-          <input type="text" id="roster-pick-search" class="form-input" placeholder="🔍 พิมพ์ค้นหาชื่อ หรือ @handle..." style="margin-bottom: 1rem;" oninput="filterRosterApplicants(this.value)">
-
-          <div id="roster-pick-list" style="overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 4px;">
-            <!-- Populated by JS -->
+          <!-- Mode Switcher Tabs inside Modal -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <button type="button" id="roster-mode-matching" class="btn-secondary active" onclick="setRosterPickMode('matching')" style="padding: 0.45rem 1rem; font-size: 0.9rem; border-radius: 20px; background: rgba(168,85,247,0.25); border-color: #a855f7; color: #fff;">
+              🎯 ตรงตามราศีนี้
+            </button>
+            <button type="button" id="roster-mode-all" class="btn-secondary" onclick="setRosterPickMode('all')" style="padding: 0.45rem 1rem; font-size: 0.9rem; border-radius: 20px; background: transparent; border-color: rgba(255,255,255,0.15); color: #cbd5e1;">
+              🌐 เลือกใครก็ได้ (ทั้งหมด)
+            </button>
+            <button type="button" id="roster-mode-custom" class="btn-secondary" onclick="setRosterPickMode('custom')" style="padding: 0.45rem 1rem; font-size: 0.9rem; border-radius: 20px; background: transparent; border-color: rgba(56,189,248,0.3); color: #7dd3fc;">
+              ➕ เพิ่มคนใหม่เอง (กรอกชื่อ+X)
+            </button>
           </div>
 
-          <div style="padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 1rem; text-align: right;">
+          <!-- Section A: List from system (Matching or All) -->
+          <div id="roster-pick-list-section">
+            <input type="text" id="roster-pick-search" class="form-input" placeholder="🔍 พิมพ์ค้นหาชื่อ หรือ @handle..." style="margin-bottom: 0.8rem;" oninput="filterRosterApplicants(this.value)">
+            <div id="roster-pick-list" style="overflow-y: auto; max-height: 360px; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 4px;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Section B: Add custom player directly -->
+          <div id="roster-pick-custom-section" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 1.2rem; margin-bottom: 0.8rem;">
+            <h3 style="color: #38bdf8; font-size: 1.1rem; margin-bottom: 0.8rem; font-weight: 700;">➕ เพิ่มข้อมูลผู้เล่นใหม่</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+              <div>
+                <label class="form-label" style="font-size: 0.9rem;">ชื่อ VTuber</label>
+                <input type="text" id="custom-roster-name" class="form-input" placeholder="เช่น Yuubear, น้อนเซบ">
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.9rem;">ลิงก์ X หรือ @username</label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="custom-roster-x" class="form-input" placeholder="https://x.com/username หรือ @username">
+                  <button type="button" class="btn-secondary" onclick="fetchCustomRosterAvatar()" style="white-space: nowrap; font-size: 0.85rem; padding: 0 12px; border-color: #38bdf8; color: #7dd3fc;">
+                    🔍 ดึงรูป X
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.9rem;">รูปภาพโปรไฟล์ (URL)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <img id="custom-roster-preview-img" src="/assets/images/mascot/not-speak.png" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid #a855f7;">
+                  <input type="text" id="custom-roster-image" class="form-input" placeholder="URL รูปภาพ (จะถูกกรอกให้อัตโนมัติเมื่อกดดึงรูป X)">
+                </div>
+              </div>
+              <div style="margin-top: 0.4rem;">
+                <button type="button" class="btn-primary" onclick="submitCustomRosterPlayer()" style="width: 100%; justify-content: center; padding: 0.75rem;">
+                  ✓ บันทึกและเลือกคนนี้ลงในช่อง
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 0.8rem 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.8rem; text-align: right;">
             <button type="button" class="btn-secondary" onclick="closeRosterPickModal()" style="padding: 0.55rem 1.6rem;">ปิด</button>
           </div>
         </div>
