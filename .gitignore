@@ -8,6 +8,7 @@ vtubergame-676dc-firebase-adminsdk-fbsvc-082a608eba.json
 node_modules/
 
 # Local Database & Temporary Scratch
+.firebase/
 database/
 scratch/
 
