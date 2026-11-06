@@ -251,5 +251,6 @@ module.exports = {
   readData,
   writeData,
   getFirebaseAuth: () => firebaseAuth,
+  getRtdbRef: () => rtdbRef,
   getChatBackup
 };

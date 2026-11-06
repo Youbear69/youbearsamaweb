@@ -9,6 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/animations.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -430,9 +434,9 @@
   <!-- Universal Top Navigation Bar with Pill Container -->
   <header class="top-nav-bar">
     <nav class="nav-pill-group">
-      <a href="/12vtubergame/adminpanel" class="nav-pill-link" data-no-seamless="true">กลับสู่แอดมินพาเนลหลัก</a>
-      <a href="/12vtubergame/audience-vote" target="_blank" class="nav-pill-link" data-no-seamless="true">หน้าโหวตคนดู ↗</a>
-      <a href="/12vtubergame/audience-vote-overlay" target="_blank" class="nav-pill-link" data-no-seamless="true">เปิด Overlay (OBS) ↗</a>
+      <a href="https://yuubearsama.online/12vtubergame/adminpanel" class="nav-pill-link" data-no-seamless="true">กลับสู่แอดมินพาเนลหลัก</a>
+      <a href="https://yuubearsama.online/12vtubergame/audience-vote" target="_blank" class="nav-pill-link" data-no-seamless="true">หน้าโหวตคนดู ↗</a>
+      <a href="https://yuubearsama.online/12vtubergame/audience-vote-overlay" target="_blank" class="nav-pill-link" data-no-seamless="true">เปิด Overlay (OBS) ↗</a>
     </nav>
   </header>
 
@@ -477,7 +481,7 @@
         <button type="button" id="btn-reset-vote" class="btn-action-admin btn-danger-outline" onclick="adminResetVotes()">
           รีเซ็ตคะแนนรอบนี้
         </button>
-        <a href="/12vtubergame/audience-vote-overlay" target="_blank" rel="noopener noreferrer" class="btn-action-admin btn-cyan-outline">
+        <a href="https://yuubearsama.online/12vtubergame/audience-vote-overlay" target="_blank" rel="noopener noreferrer" class="btn-action-admin btn-cyan-outline">
           เปิดหน้า Overlay (OBS) ↗
         </a>
         <button type="button" class="btn-action-admin btn-neutral-outline" onclick="loadAdminVoteState()">
@@ -510,21 +514,21 @@
       <div class="streamdeck-category-title">1. ควบคุมการเข้าถึงหน้าเว็บโหวต (Page Access):</div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">สลับเปิด/ปิดหน้าเว็บ (Page Toggle):</span>
-        <span class="streamdeck-url" id="sd-url-page-toggle">/api/audience-vote/streamdeck/page-toggle</span>
+        <span class="streamdeck-url" id="sd-url-page-toggle">https://yuubearsama.online/api/audience-vote/streamdeck/page-toggle</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-toggle', this)">
           คัดลอกลิงก์
         </button>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับเปิดหน้าเว็บ (Page Open):</span>
-        <span class="streamdeck-url" id="sd-url-page-open">/api/audience-vote/streamdeck/page-open</span>
+        <span class="streamdeck-url" id="sd-url-page-open">https://yuubearsama.online/api/audience-vote/streamdeck/page-open</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-open', this)">
           คัดลอกลิงก์
         </button>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับปิดหน้าเว็บ (Page Close):</span>
-        <span class="streamdeck-url" id="sd-url-page-close">/api/audience-vote/streamdeck/page-close</span>
+        <span class="streamdeck-url" id="sd-url-page-close">https://yuubearsama.online/api/audience-vote/streamdeck/page-close</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-close', this)">
           คัดลอกลิงก์
         </button>
@@ -533,28 +537,28 @@
       <div class="streamdeck-category-title" style="margin-top: 1.4rem;">2. ควบคุมรอบการลงคะแนน (Voting Round):</div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">สลับเปิด/ปิดรอบโหวต (Round Toggle):</span>
-        <span class="streamdeck-url" id="sd-url-toggle">/api/audience-vote/streamdeck/toggle</span>
+        <span class="streamdeck-url" id="sd-url-toggle">https://yuubearsama.online/api/audience-vote/streamdeck/toggle</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-toggle', this)">
           คัดลอกลิงก์
         </button>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับเปิดรอบโหวต (Round Open):</span>
-        <span class="streamdeck-url" id="sd-url-open">/api/audience-vote/streamdeck/open</span>
+        <span class="streamdeck-url" id="sd-url-open">https://yuubearsama.online/api/audience-vote/streamdeck/open</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-open', this)">
           คัดลอกลิงก์
         </button>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับปิดรอบโหวต (Round Close):</span>
-        <span class="streamdeck-url" id="sd-url-close">/api/audience-vote/streamdeck/close</span>
+        <span class="streamdeck-url" id="sd-url-close">https://yuubearsama.online/api/audience-vote/streamdeck/close</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-close', this)">
           คัดลอกลิงก์
         </button>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">รีเซ็ตคะแนนรอบนี้ (Round Reset):</span>
-        <span class="streamdeck-url" id="sd-url-reset">/api/audience-vote/streamdeck/reset</span>
+        <span class="streamdeck-url" id="sd-url-reset">https://yuubearsama.online/api/audience-vote/streamdeck/reset</span>
         <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-reset', this)">
           คัดลอกลิงก์
         </button>

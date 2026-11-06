@@ -24,7 +24,7 @@
     <nav class="nav-pill-group">
       <a href="https://yuubearsama.online/" class="nav-pill-link" id="nav-link-home">Home</a>
       <a href="/12vtubergame" class="nav-pill-link active" id="nav-link-12vtuber" onclick="switchMainTab('12vtuber', event)">ศึก 12 วีทูบเบอร์</a>
-      <a href="/12vtubergame/audience-vote" class="nav-pill-link" id="nav-link-audience-vote" data-no-seamless="true" style="display: none;">โหวตคนดู</a>
+      <a href="https://yuubearsama.online/12vtubergame/audience-vote" class="nav-pill-link" id="nav-link-audience-vote" data-no-seamless="true" style="display: none;">โหวตคนดู</a>
       <a href="/12vtubergame/minigame" class="nav-pill-link" id="nav-link-minigame" onclick="switchMainTab('minigame', event)">Mini Game</a>
     </nav>
 
@@ -138,7 +138,7 @@
 
       <!-- Audience Vote Callout Banner -->
       <div id="audience-vote-callout-wrap" class="audience-vote-callout-wrap" style="width: 100%; max-width: 900px; margin: 0 auto 1.4rem auto; display: none;">
-        <a href="/12vtubergame/audience-vote" data-no-seamless="true" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.95rem 1.6rem; border-radius: 18px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(56, 189, 248, 0.2) 100%); border: 1.5px solid rgba(168, 85, 247, 0.55); box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25); text-decoration: none; color: #fff; transition: all 0.25s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#c084fc';" onmouseout="this.style.transform='none'; this.style.borderColor='rgba(168, 85, 247, 0.55)';">
+        <a href="https://yuubearsama.online/12vtubergame/audience-vote" data-no-seamless="true" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.95rem 1.6rem; border-radius: 18px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(56, 189, 248, 0.2) 100%); border: 1.5px solid rgba(168, 85, 247, 0.55); box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25); text-decoration: none; color: #fff; transition: all 0.25s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#c084fc';" onmouseout="this.style.transform='none'; this.style.borderColor='rgba(168, 85, 247, 0.55)';">
           <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(168,85,247,0.3); border: 1.5px solid #c084fc; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ffffff;">
@@ -652,6 +652,14 @@
       const isOpen = isPageOpen !== false;
       if (navPill) navPill.style.display = isOpen ? '' : 'none';
       if (banner) banner.style.display = isOpen ? 'block' : 'none';
+    }
+
+    // Firebase RTDB live listener for cloud hosting
+    if (typeof rtdb !== 'undefined') {
+      rtdb.ref('audience_vote/isPageOpen').on('value', snap => {
+        const val = snap.val();
+        syncAudienceVotePageStatus(val !== false);
+      });
     }
 
     // Initial check from API

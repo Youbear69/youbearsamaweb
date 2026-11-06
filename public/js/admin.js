@@ -1991,11 +1991,18 @@ async function initAdminPage() {
   // ==========================================
   // Links Directory (Tab 7)
   // ==========================================
+  let currentDirectoryDomain = 'https://yuubearsama.online';
+
+  window.setDirectoryDomain = function(domain) {
+    currentDirectoryDomain = domain;
+    renderAdminLinksDirectory();
+  };
+
   window.renderAdminLinksDirectory = function() {
     const container = document.getElementById('admin-links-directory-container');
     if (!container) return;
 
-    const origin = window.location.origin;
+    const origin = currentDirectoryDomain;
 
     const sections = [
       {
@@ -2138,7 +2145,24 @@ async function initAdminPage() {
       }
     ];
 
-    container.innerHTML = sections.map(sec => {
+    const domainSelectorHtml = `
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 0.9rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="color: #cbd5e1; font-size: 0.92rem; font-weight: 600;">โดเมนเป้าหมายสำหรับลิงก์:</span>
+          <span style="color: #7dd3fc; font-family: monospace; font-size: 0.95rem; font-weight: 700;">${origin}</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; border-color: ${currentDirectoryDomain === 'https://yuubearsama.online' ? '#a855f7' : 'rgba(255,255,255,0.2)'}; color: ${currentDirectoryDomain === 'https://yuubearsama.online' ? '#c084fc' : '#94a3b8'}; background: ${currentDirectoryDomain === 'https://yuubearsama.online' ? 'rgba(168,85,247,0.18)' : 'transparent'};" onclick="setDirectoryDomain('https://yuubearsama.online')">
+            yuubearsama.online (เว็บจริง)
+          </button>
+          <button type="button" class="btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; border-color: ${currentDirectoryDomain === 'http://localhost:3000' ? '#38bdf8' : 'rgba(255,255,255,0.2)'}; color: ${currentDirectoryDomain === 'http://localhost:3000' ? '#7dd3fc' : '#94a3b8'}; background: ${currentDirectoryDomain === 'http://localhost:3000' ? 'rgba(56,189,248,0.18)' : 'transparent'};" onclick="setDirectoryDomain('http://localhost:3000')">
+            localhost:3000 (เครื่องสตรีม)
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = domainSelectorHtml + sections.map(sec => {
       const itemsHtml = sec.items.map(item => {
         const fullUrl = `${origin}${item.path}`;
         const inputId = 'copy_input_' + Math.random().toString(36).substr(2, 7);
@@ -2158,9 +2182,9 @@ async function initAdminPage() {
             <div style="display: flex; gap: 0.5rem; align-items: center;">
               <input type="text" id="${inputId}" class="form-input" readonly value="${escapeHtml(fullUrl)}" style="font-size: 0.86rem; padding: 0.4rem 0.8rem; color: #7dd3fc; background: rgba(0,0,0,0.3); font-family: monospace;" onclick="this.select()">
               <button type="button" class="btn-secondary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; white-space: nowrap; border-color: ${sec.color}66; color: #fff;" onclick="adminCopyLinkText('${inputId}', this)">
-                📋 คัดลอก
+                คัดลอก
               </button>
-              <a href="${escapeHtml(item.path)}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; white-space: nowrap; text-decoration: none;">
+              <a href="${escapeHtml(fullUrl)}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; white-space: nowrap; text-decoration: none;">
                 เปิด ↗
               </a>
             </div>

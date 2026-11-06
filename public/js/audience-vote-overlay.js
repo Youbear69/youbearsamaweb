@@ -157,6 +157,75 @@
     }, 400);
   }
 
+  const ZODIAC_METADATA_FALLBACK = [
+    { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png' },
+    { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png' },
+    { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png' },
+    { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png' },
+    { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png' },
+    { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png' },
+    { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png' },
+    { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png' },
+    { key: 'libra', th: 'ตุลย์/ตุล', en: 'Libra', icon: 'libra.png' },
+    { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png' },
+    { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png' },
+    { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png' }
+  ];
+
+  let overlayLastEpoch = 0;
+
+  function calculateStatsFromRtdb(val) {
+    if (!val) {
+      handleReset();
+      return;
+    }
+    const epoch = val.resetEpoch || 0;
+    if (epoch > overlayLastEpoch && overlayLastEpoch > 0) {
+      handleReset();
+    }
+    overlayLastEpoch = epoch;
+
+    const votesObj = val.votes || {};
+    const votesArr = Array.isArray(votesObj) ? votesObj : Object.values(votesObj);
+    const totalVotes = votesArr.length;
+
+    if (totalVotes === 0) {
+      handleReset();
+      return;
+    }
+
+    const counts = {};
+    const metaList = (typeof ZODIAC_METADATA !== 'undefined') ? ZODIAC_METADATA : ZODIAC_METADATA_FALLBACK;
+    metaList.forEach(z => { counts[z.key] = 0; });
+    votesArr.forEach(v => {
+      if (v && v.zodiacKey && counts[v.zodiacKey] !== undefined) {
+        counts[v.zodiacKey]++;
+      }
+    });
+
+    const zodiacStats = metaList.map(z => {
+      const cnt = counts[z.key] || 0;
+      return {
+        key: z.key,
+        th: z.th,
+        en: z.en,
+        icon: z.icon,
+        count: cnt,
+        percentage: totalVotes > 0 ? Math.round((cnt / totalVotes) * 100) : 0
+      };
+    });
+
+    renderStats(zodiacStats);
+  }
+
+  // Firebase Realtime Database live listener for cloud hosting
+  if (typeof rtdb !== 'undefined') {
+    rtdb.ref('audience_vote').on('value', snap => {
+      const val = snap.val();
+      calculateStatsFromRtdb(val);
+    });
+  }
+
   // Socket.IO real-time connection
   const socket = typeof io === 'function' ? io() : null;
 

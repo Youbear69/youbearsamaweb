@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');
-const { readData, writeData, getFirebaseAuth, getChatBackup } = require('./db');
+const { readData, writeData, getFirebaseAuth, getRtdbRef, getChatBackup } = require('./db');
 const {
   extractCleanHandle,
   cleanName,
@@ -1779,9 +1779,74 @@ function writeAudienceVoteState(state) {
   } catch (e) {
     console.error('Error writing audience vote state:', e);
   }
+
+  try {
+    const rtdb = typeof getRtdbRef === 'function' ? getRtdbRef() : null;
+    if (rtdb) {
+      const votesObj = {};
+      (state.votes || []).forEach(v => {
+        const safeKey = String(v.username || v.id).replace(/[\.#\$\[\]\/]/g, '_');
+        votesObj[safeKey] = v;
+      });
+      rtdb.child('audience_vote').set({
+        isPageOpen: state.isPageOpen !== false,
+        isOpen: state.isOpen !== false,
+        resetEpoch: state.resetEpoch || 0,
+        votes: votesObj,
+        lastUpdated: Date.now()
+      }).catch(err => {
+        console.error('[Firebase RTDB] Error syncing audience_vote:', err.message);
+      });
+    }
+  } catch (e) {
+    console.error('Error syncing audience vote to Firebase RTDB:', e);
+  }
 }
 
 let audienceVoteState = readAudienceVoteState();
+
+// Initialize bidirectional sync with Firebase RTDB
+setTimeout(() => {
+  try {
+    const rtdb = typeof getRtdbRef === 'function' ? getRtdbRef() : null;
+    if (rtdb) {
+      rtdb.child('audience_vote').on('value', snap => {
+        const val = snap.val();
+        if (val) {
+          let changed = false;
+          if (val.isPageOpen !== undefined && val.isPageOpen !== audienceVoteState.isPageOpen) {
+            audienceVoteState.isPageOpen = val.isPageOpen;
+            changed = true;
+          }
+          if (val.isOpen !== undefined && val.isOpen !== audienceVoteState.isOpen) {
+            audienceVoteState.isOpen = val.isOpen;
+            changed = true;
+          }
+          if (val.resetEpoch !== undefined && val.resetEpoch !== audienceVoteState.resetEpoch) {
+            audienceVoteState.resetEpoch = val.resetEpoch;
+            changed = true;
+          }
+          if (val.votes && typeof val.votes === 'object') {
+            audienceVoteState.votes = Object.values(val.votes);
+            changed = true;
+          } else if (!val.votes && audienceVoteState.votes.length > 0) {
+            audienceVoteState.votes = [];
+            changed = true;
+          }
+          if (changed) {
+            const dir = path.dirname(AUDIENCE_VOTE_FILE);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(AUDIENCE_VOTE_FILE, JSON.stringify(audienceVoteState, null, 2), 'utf-8');
+            const updatedState = calculateAudienceVoteResults(audienceVoteState);
+            io.emit('audienceVote:update', updatedState);
+          }
+        }
+      });
+    }
+  } catch(e) {
+    console.error('Error initializing RTDB audience_vote listener:', e);
+  }
+}, 3000);
 
 function calculateAudienceVoteResults(state) {
   const votes = state.votes || [];
