@@ -38,7 +38,7 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
 
           echo "Starting Firebase deployment..."
-          npx --yes firebase-tools deploy --only hosting --project vtubergame-676dc --non-interactive 2>&1 | tee deploy.log
+          npx --yes firebase-tools@15.34.0 deploy --only hosting --project vtubergame-676dc --non-interactive 2>&1 | tee deploy.log
           DEPLOY_EXIT=${PIPESTATUS[0]}
 
           echo "### Firebase Deploy Log" >> $GITHUB_STEP_SUMMARY
