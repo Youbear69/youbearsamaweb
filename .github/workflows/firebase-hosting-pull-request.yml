@@ -8,6 +8,10 @@ on:
 jobs:
   build_and_preview:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
