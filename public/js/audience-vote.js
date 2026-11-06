@@ -1,28 +1,27 @@
-// Audience Vote Client Logic
+// Audience Vote Client Script
 (function() {
   const socket = (typeof io === 'function') ? io() : null;
 
-  // 12 Zodiac Metadata
-  const ZODIACS = [
-    { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png', date: '20 ม.ค. - 18 ก.พ.' },
-    { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png', date: '19 ก.พ. - 20 มี.ค.' },
-    { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png', date: '21 มี.ค. - 19 เม.ย.' },
-    { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png', date: '20 เม.ย. - 20 พ.ค.' },
-    { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png', date: '21 พ.ค. - 20 มิ.ย.' },
-    { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png', date: '21 มิ.ย. - 22 ก.ค.' },
-    { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png', date: '23 ก.ค. - 22 ส.ค.' },
-    { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png', date: '23 ส.ค. - 22 ก.ย.' },
-    { key: 'libra', th: 'ตุลย์', en: 'Libra', icon: 'libra.png', date: '23 ก.ย. - 22 ต.ค.' },
-    { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png', date: '23 ต.ค. - 21 พ.ย.' },
-    { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png', date: '22 พ.ย. - 21 ธ.ค.' },
-    { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png', date: '22 ธ.ค. - 19 ม.ค.' }
-  ];
-
-  let rosterData = { registered: {}, nominated: {} };
-  let voteState = { isPageOpen: true, isOpen: true, resetEpoch: 0, votes: [] };
   let currentUsername = localStorage.getItem('audience_vote_username') || '';
   let selectedZodiacKey = null;
   let myVotedZodiacKey = null;
+  let rosterData = null;
+  let voteState = { isPageOpen: true, isOpen: true, resetEpoch: 0, votes: [] };
+
+  const ZODIACS = [
+    { key: 'aquarius', th: 'กุมภ์', en: 'Aquarius', icon: 'aquarius.png' },
+    { key: 'pisces', th: 'มีน', en: 'Pisces', icon: 'pisces.png' },
+    { key: 'aries', th: 'เมษ', en: 'Aries', icon: 'aries.png' },
+    { key: 'taurus', th: 'พฤษภ', en: 'Taurus', icon: 'taurus.png' },
+    { key: 'gemini', th: 'เมถุน', en: 'Gemini', icon: 'gemini.png' },
+    { key: 'cancer', th: 'กรกฎ', en: 'Cancer', icon: 'cancer.png' },
+    { key: 'leo', th: 'สิงห์', en: 'Leo', icon: 'leo.png' },
+    { key: 'virgo', th: 'กันย์', en: 'Virgo', icon: 'virgo.png' },
+    { key: 'libra', th: 'ตุลย์/ตุล', en: 'Libra', icon: 'libra.png' },
+    { key: 'scorpio', th: 'พิจิก', en: 'Scorpio', icon: 'scorpio.png' },
+    { key: 'sagittarius', th: 'ธนู', en: 'Sagittarius', icon: 'sagittarius.png' },
+    { key: 'capricorn', th: 'มังกร', en: 'Capricorn', icon: 'capricorn.png' }
+  ];
 
   function showToast(msg) {
     const t = document.getElementById('toast');
@@ -33,7 +32,7 @@
     if (i) i.textContent = '';
     t.classList.add('show');
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2800);
   }
 
   function getSafeUserKey(name) {
@@ -42,6 +41,10 @@
 
   // Username modal handlers
   window.openUsernameModal = function() {
+    if (myVotedZodiacKey) {
+      showToast('คุณได้โหวตไปแล้วในรอบนี้ ไม่สามารถเปลี่ยนชื่อได้');
+      return;
+    }
     const modal = document.getElementById('username-modal');
     const input = document.getElementById('username-input');
     if (modal) modal.style.display = 'flex';
@@ -64,60 +67,73 @@
       showToast('กรุณากรอกชื่อของคุณ');
       return;
     }
+
     currentUsername = val;
     localStorage.setItem('audience_vote_username', currentUsername);
-    closeUsernameModal();
     updateUserDisplay();
+    closeUsernameModal();
     checkIfUserAlreadyVoted();
     renderCards();
-    showToast(`ยินดีต้อนรับคุณ ${currentUsername}`);
+    showToast(`ยินดีต้อนรับ คุณ ${currentUsername}`);
   };
 
-  window.handleLogout = function() {
-    currentUsername = '';
+  window.handleUserLogout = function() {
+    if (!currentUsername) {
+      openUsernameModal();
+      return;
+    }
+
+    const msg = myVotedZodiacKey
+      ? `ต้องการออกจากระบบจาก "${currentUsername}" หรือไม่? (ประวัติการโหวตในชื่อเดิมจะยังคงอยู่ และสามารถเข้าสู่ระบบด้วยชื่อใหม่ได้)`
+      : `ต้องการออกจากระบบและเปลี่ยนชื่อผู้ใช้งานหรือไม่?`;
+
+    if (!confirm(msg)) return;
+
     localStorage.removeItem('audience_vote_username');
+    currentUsername = '';
     myVotedZodiacKey = null;
     selectedZodiacKey = null;
+
     hideFloatingConfirmBar();
     updateUserDisplay();
     renderCards();
-    showToast('ออกจากระบบเรียบร้อยแล้ว');
     openUsernameModal();
+    showToast('ออกจากระบบเรียบร้อยแล้ว');
   };
 
   function updateUserDisplay() {
-    const nameEl = document.getElementById('user-display-name');
-    const statusEl = document.getElementById('user-vote-status');
-    const btnLogout = document.getElementById('btn-user-logout');
-    if (nameEl) nameEl.textContent = currentUsername || 'ยังไม่ได้ระบุชื่อ';
-    if (btnLogout) btnLogout.style.display = currentUsername ? 'inline-flex' : 'none';
+    const nameEl = document.getElementById('voter-name-display');
+    const badgeEl = document.getElementById('voter-status-badge');
 
-    if (statusEl) {
-      if (!currentUsername) {
-        statusEl.textContent = 'กดเพื่อระบุชื่อ';
-        statusEl.className = 'user-status-badge badge-warning';
-      } else if (myVotedZodiacKey) {
-        const z = ZODIACS.find(x => x.key === myVotedZodiacKey);
-        const zName = z ? `ราศี${z.th}` : myVotedZodiacKey;
-        statusEl.textContent = `ล็อคคำตอบแล้ว: ${zName}`;
-        statusEl.className = 'user-status-badge badge-locked';
+    if (nameEl) {
+      nameEl.textContent = currentUsername || 'ยังไม่ระบุชื่อ';
+    }
+
+    if (badgeEl) {
+      if (myVotedZodiacKey) {
+        const zMeta = ZODIACS.find(z => z.key === myVotedZodiacKey);
+        badgeEl.className = 'voter-status-badge status-voted';
+        badgeEl.textContent = `ล็อคคำตอบแล้ว: ราศี${zMeta ? zMeta.th : myVotedZodiacKey}`;
       } else if (voteState.isOpen === false) {
-        statusEl.textContent = 'รอบโหวตปิดอยู่';
-        statusEl.className = 'user-status-badge badge-warning';
+        badgeEl.className = 'voter-status-badge status-closed';
+        badgeEl.textContent = 'ปิดรับโหวตชั่วคราว';
+      } else if (!currentUsername) {
+        badgeEl.className = 'voter-status-badge status-unvoted';
+        badgeEl.textContent = 'คลิกเพื่อระบุชื่อ';
       } else {
-        statusEl.textContent = 'พร้อมลงคะแนน (เลือกได้ 1 ราศี)';
-        statusEl.className = 'user-status-badge badge-pending';
+        badgeEl.className = 'voter-status-badge status-unvoted';
+        badgeEl.textContent = 'ยังไม่ได้โหวต (เลือกได้ 1 ราศี)';
       }
     }
   }
 
   function updateClosedBanner() {
-    const banner = document.getElementById('vote-closed-banner');
+    const banner = document.getElementById('system-closed-banner');
     if (!banner) return;
     if (voteState.isOpen === false) {
-      banner.style.display = 'block';
+      banner.classList.add('show');
     } else {
-      banner.style.display = 'none';
+      banner.classList.remove('show');
     }
   }
 
@@ -134,15 +150,20 @@
   }
 
   function checkIfUserAlreadyVoted() {
-    myVotedZodiacKey = null;
-    if (!currentUsername) return;
+    if (!currentUsername) {
+      myVotedZodiacKey = null;
+      return;
+    }
 
-    // 1. Check from state votes
+    // 1. Check in votes list from server/RTDB
     const votes = voteState.votes || [];
     const cleanUser = currentUsername.trim().toLowerCase();
-    const existing = votes.find(v => (v.username || '').trim().toLowerCase() === cleanUser);
-    if (existing) {
-      myVotedZodiacKey = existing.zodiacKey;
+    const found = votes.find(v => (v.username || '').trim().toLowerCase() === cleanUser);
+    if (found) {
+      myVotedZodiacKey = found.zodiacKey;
+      selectedZodiacKey = found.zodiacKey;
+      hideFloatingConfirmBar();
+      updateUserDisplay();
       return;
     }
 
@@ -151,11 +172,17 @@
     const localChoice = localStorage.getItem('my_audience_vote_' + epoch);
     if (localChoice) {
       myVotedZodiacKey = localChoice;
+      selectedZodiacKey = localChoice;
+      hideFloatingConfirmBar();
+    } else {
+      myVotedZodiacKey = null;
     }
+    updateUserDisplay();
   }
 
   function applyRtdbData(val) {
     if (!val) return;
+    const oldEpoch = voteState.resetEpoch || 0;
     voteState.isPageOpen = val.isPageOpen !== undefined ? val.isPageOpen : true;
     voteState.isOpen = val.isOpen !== undefined ? val.isOpen : true;
     voteState.resetEpoch = val.resetEpoch || 0;
@@ -168,6 +195,16 @@
     updateClosedBanner();
     updateUserDisplay();
     renderCards();
+
+    // If resetEpoch increased, reset user vote state
+    if (val.resetEpoch && val.resetEpoch > oldEpoch && oldEpoch > 0) {
+      myVotedZodiacKey = null;
+      selectedZodiacKey = null;
+      hideFloatingConfirmBar();
+      updateUserDisplay();
+      renderCards();
+      showToast('แอดมินได้รีเซ็ตการโหวตแล้ว คุณสามารถโหวตใหม่ได้');
+    }
   }
 
   // Load Roster & Audience Vote State
@@ -212,7 +249,7 @@
       } catch (e) {}
     }
 
-    // 3. Fallback to local REST state
+    // 3. Fallback to local server REST API
     try {
       const voteRes = await fetch('/api/audience-vote/state');
       if (voteRes.ok) {
@@ -238,156 +275,127 @@
     }
   }
 
-  function getPlayersForZodiac(zodiacKey) {
-    const list = [];
-    const reg = (rosterData.registered && rosterData.registered[zodiacKey]) || [];
-    reg.forEach(p => {
-      if (p && (p.name || p.xAccount)) {
-        list.push({
-          name: p.name || 'ผู้เล่น',
-          avatar: p.avatar || `/white/${zodiacKey}.png`,
-          xAccount: p.xAccount || '',
-          type: 'reg'
-        });
-      }
-    });
-
-    const nom = (rosterData.nominated && rosterData.nominated[zodiacKey]) || [];
-    nom.forEach(p => {
-      if (p && (p.name || p.xAccount)) {
-        list.push({
-          name: p.name || 'ผู้เล่น',
-          avatar: p.avatar || `/white/${zodiacKey}.png`,
-          xAccount: p.xAccount || '',
-          type: 'nom'
-        });
-      }
-    });
-
-    return list;
-  }
-
+  // Render 12 Zodiac Cards
   function renderCards() {
-    const grid = document.getElementById('zodiac-vote-grid');
+    const grid = document.getElementById('audience-zodiac-grid');
     if (!grid) return;
 
-    const isLocked = Boolean(myVotedZodiacKey);
-    const isClosed = voteState.isOpen === false;
+    // Use registered roster by default, fallback to nominated if empty
+    const rosterReg = (rosterData && rosterData.registered) ? rosterData.registered : {};
+    const rosterNom = (rosterData && rosterData.nominated) ? rosterData.nominated : {};
 
     grid.innerHTML = ZODIACS.map(z => {
+      let players = rosterReg[z.key] || [];
+      if (players.length === 0 && rosterNom[z.key]) {
+        players = rosterNom[z.key];
+      }
+
       const isSelected = (selectedZodiacKey === z.key);
       const isMyVoted = (myVotedZodiacKey === z.key);
+      const isLockedOut = (myVotedZodiacKey && !isMyVoted);
+      const isClosed = (voteState.isOpen === false);
 
-      let cardClasses = 'zodiac-vote-card';
-      if (isSelected && !isLocked) cardClasses += ' selected';
-      if (isMyVoted) cardClasses += ' voted-locked';
-      if (isLocked && !isMyVoted) cardClasses += ' other-locked';
-      if (isClosed && !isMyVoted) cardClasses += ' disabled-closed';
+      let cardClasses = 'audience-vote-card';
+      if (isSelected) cardClasses += ' is-selected';
+      if (isMyVoted) cardClasses += ' is-voted-target';
+      if (isLockedOut || isClosed) cardClasses += ' is-disabled';
 
-      const players = getPlayersForZodiac(z.key);
-      const iconPath = `/white/${z.icon}`;
-
-      const playersHtml = players.length > 0 ? `
-        <div class="card-players-list">
-          ${players.map(p => `
-            <div class="player-chip">
-              <img src="${p.avatar}" alt="${escapeHtml(p.name)}" class="player-avatar" onerror="this.src='${iconPath}'">
-              <span class="player-name">${escapeHtml(p.name)}</span>
+      let playersHtml = '';
+      if (players.length === 0) {
+        playersHtml = `<div class="no-players-placeholder">ตัวแทนราศี ${escapeHtml(z.th)}</div>`;
+      } else {
+        playersHtml = players.map(p => {
+          const avatar = p.avatar || p.imageUrl || '/white/' + z.icon;
+          const displayName = p.displayName || p.name || 'VTuber';
+          const handle = p.handle || (p.xAccount ? (p.xAccount.startsWith('@') ? p.xAccount : '@' + p.xAccount.replace(/https?:\/\/(x|twitter)\.com\//i, '').split('/')[0]) : '');
+          return `
+            <div class="player-mini-row">
+              <img src="${escapeHtml(avatar)}" onerror="this.onerror=null; this.src='/white/${z.icon}';" class="player-avatar-thumb" alt="${escapeHtml(displayName)}">
+              <div class="player-text-info">
+                <span class="player-display-name">${escapeHtml(displayName)}</span>
+                ${handle ? `<span class="player-x-handle">${escapeHtml(handle)}</span>` : ''}
+              </div>
             </div>
-          `).join('')}
-        </div>
-      ` : `
-        <div class="card-players-empty">รอประกาศรายชื่อผู้เล่น</div>
-      `;
-
-      let badgeHtml = '';
-      if (isMyVoted) {
-        badgeHtml = `<div class="card-badge-voted">ล็อคคำตอบแล้ว</div>`;
-      } else if (isSelected && !isLocked) {
-        badgeHtml = `<div class="card-badge-selected">กำลังเลือก</div>`;
+          `;
+        }).join('');
       }
 
       return `
         <div class="${cardClasses}" onclick="handleCardClick('${z.key}')">
-          ${badgeHtml}
-          <div class="card-top-info">
-            <div class="card-zodiac-icon">
-              <img src="${iconPath}" alt="${z.th}" onerror="this.src='/white/aquarius.png'">
+          <div class="card-top-header">
+            <div class="zodiac-main-badge">
+              <img src="/white/${z.icon}" class="zodiac-icon-img" alt="${escapeHtml(z.th)}">
+              <div class="zodiac-names-wrap">
+                <span class="zodiac-th-name">ราศี${escapeHtml(z.th)}</span>
+                <span class="zodiac-en-name">${escapeHtml(z.en)}</span>
+              </div>
             </div>
-            <div>
-              <div class="card-zodiac-title">ราศี${escapeHtml(z.th)}</div>
-              <div class="card-zodiac-en">${escapeHtml(z.en)}</div>
-              <div class="card-date-badge">${escapeHtml(z.date)}</div>
+            <div class="select-indicator-box">
+              ${isMyVoted ? '✓' : (isSelected ? '●' : '')}
             </div>
           </div>
-          ${playersHtml}
+          <div class="card-players-list">
+            ${playersHtml}
+          </div>
         </div>
       `;
     }).join('');
   }
 
-  window.handleCardClick = function(zodiacKey) {
+  window.handleCardClick = function(zKey) {
     if (voteState.isPageOpen === false) {
-      showToast('ระบบโหวตถูกปิดการเข้าถึงอยู่ในขณะนี้');
-      return;
-    }
-    if (myVotedZodiacKey) {
-      showToast('คุณได้ลงคะแนนโหวตไปแล้วในรอบนี้ ไม่สามารถแก้ไขคำตอบได้');
+      showToast('ระบบยังไม่เปิดให้เข้าสู่หน้าโหวตในขณะนี้');
       return;
     }
     if (voteState.isOpen === false) {
-      showToast('ขณะนี้รอบการโหวตปิดรับคะแนนอยู่');
+      showToast('ระบบปิดรับการโหวตอยู่ในขณะนี้');
+      return;
+    }
+    if (myVotedZodiacKey) {
+      showToast('คุณได้โหวตและล็อคคำตอบแล้ว ไม่สามารถเปลี่ยนราศีได้');
       return;
     }
     if (!currentUsername) {
       openUsernameModal();
-      showToast('กรุณาระบุชื่อก่อนเลือกราศี');
       return;
     }
 
-    selectedZodiacKey = zodiacKey;
+    selectedZodiacKey = zKey;
     renderCards();
-    showFloatingConfirmBar(zodiacKey);
+    showFloatingConfirmBar(zKey);
   };
 
-  function showFloatingConfirmBar(zodiacKey) {
+  function showFloatingConfirmBar(zKey) {
     const bar = document.getElementById('floating-confirm-bar');
-    const nameEl = document.getElementById('confirm-zodiac-name');
-    if (!bar) return;
+    const textEl = document.getElementById('confirm-zodiac-text');
+    if (!bar || !textEl) return;
 
-    const z = ZODIACS.find(x => x.key === zodiacKey);
-    if (nameEl && z) {
-      nameEl.textContent = `ราศี${z.th} (${z.en})`;
-    }
-    bar.classList.add('active');
+    const zMeta = ZODIACS.find(z => z.key === zKey);
+    const zName = zMeta ? `${zMeta.th} (${zMeta.en})` : zKey;
+
+    textEl.textContent = `คุณเลือก: ราศี${zName}`;
+    bar.classList.add('show');
   }
 
   function hideFloatingConfirmBar() {
     const bar = document.getElementById('floating-confirm-bar');
-    if (bar) bar.classList.remove('active');
+    if (bar) bar.classList.remove('show');
   }
 
-  window.cancelSelection = function() {
-    selectedZodiacKey = null;
-    hideFloatingConfirmBar();
-    renderCards();
-  };
-
-  window.submitVote = async function() {
-    if (!selectedZodiacKey || !currentUsername) return;
-    if (myVotedZodiacKey) {
-      showToast('คุณได้ลงคะแนนโหวตไปแล้ว');
+  window.confirmSubmitVote = async function() {
+    if (!selectedZodiacKey) {
+      showToast('กรุณาคลิกเลือกราศีก่อนยืนยัน');
       return;
     }
-    if (voteState.isOpen === false) {
-      showToast('รอบโหวตปิดรับคะแนนแล้ว');
+    if (!currentUsername) {
+      openUsernameModal();
       return;
     }
 
-    const z = ZODIACS.find(x => x.key === selectedZodiacKey);
-    const zName = z ? `ราศี${z.th}` : selectedZodiacKey;
+    const zMeta = ZODIACS.find(z => z.key === selectedZodiacKey);
+    const zName = zMeta ? `ราศี${zMeta.th} (${zMeta.en})` : selectedZodiacKey;
 
-    const confirmed = confirm(`ยืนยันการโหวตให้กับ "${zName}" ใช่หรือไม่?\n\n(หลังจากกดยืนยันแล้วจะไม่สามารถแก้ไขคำตอบได้จนกว่าแอดมินจะรีเซ็ตรอบ)`);
+    const confirmed = confirm(`ยืนยันการลงคะแนนโหวตให้ "${zName}" ?\n\nหลังกดยืนยันแล้ว จะไม่สามารถเปลี่ยนคำตอบได้ จนกว่าแอดมินจะรีเซ็ตรอบใหม่`);
     if (!confirmed) return;
 
     const btn = document.getElementById('btn-submit-vote');
@@ -398,8 +406,8 @@
       const votePayload = {
         username: currentUsername,
         zodiacKey: selectedZodiacKey,
-        zodiacNameTh: z ? z.th : selectedZodiacKey,
-        zodiacNameEn: z ? z.en : selectedZodiacKey,
+        zodiacNameTh: zMeta ? zMeta.th : selectedZodiacKey,
+        zodiacNameEn: zMeta ? zMeta.en : selectedZodiacKey,
         timestamp: new Date().toISOString()
       };
 
@@ -420,7 +428,7 @@
         });
       } catch (e) {}
 
-      // Save choice to local storage
+      // Save choice to localStorage for current epoch
       const epoch = voteState.resetEpoch || 0;
       localStorage.setItem('my_audience_vote_' + epoch, selectedZodiacKey);
 
@@ -431,7 +439,7 @@
       showToast(`โหวตสำเร็จ! ล็อคคำตอบให้ "${zName}" เรียบร้อย`);
     } catch (err) {
       console.error(err);
-      showToast('เกิดข้อผิดพลาดในการลงคะแนน');
+      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -459,60 +467,61 @@
       }
     });
 
-    socket.on('audienceVote:pageStatus', (data) => {
-      voteState.isPageOpen = data.isPageOpen;
-      syncPageAccessModal();
-    });
-
-    socket.on('audienceVote:status', (data) => {
-      voteState.isOpen = data.isOpen;
-      updateClosedBanner();
-      updateUserDisplay();
-      renderCards();
-    });
-
-    socket.on('audienceVote:reset', (data) => {
-      voteState.votes = [];
-      voteState.resetEpoch = data.resetEpoch || Date.now();
-      myVotedZodiacKey = null;
-      selectedZodiacKey = null;
-      hideFloatingConfirmBar();
-      updateUserDisplay();
-      renderCards();
-      showToast('แอดมินได้รีเซ็ตรอบการโหวตแล้ว คุณสามารถเริ่มโหวตใหม่ได้');
-    });
-
     socket.on('audienceVote:update', (data) => {
       if (data) {
         voteState = data;
         syncPageAccessModal();
         checkIfUserAlreadyVoted();
         updateClosedBanner();
-        updateUserDisplay();
+        renderCards();
+      }
+    });
+
+    socket.on('audienceVote:pageStatus', (data) => {
+      if (data) {
+        voteState.isPageOpen = data.isPageOpen;
+        syncPageAccessModal();
+        if (data.isPageOpen === false) {
+          showToast('แอดมินได้ปิดการเข้าถึงหน้าโหวต');
+        } else {
+          showToast('แอดมินได้เปิดให้เข้าสู่หน้าโหวตแล้ว');
+        }
+      }
+    });
+
+    socket.on('audienceVote:status', (data) => {
+      if (data) {
+        voteState.isOpen = data.isOpen;
+        updateClosedBanner();
+        renderCards();
+        showToast(data.isOpen ? 'ระบบเปิดรับโหวตรอบนี้แล้ว' : 'ระบบปิดรับโหวตชั่วคราว');
+      }
+    });
+
+    socket.on('audienceVote:reset', () => {
+      myVotedZodiacKey = null;
+      selectedZodiacKey = null;
+      hideFloatingConfirmBar();
+      updateUserDisplay();
+      renderCards();
+      showToast('แอดมินได้รีเซ็ตการโหวตแล้ว คุณสามารถโหวตใหม่ได้');
+    });
+
+    socket.on('rosterUpdated', (newRoster) => {
+      if (newRoster) {
+        rosterData = newRoster;
         renderCards();
       }
     });
   }
 
-  // Firebase Realtime Database live listener for cloud hosting
+  // Firebase Realtime Database listener for cloud hosting
   if (typeof rtdb !== 'undefined') {
     rtdb.ref('audience_vote').on('value', snap => {
       const val = snap.val();
-      if (val) {
-        const oldEpoch = voteState.resetEpoch || 0;
-        applyRtdbData(val);
-        if (val.resetEpoch && val.resetEpoch > oldEpoch && oldEpoch > 0) {
-          myVotedZodiacKey = null;
-          selectedZodiacKey = null;
-          hideFloatingConfirmBar();
-          updateUserDisplay();
-          renderCards();
-          showToast('แอดมินได้รีเซ็ตรอบการโหวตแล้ว คุณสามารถเริ่มโหวตใหม่ได้');
-        }
-      }
+      if (val) applyRtdbData(val);
     });
 
-    // Also listen to roster updates from RTDB if present
     rtdb.ref('roster').on('value', snap => {
       const val = snap.val();
       if (val) {
@@ -522,8 +531,6 @@
     });
   }
 
-  // Initialize
-  document.addEventListener('DOMContentLoaded', () => {
-    loadInitialData();
-  });
+  // Init
+  document.addEventListener('DOMContentLoaded', loadInitialData);
 })();

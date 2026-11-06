@@ -53,7 +53,7 @@
         key: z.key,
         th: z.th,
         en: z.en,
-        icon: z.icon,
+        icon: z.icon || (z.key + '.png'),
         count: cnt,
         percentage: totalVotes > 0 ? Math.round((cnt / totalVotes) * 100) : 0
       };
@@ -143,23 +143,13 @@
     }
 
     if (btnTogglePage) {
-      if (isPageOpen) {
-        btnTogglePage.textContent = 'กดปิดหน้าเว็บโหวต';
-        btnTogglePage.className = 'btn-action-admin btn-danger-outline';
-      } else {
-        btnTogglePage.textContent = 'กดเปิดหน้าเว็บโหวต';
-        btnTogglePage.className = 'btn-action-admin btn-cyan-outline';
-      }
+      btnTogglePage.className = `btn-action-admin ${isPageOpen ? 'btn-danger-outline' : 'btn-cyan-outline'}`;
+      btnTogglePage.textContent = isPageOpen ? 'กดปิดหน้าเว็บโหวต' : 'กดเปิดหน้าเว็บโหวต';
     }
 
     if (btnToggleVote) {
-      if (isRoundOpen) {
-        btnToggleVote.textContent = 'กดปิดรับโหวตรอบนี้';
-        btnToggleVote.className = 'btn-action-admin btn-danger-outline';
-      } else {
-        btnToggleVote.textContent = 'กดเปิดรับโหวตรอบนี้';
-        btnToggleVote.className = 'btn-action-admin btn-cyan-outline';
-      }
+      btnToggleVote.className = `btn-action-admin ${isRoundOpen ? 'btn-danger-outline' : 'btn-cyan-outline'}`;
+      btnToggleVote.textContent = isRoundOpen ? 'กดปิดรับโหวตรอบนี้' : 'กดเปิดรับโหวตรอบนี้';
     }
   }
 
@@ -173,60 +163,76 @@
       return;
     }
 
-    grid.innerHTML = stats.map(z => {
-      const iconPath = `/white/${z.icon || (z.key + '.png')}`;
+    grid.innerHTML = stats.map(s => {
+      const hasVotes = s.count > 0;
+      const iconPath = `/white/${s.icon || (s.key + '.png')}`;
       return `
-        <div class="tally-card">
+        <div class="tally-card ${hasVotes ? 'has-votes' : ''}">
           <div class="tally-card-header">
-            <div class="tally-icon-wrap">
-              <img src="${iconPath}" alt="${z.th}" onerror="this.src='/white/aquarius.png'">
+            <div class="tally-zodiac-title">
+              <img src="${iconPath}" onerror="this.onerror=null; this.src='/white/aquarius.png';" class="tally-zodiac-icon" alt="${escapeHtml(s.th)}">
+              <div>
+                <strong style="color: #fff; font-size: 1.05rem;">ราศี${escapeHtml(s.th)}</strong>
+                <span style="color: #a78bfa; font-size: 0.8rem; margin-left: 4px;">(${escapeHtml(s.en)})</span>
+              </div>
             </div>
-            <div>
-              <div class="tally-name">${escapeHtml(z.th)}</div>
-              <div class="tally-en">${escapeHtml(z.en)}</div>
-            </div>
-            <div class="tally-pct">${z.percentage}%</div>
+            <div class="tally-percentage-big">${s.percentage}%</div>
           </div>
-          <div class="tally-progress-bg">
-            <div class="tally-progress-fill" style="width: ${z.percentage}%;"></div>
+
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width: ${s.percentage}%;"></div>
           </div>
-          <div class="tally-count-label">
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: #cbd5e1; margin-top: 4px;">
             <span>คะแนนโหวต:</span>
-            <span class="count-num">${z.count} คน</span>
+            <strong style="color: ${hasVotes ? '#38bdf8' : '#94a3b8'}; font-size: 0.95rem;">${s.count} คน</strong>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  function renderVotersTable() {
+  window.renderVotersTable = function() {
     const tbody = document.getElementById('voters-table-body');
-    const emptyRow = document.getElementById('empty-voters-row');
+    const searchInput = document.getElementById('voters-search');
     if (!tbody) return;
 
-    const votes = adminVoteState.votes || [];
-    if (votes.length === 0) {
-      if (emptyRow) emptyRow.style.display = '';
-      tbody.innerHTML = '';
-      if (emptyRow) tbody.appendChild(emptyRow);
+    const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const votes = [...(adminVoteState.votes || [])].reverse(); // newest first
+
+    const filtered = votes.filter(v => {
+      if (!query) return true;
+      return (v.username && v.username.toLowerCase().includes(query)) ||
+             (v.zodiacNameTh && v.zodiacNameTh.toLowerCase().includes(query)) ||
+             (v.zodiacKey && v.zodiacKey.toLowerCase().includes(query));
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            ${query ? 'ไม่พบชื่อที่ค้นหา' : 'ยังไม่มีผู้ลงคะแนนโหวตในรอบนี้'}
+          </td>
+        </tr>
+      `;
       return;
     }
 
-    if (emptyRow) emptyRow.style.display = 'none';
-
-    tbody.innerHTML = votes.slice().reverse().map((v, idx) => {
+    tbody.innerHTML = filtered.map((v, idx) => {
       let timeStr = '-';
       if (v.timestamp) {
-        const d = new Date(v.timestamp);
-        timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        try {
+          const d = new Date(v.timestamp);
+          timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch(e) {}
       }
       return `
         <tr>
-          <td style="color: var(--text-muted);">${votes.length - idx}</td>
+          <td style="color: var(--text-muted);">${filtered.length - idx}</td>
+          <td style="color: var(--text-muted); font-size: 0.9rem;">${timeStr}</td>
           <td>
             <strong style="color: #ffffff; font-size: 0.98rem;">${escapeHtml(v.username || 'ผู้ชม')}</strong>
           </td>
-          <td style="color: var(--text-muted); font-size: 0.9rem;">${timeStr}</td>
           <td>
             <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 9999px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); color: #c084fc; font-weight: 600; font-size: 0.88rem;">
               ราศี${escapeHtml(v.zodiacNameTh || v.zodiacKey)}
@@ -235,7 +241,7 @@
         </tr>
       `;
     }).join('');
-  }
+  };
 
   function setupStreamDeckUrls() {
     const origin = 'https://yuubearsama.online';
@@ -370,16 +376,22 @@
   // Socket.IO event bindings for local server
   if (socket) {
     socket.on('audienceVote:update', function(state) {
-      adminVoteState = state;
-      renderAll();
+      if (state) {
+        adminVoteState = state;
+        renderAll();
+      }
     });
     socket.on('audienceVote:pageStatus', function(data) {
-      adminVoteState.isPageOpen = data.isPageOpen;
-      renderStatusAndStats();
+      if (data && typeof data.isPageOpen === 'boolean') {
+        adminVoteState.isPageOpen = data.isPageOpen;
+        renderStatusAndStats();
+      }
     });
     socket.on('audienceVote:status', function(data) {
-      adminVoteState.isOpen = data.isOpen;
-      renderStatusAndStats();
+      if (data && typeof data.isOpen === 'boolean') {
+        adminVoteState.isOpen = data.isOpen;
+        renderStatusAndStats();
+      }
     });
     socket.on('audienceVote:reset', function(data) {
       adminVoteState.votes = [];
