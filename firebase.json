@@ -52,6 +52,30 @@
         "destination": "/adminpanel.html"
       },
       {
+        "source": "/12vtubergame/audience-vote",
+        "destination": "/audience-vote.html"
+      },
+      {
+        "source": "/12vtubergame/audience-vote/",
+        "destination": "/audience-vote.html"
+      },
+      {
+        "source": "/12vtubergame/audience-vote-admin",
+        "destination": "/audience-vote-admin.html"
+      },
+      {
+        "source": "/12vtubergame/audience-vote-admin/",
+        "destination": "/audience-vote-admin.html"
+      },
+      {
+        "source": "/12vtubergame/audience-vote-overlay",
+        "destination": "/audience-vote-overlay.html"
+      },
+      {
+        "source": "/12vtubergame/audience-vote-overlay/",
+        "destination": "/audience-vote-overlay.html"
+      },
+      {
         "source": "/12vtubergame/random12ad",
         "destination": "/random12ad.html"
       },
@@ -126,6 +150,30 @@
       {
         "source": "/adminpanel",
         "destination": "/adminpanel.html"
+      },
+      {
+        "source": "/audience-vote",
+        "destination": "/audience-vote.html"
+      },
+      {
+        "source": "/audience-vote/",
+        "destination": "/audience-vote.html"
+      },
+      {
+        "source": "/audience-vote-admin",
+        "destination": "/audience-vote-admin.html"
+      },
+      {
+        "source": "/audience-vote-admin/",
+        "destination": "/audience-vote-admin.html"
+      },
+      {
+        "source": "/audience-vote-overlay",
+        "destination": "/audience-vote-overlay.html"
+      },
+      {
+        "source": "/audience-vote-overlay/",
+        "destination": "/audience-vote-overlay.html"
       },
       {
         "source": "/random12ad",
