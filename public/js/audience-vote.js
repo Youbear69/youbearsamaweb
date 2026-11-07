@@ -209,21 +209,34 @@
 
   // Load Roster & Audience Vote State
   async function loadInitialData() {
-    // 1. Fetch roster players (with static fallback)
+    // 1. Fetch roster players (checking Firebase RTDB first, then local API, then static fallback)
     let rosterLoaded = false;
-    try {
-      const rosterRes = await fetch('/api/roster');
-      if (rosterRes.ok) {
-        const ct = rosterRes.headers.get('content-type') || '';
-        if (ct.includes('application/json')) {
-          const json = await rosterRes.json();
-          if (json && json.data) {
-            rosterData = json.data;
-            rosterLoaded = true;
+    if (typeof rtdb !== 'undefined') {
+      try {
+        const snap = await rtdb.ref('roster').once('value');
+        const val = snap.val();
+        if (val && (Object.keys(val.registered || {}).length > 0 || Object.keys(val.nominated || {}).length > 0)) {
+          rosterData = val;
+          rosterLoaded = true;
+        }
+      } catch (e) {}
+    }
+
+    if (!rosterLoaded) {
+      try {
+        const rosterRes = await fetch('/api/roster');
+        if (rosterRes.ok) {
+          const ct = rosterRes.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const json = await rosterRes.json();
+            if (json && json.data) {
+              rosterData = json.data;
+              rosterLoaded = true;
+            }
           }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     if (!rosterLoaded) {
       try {

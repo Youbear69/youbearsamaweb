@@ -1488,23 +1488,97 @@ async function initAdminPage() {
   ];
 
   async function loadAdminRoster() {
-    try {
-      const res = await fetch('/api/roster');
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.data) {
-          adminRosterData = json.data;
-          if (!adminRosterData.registered) adminRosterData.registered = {};
-          if (!adminRosterData.nominated) adminRosterData.nominated = {};
+    let loaded = false;
 
-          updateRosterCountBadges();
-          renderAdminRoster();
+    // 1. Try Firebase Realtime Database first
+    if (typeof rtdb !== 'undefined') {
+      try {
+        const snap = await rtdb.ref('roster').once('value');
+        const val = snap.val();
+        if (val && (Object.keys(val.registered || {}).length > 0 || Object.keys(val.nominated || {}).length > 0)) {
+          adminRosterData = val;
+          loaded = true;
         }
+      } catch (err) {
+        console.warn('Firebase RTDB roster read error:', err);
       }
-    } catch (err) {
-      console.error('Failed to load admin roster:', err);
-      showToast('ไม่สามารถดึงข้อมูลรายชื่อผู้ได้เล่นได้', 'error');
     }
+
+    // 2. Try Local Server REST API (only if response is JSON)
+    if (!loaded) {
+      try {
+        const res = await fetch('/api/roster');
+        if (res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const json = await res.json();
+            if (json && json.data && (Object.keys(json.data.registered || {}).length > 0 || Object.keys(json.data.nominated || {}).length > 0)) {
+              adminRosterData = json.data;
+              loaded = true;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Local /api/roster fetch error:', err);
+      }
+    }
+
+    // 3. Try LocalStorage Cache
+    if (!loaded) {
+      try {
+        const cached = localStorage.getItem('cached_roster_data');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (Object.keys(parsed.registered || {}).length > 0 || Object.keys(parsed.nominated || {}).length > 0)) {
+            adminRosterData = parsed;
+            loaded = true;
+          }
+        }
+      } catch (e) {
+        console.warn('LocalStorage roster cache parse error:', e);
+      }
+    }
+
+    // 4. Try Static Default JSON file
+    if (!loaded) {
+      try {
+        const staticRes = await fetch('/data/roster_default.json');
+        if (staticRes.ok) {
+          const ct = staticRes.headers.get('content-type') || '';
+          if (ct.includes('application/json') || staticRes.status === 200) {
+            const staticJson = await staticRes.json();
+            if (staticJson && (Object.keys(staticJson.registered || {}).length > 0 || Object.keys(staticJson.nominated || {}).length > 0)) {
+              adminRosterData = staticJson;
+              loaded = true;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Static roster_default.json fetch error:', e);
+      }
+    }
+
+    // Ensure structure is clean
+    if (!adminRosterData) adminRosterData = {};
+    if (!adminRosterData.registered) adminRosterData.registered = {};
+    if (!adminRosterData.nominated) adminRosterData.nominated = {};
+
+    // Cache locally
+    try {
+      localStorage.setItem('cached_roster_data', JSON.stringify(adminRosterData));
+    } catch (e) {}
+
+    // Auto-seed Firebase RTDB if it was empty so cloud stays synchronized
+    if (typeof rtdb !== 'undefined' && loaded) {
+      rtdb.ref('roster').once('value').then(s => {
+        if (!s.val()) {
+          rtdb.ref('roster').set(adminRosterData).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+
+    updateRosterCountBadges();
+    renderAdminRoster();
   }
   window.loadAdminRoster = loadAdminRoster;
 
@@ -1614,7 +1688,7 @@ async function initAdminPage() {
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
               <span style="font-size: 0.78rem; font-weight: 700; color: #a78bfa;">ช่อง #${idx + 1}</span>
               <button type="button" class="btn-secondary" style="padding: 1px 7px; font-size: 0.75rem; color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); background: rgba(239,68,68,0.08);" onclick="removeAdminRosterPlayer('${z.key}', ${idx})" title="ลบช่องนี้">
-                ✕ ลบช่อง
+                ลบช่อง
               </button>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
@@ -1627,7 +1701,7 @@ async function initAdminPage() {
             <div style="display: flex; gap: 6px; align-items: center;">
               <input type="text" class="form-input" style="padding: 3px 8px; font-size: 0.82rem; flex: 1;" placeholder="URL รูปภาพโปรไฟล์" value="${escapeHtml(p.imageUrl || '')}" oninput="updateRosterField('${z.key}', ${idx}, 'imageUrl', this.value)">
               <button type="button" class="btn-secondary" style="padding: 3px 10px; font-size: 0.82rem; white-space: nowrap; border-color: #a855f7; color: #e9d5ff; background: rgba(168,85,247,0.15);" onclick="openRosterPickModal('${z.key}', ${idx})">
-                👥 เลือกคน
+                เลือกคน
               </button>
             </div>
           </div>
@@ -1734,7 +1808,7 @@ async function initAdminPage() {
 
     const zMeta = activePickTarget ? SAFE_ZODIACS.find(z => z.key === activePickTarget.zodiacKey) : null;
     if (btnMatch && zMeta) {
-      btnMatch.textContent = `🎯 ตรงตามราศี (${zMeta.th})`;
+      btnMatch.textContent = `ตรงตามราศี (${zMeta.th})`;
     }
 
     [btnMatch, btnAll, btnCustom].forEach(b => {
@@ -1867,23 +1941,39 @@ async function initAdminPage() {
     }
 
     showToast('กำลังดึงรูปโปรไฟล์จาก X...', 'info');
+    let foundUrl = null;
+
+    // 1. Try local server backend
     try {
       const res = await fetch('/api/roster/fetch-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ xAccount: xVal, displayName: nameVal })
       });
-      const data = await res.json();
-      if (data && data.success && data.imageUrl) {
-        if (imgInput) imgInput.value = data.imageUrl;
-        if (prevImg) prevImg.src = data.imageUrl;
-        showToast('ดึงรูปโปรไฟล์สำเร็จ!', 'success');
-      } else {
-        showToast('ไม่สามารถดึงรูปโปรไฟล์ได้ สามารถกรอก URL เองได้', 'error');
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && data.imageUrl) {
+          foundUrl = data.imageUrl;
+        }
       }
     } catch (e) {
-      console.error(e);
-      showToast('เกิดข้อผิดพลาดในการดึงรูป', 'error');
+      console.warn('Local avatar fetch error:', e);
+    }
+
+    // 2. Fallback to unavatar.io using Twitter/X handle
+    if (!foundUrl) {
+      const cleanHandle = xVal.replace(/^https?:\/\/(?:twitter|x)\.com\//i, '').replace(/^@/, '').split('/')[0].split('?')[0].trim();
+      if (cleanHandle) {
+        foundUrl = `https://unavatar.io/x/${cleanHandle}`;
+      }
+    }
+
+    if (foundUrl) {
+      if (imgInput) imgInput.value = foundUrl;
+      if (prevImg) prevImg.src = foundUrl;
+      showToast('ดึงรูปโปรไฟล์สำเร็จ', 'success');
+    } else {
+      showToast('ไม่สามารถดึงรูปโปรไฟล์ได้ สามารถกรอก URL เองได้', 'error');
     }
   };
 
@@ -1922,69 +2012,137 @@ async function initAdminPage() {
     try {
       if (btn) btn.disabled = true;
 
-      const user = fbAuth.currentUser;
-      let token = '';
-      if (user) {
-        token = await user.getIdToken();
+      let savedOnline = false;
+
+      // 1. Save to Firebase Realtime Database
+      if (typeof rtdb !== 'undefined') {
+        try {
+          await rtdb.ref('roster').set(adminRosterData);
+          savedOnline = true;
+        } catch (rtdbErr) {
+          console.error('Firebase RTDB save error:', rtdbErr);
+        }
       }
 
-      const res = await fetch('/api/roster', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-dev': 'true',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ roster: adminRosterData })
-      });
+      // 2. Cache locally
+      try {
+        localStorage.setItem('cached_roster_data', JSON.stringify(adminRosterData));
+      } catch (e) {}
 
-      const json = await res.json();
-      if (json.success) {
-        showToast('บันทึกรายชื่อผู้ได้เล่นสำเร็จเรียบร้อย!', 'success');
+      // 3. Send to local Node server if reachable
+      try {
+        const user = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser : null;
+        let token = user ? await user.getIdToken() : '';
+
+        const res = await fetch('/api/roster', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-dev': 'true',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ roster: adminRosterData })
+        });
+        if (res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const json = await res.json();
+            if (json && json.success) savedOnline = true;
+          }
+        }
+      } catch (localErr) {
+        // Ignored if saved to RTDB
+      }
+
+      if (savedOnline) {
+        showToast('บันทึกรายชื่อผู้ได้เล่นสำเร็จเรียบร้อย', 'success');
       } else {
-        showToast('เกิดข้อผิดพลาด: ' + (json.message || 'ไม่สามารถบันทึกได้'), 'error');
+        showToast('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง', 'error');
       }
     } catch (err) {
-      console.error(err);
-      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+      console.error('Error saving roster:', err);
+      showToast('เกิดข้อผิดพลาดในการบันทึกรายชื่อผู้เล่น', 'error');
     } finally {
       if (btn) btn.disabled = false;
     }
   };
 
   window.resetAdminRosterToDefault = async function() {
-    if (!confirm('คุณต้องการรีเซ็ตรายชื่อผู้ได้เล่นเป็นค่าเริ่มต้นตามภาพตัวอย่างใช่หรือไม่?\n(ข้อมูลที่แก้ไขไว้จะถูกแทนที่ด้วยข้อมูลตั้งต้น)')) {
+    if (!confirm('คุณต้องการรีเซ็ตรายชื่อผู้ได้เล่นเป็นค่าเริ่มต้นใช่หรือไม่?\n(ข้อมูลที่แก้ไขไว้จะถูกแทนที่ด้วยข้อมูลตั้งต้น)')) {
       return;
     }
 
+    const btn = document.getElementById('btn-reset-roster');
     try {
-      const user = fbAuth.currentUser;
-      let token = '';
-      if (user) {
-        token = await user.getIdToken();
+      if (btn) btn.disabled = true;
+
+      let defaultData = null;
+
+      // 1. Fetch static default file
+      try {
+        const staticRes = await fetch('/data/roster_default.json');
+        if (staticRes.ok) {
+          const ct = staticRes.headers.get('content-type') || '';
+          if (ct.includes('application/json') || staticRes.status === 200) {
+            defaultData = await staticRes.json();
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load static default roster:', e);
       }
 
-      const res = await fetch('/api/roster/reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-dev': 'true',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
+      // 2. Fallback to server reset endpoint if static fetch failed
+      if (!defaultData) {
+        try {
+          const user = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser : null;
+          let token = user ? await user.getIdToken() : '';
+          const res = await fetch('/api/roster/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-dev': 'true',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+          });
+          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+            const json = await res.json();
+            if (json.success && json.data) {
+              defaultData = json.data;
+            }
+          }
+        } catch (e) {}
+      }
 
-      const json = await res.json();
-      if (json.success) {
-        adminRosterData = json.data;
+      if (defaultData) {
+        adminRosterData = defaultData;
+        if (!adminRosterData.registered) adminRosterData.registered = {};
+        if (!adminRosterData.nominated) adminRosterData.nominated = {};
+
+        // Save to Firebase RTDB
+        if (typeof rtdb !== 'undefined') {
+          try {
+            await rtdb.ref('roster').set(adminRosterData);
+          } catch (rtdbErr) {
+            console.error('Firebase RTDB reset set error:', rtdbErr);
+          }
+        }
+
+        // Cache locally
+        try {
+          localStorage.setItem('cached_roster_data', JSON.stringify(adminRosterData));
+        } catch (e) {}
+
         updateRosterCountBadges();
         renderAdminRoster();
-        showToast('รีเซ็ตรายชื่อเป็นค่าเริ่มต้นสำเร็จ!', 'success');
+        showToast('รีเซ็ตรายชื่อเป็นค่าเริ่มต้นสำเร็จ', 'success');
       } else {
-        showToast('เกิดข้อผิดพลาด: ' + (json.message || 'ไม่สามารถรีเซ็ตได้'), 'error');
+        showToast('ไม่สามารถดึงข้อมูลรายชื่อเริ่มต้นได้', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+      showToast('เกิดข้อผิดพลาดในการรีเซ็ตข้อมูล', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
     }
   };
 

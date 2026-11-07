@@ -31,23 +31,46 @@ document.addEventListener('DOMContentLoaded', () => {
   initNumericalTicker();
 });
 
-// Load roster data from server API with local storage backup and static JSON fallback
+// Load roster data from Firebase RTDB / server API with local storage backup and static JSON fallback
 async function loadRosterData() {
   let loaded = false;
-  try {
-    const res = await fetch('/api/roster');
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.data && (Object.keys(json.data.registered || {}).length > 0 || Object.keys(json.data.nominated || {}).length > 0)) {
-        rosterData = json.data;
+
+  // 1. Try Firebase Realtime Database
+  if (typeof rtdb !== 'undefined') {
+    try {
+      const snap = await rtdb.ref('roster').once('value');
+      const val = snap.val();
+      if (val && (Object.keys(val.registered || {}).length > 0 || Object.keys(val.nominated || {}).length > 0)) {
+        rosterData = val;
         localStorage.setItem('cached_roster_data', JSON.stringify(rosterData));
         loaded = true;
       }
+    } catch (e) {
+      console.warn('Firebase RTDB read in roster.js failed:', e);
     }
-  } catch (err) {
-    console.warn('Could not fetch /api/roster, attempting cache/static fallback:', err);
   }
 
+  // 2. Try Local Server REST API
+  if (!loaded) {
+    try {
+      const res = await fetch('/api/roster');
+      if (res.ok) {
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const json = await res.json();
+          if (json && json.data && (Object.keys(json.data.registered || {}).length > 0 || Object.keys(json.data.nominated || {}).length > 0)) {
+            rosterData = json.data;
+            localStorage.setItem('cached_roster_data', JSON.stringify(rosterData));
+            loaded = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch /api/roster, attempting cache/static fallback:', err);
+    }
+  }
+
+  // 3. Try LocalStorage Cache
   if (!loaded) {
     const cached = localStorage.getItem('cached_roster_data');
     if (cached) {
@@ -61,16 +84,19 @@ async function loadRosterData() {
     }
   }
 
-  // Fallback to static local file for complete offline/local support
+  // 4. Fallback to static local file for complete offline/local support
   if (!loaded) {
     try {
       const staticRes = await fetch('/data/roster_default.json');
       if (staticRes.ok) {
-        const staticJson = await staticRes.json();
-        if (staticJson) {
-          rosterData = staticJson;
-          localStorage.setItem('cached_roster_data', JSON.stringify(rosterData));
-          loaded = true;
+        const ct = staticRes.headers.get('content-type') || '';
+        if (ct.includes('application/json') || staticRes.status === 200) {
+          const staticJson = await staticRes.json();
+          if (staticJson) {
+            rosterData = staticJson;
+            localStorage.setItem('cached_roster_data', JSON.stringify(rosterData));
+            loaded = true;
+          }
         }
       }
     } catch (e) {
@@ -82,7 +108,7 @@ async function loadRosterData() {
   switchRosterView(currentRosterMode);
 }
 
-// Realtime socket listener
+// Realtime socket & Firebase RTDB listener
 function initSocketListener() {
   if (typeof io !== 'undefined') {
     try {
@@ -95,6 +121,21 @@ function initSocketListener() {
       });
     } catch (e) {
       console.warn('Socket connection for roster not established:', e);
+    }
+  }
+
+  if (typeof rtdb !== 'undefined') {
+    try {
+      rtdb.ref('roster').on('value', (snap) => {
+        const val = snap.val();
+        if (val && (val.registered || val.nominated)) {
+          rosterData = val;
+          localStorage.setItem('cached_roster_data', JSON.stringify(rosterData));
+          renderCurrentRoster();
+        }
+      });
+    } catch (e) {
+      console.warn('Firebase RTDB listener for roster failed:', e);
     }
   }
 }
