@@ -395,6 +395,29 @@
       transform: translateY(0);
     }
 
+    .sd-test-btn {
+      background: rgba(168, 85, 247, 0.18);
+      border: 1.5px solid rgba(168, 85, 247, 0.45);
+      color: #e9d5ff;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .sd-test-btn:hover {
+      background: rgba(168, 85, 247, 0.32);
+      border-color: #a855f7;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+    }
+    .sd-test-btn:active {
+      transform: translateY(0);
+    }
+
     /* Toast */
     .vote-toast {
       position: fixed;
@@ -509,62 +532,108 @@
         <h2 style="font-size: 1.35rem; font-weight: 800; color: #38bdf8; margin-bottom: 0.3rem;">
           ลิงก์ควบคุมสำหรับ Stream Deck (Direct HTTP Trigger)
         </h2>
-        <p style="color: var(--text-muted); font-size: 0.92rem;">
-          สามารถนำลิงก์ด้านล่างไปใส่ในปุ่ม Stream Deck (เลือก Action: <strong>Website / Open URL</strong> หรือ <strong>API Request</strong>) เพื่อกดปุ่มสั่งการได้ทันทีจากโต๊ะสตรีม
+        <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.5; margin-bottom: 1rem;">
+          สามารถนำลิงก์ด้านล่างไปใส่ในปุ่ม Stream Deck (เลือก Action: <strong>Website / Open URL</strong> หรือ <strong>API Request</strong>) เพื่อกดปุ่มสั่งการได้ทันทีจากโต๊ะสตรีม หรือกดปุ่ม <strong>"ทดสอบกดทำงาน"</strong> เพื่อลองสั่งการได้ทันที
         </p>
+
+        <!-- Domain Switcher Toolbar -->
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; background: rgba(0, 0, 0, 0.28); padding: 8px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <span style="font-weight: 700; color: #e9d5ff; font-size: 0.88rem;">เลือกโดเมนลิงก์:</span>
+          <button type="button" id="btn-sd-domain-local" class="btn-secondary active" onclick="setStreamDeckDomain('local')" style="padding: 5px 14px; font-size: 0.85rem; border-radius: 20px; font-weight: 700; background: rgba(56, 189, 248, 0.25); border-color: #38bdf8; color: #fff;">
+            Stream Deck บนเครื่องสตรีม (localhost:3000) - แนะนำ
+          </button>
+          <button type="button" id="btn-sd-domain-cloud" class="btn-secondary" onclick="setStreamDeckDomain('cloud')" style="padding: 5px 14px; font-size: 0.85rem; border-radius: 20px; font-weight: 700; background: transparent; border-color: rgba(255, 255, 255, 0.2); color: #cbd5e1;">
+            ออนไลน์ / คลาวด์ (yuubearsama.online)
+          </button>
+        </div>
       </div>
 
       <div class="streamdeck-category-title">1. ควบคุมการเข้าถึงหน้าเว็บโหวต (Page Access):</div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">สลับเปิด/ปิดหน้าเว็บ (Page Toggle):</span>
-        <span class="streamdeck-url" id="sd-url-page-toggle">https://yuubearsama.online/api/audience-vote/streamdeck/page-toggle</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-toggle', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-page-toggle">http://localhost:3000/api/audience-vote/streamdeck/page-toggle</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('page-toggle', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-toggle', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับเปิดหน้าเว็บ (Page Open):</span>
-        <span class="streamdeck-url" id="sd-url-page-open">https://yuubearsama.online/api/audience-vote/streamdeck/page-open</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-open', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-page-open">http://localhost:3000/api/audience-vote/streamdeck/page-open</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('page-open', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-open', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับปิดหน้าเว็บ (Page Close):</span>
-        <span class="streamdeck-url" id="sd-url-page-close">https://yuubearsama.online/api/audience-vote/streamdeck/page-close</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-close', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-page-close">http://localhost:3000/api/audience-vote/streamdeck/page-close</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('page-close', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-page-close', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
 
       <div class="streamdeck-category-title" style="margin-top: 1.4rem;">2. ควบคุมรอบการลงคะแนน (Voting Round):</div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">สลับเปิด/ปิดรอบโหวต (Round Toggle):</span>
-        <span class="streamdeck-url" id="sd-url-toggle">https://yuubearsama.online/api/audience-vote/streamdeck/toggle</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-toggle', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-toggle">http://localhost:3000/api/audience-vote/streamdeck/toggle</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('toggle', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-toggle', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับเปิดรอบโหวต (Round Open):</span>
-        <span class="streamdeck-url" id="sd-url-open">https://yuubearsama.online/api/audience-vote/streamdeck/open</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-open', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-open">http://localhost:3000/api/audience-vote/streamdeck/open</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('open', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-open', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">บังคับปิดรอบโหวต (Round Close):</span>
-        <span class="streamdeck-url" id="sd-url-close">https://yuubearsama.online/api/audience-vote/streamdeck/close</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-close', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-close">http://localhost:3000/api/audience-vote/streamdeck/close</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('close', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-close', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
       <div class="streamdeck-row">
         <span class="streamdeck-label">รีเซ็ตคะแนนรอบนี้ (Round Reset):</span>
-        <span class="streamdeck-url" id="sd-url-reset">https://yuubearsama.online/api/audience-vote/streamdeck/reset</span>
-        <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-reset', this)">
-          คัดลอกลิงก์
-        </button>
+        <span class="streamdeck-url" id="sd-url-reset">http://localhost:3000/api/audience-vote/streamdeck/reset</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="sd-test-btn" onclick="testStreamDeckAction('reset', this)" title="ทดสอบสั่งการทันที">
+            ทดสอบกดทำงาน
+          </button>
+          <button type="button" class="sd-copy-btn" onclick="copyStreamDeckLink('sd-url-reset', this)">
+            คัดลอกลิงก์
+          </button>
+        </div>
       </div>
     </div>
 

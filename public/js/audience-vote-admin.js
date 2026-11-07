@@ -243,8 +243,46 @@
     }).join('');
   };
 
+  let currentSdDomain = localStorage.getItem('sd_domain_choice') || 'local';
+
+  window.setStreamDeckDomain = function(domain) {
+    currentSdDomain = domain;
+    localStorage.setItem('sd_domain_choice', domain);
+    const btnLocal = document.getElementById('btn-sd-domain-local');
+    const btnCloud = document.getElementById('btn-sd-domain-cloud');
+
+    if (domain === 'local') {
+      if (btnLocal) {
+        btnLocal.className = 'btn-secondary active';
+        btnLocal.style.background = 'rgba(56, 189, 248, 0.25)';
+        btnLocal.style.borderColor = '#38bdf8';
+        btnLocal.style.color = '#fff';
+      }
+      if (btnCloud) {
+        btnCloud.className = 'btn-secondary';
+        btnCloud.style.background = 'transparent';
+        btnCloud.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        btnCloud.style.color = '#cbd5e1';
+      }
+    } else {
+      if (btnCloud) {
+        btnCloud.className = 'btn-secondary active';
+        btnCloud.style.background = 'rgba(168, 85, 247, 0.25)';
+        btnCloud.style.borderColor = '#a855f7';
+        btnCloud.style.color = '#fff';
+      }
+      if (btnLocal) {
+        btnLocal.className = 'btn-secondary';
+        btnLocal.style.background = 'transparent';
+        btnLocal.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        btnLocal.style.color = '#cbd5e1';
+      }
+    }
+    setupStreamDeckUrls();
+  };
+
   function setupStreamDeckUrls() {
-    const origin = 'https://yuubearsama.online';
+    const origin = (currentSdDomain === 'cloud') ? 'https://yuubearsama.online' : 'http://localhost:3000';
     const items = [
       { id: 'sd-url-page-toggle', path: '/api/audience-vote/streamdeck/page-toggle' },
       { id: 'sd-url-page-open', path: '/api/audience-vote/streamdeck/page-open' },
@@ -260,6 +298,110 @@
       if (el) el.textContent = `${origin}${item.path}`;
     });
   }
+
+  // Test Stream Deck action immediately from the browser
+  window.testStreamDeckAction = async function(action, btn) {
+    if (btn) btn.disabled = true;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = 'กำลังสั่งการ...';
+      btn.style.borderColor = '#38bdf8';
+    }
+
+    try {
+      const now = Date.now();
+      let successMsg = '';
+
+      if (action === 'page-toggle') {
+        const target = !(adminVoteState.isPageOpen !== false);
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isPageOpen').set(target);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isPageOpen = target;
+        renderStatusAndStats();
+        successMsg = target ? 'เปิดหน้าเว็บโหวตแล้ว' : 'ปิดหน้าเว็บโหวตและซ่อนปุ่มแล้ว';
+      } else if (action === 'page-open') {
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isPageOpen').set(true);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isPageOpen = true;
+        renderStatusAndStats();
+        successMsg = 'เปิดหน้าเว็บโหวตแล้ว';
+      } else if (action === 'page-close') {
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isPageOpen').set(false);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isPageOpen = false;
+        renderStatusAndStats();
+        successMsg = 'ปิดหน้าเว็บโหวตและซ่อนปุ่มแล้ว';
+      } else if (action === 'toggle') {
+        const target = !(adminVoteState.isOpen === true);
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isOpen').set(target);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isOpen = target;
+        renderStatusAndStats();
+        successMsg = target ? 'เปิดรับคะแนนโหวตแล้ว' : 'ปิดรับคะแนนโหวตแล้ว';
+      } else if (action === 'open') {
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isOpen').set(true);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isOpen = true;
+        renderStatusAndStats();
+        successMsg = 'เปิดรับคะแนนโหวตแล้ว';
+      } else if (action === 'close') {
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/isOpen').set(false);
+          await rtdb.ref('audience_vote/lastUpdated').set(now);
+        }
+        adminVoteState.isOpen = false;
+        renderStatusAndStats();
+        successMsg = 'ปิดรับคะแนนโหวตแล้ว';
+      } else if (action === 'reset') {
+        const newEpoch = Date.now();
+        if (typeof rtdb !== 'undefined') {
+          await rtdb.ref('audience_vote/votes').remove();
+          await rtdb.ref('audience_vote/resetEpoch').set(newEpoch);
+          await rtdb.ref('audience_vote/lastUpdated').set(newEpoch);
+        }
+        adminVoteState.votes = [];
+        adminVoteState.totalVotes = 0;
+        adminVoteState.resetEpoch = newEpoch;
+        (adminVoteState.zodiacStats || []).forEach(s => { s.count = 0; s.percentage = 0; });
+        renderAll();
+        successMsg = 'รีเซ็ตคะแนนโหวตเรียบร้อยแล้ว';
+      }
+
+      // Also call local server if running
+      try {
+        fetch(`http://localhost:3000/api/audience-vote/streamdeck/${action}`, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+      } catch (e) {}
+
+      if (btn) {
+        btn.innerHTML = 'ทำงานแล้ว';
+        btn.style.borderColor = '#10b981';
+        btn.style.color = '#6ee7b7';
+      }
+      showToast(successMsg || 'สั่งการเรียบร้อย');
+    } catch (err) {
+      console.error('Test action error:', err);
+      showToast('เกิดข้อผิดพลาดในการสั่งการ');
+    } finally {
+      setTimeout(() => {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.disabled = false;
+        }
+      }, 1500);
+    }
+  };
 
   window.copyStreamDeckLink = function(elementId, btn) {
     const el = document.getElementById(elementId);

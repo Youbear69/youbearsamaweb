@@ -8,6 +8,26 @@
     ],
     "rewrites": [
       {
+        "source": "/api/audience-vote/streamdeck/**",
+        "destination": "/streamdeck.html"
+      },
+      {
+        "source": "/12vtubergame/streamdeck",
+        "destination": "/streamdeck.html"
+      },
+      {
+        "source": "/12vtubergame/streamdeck/**",
+        "destination": "/streamdeck.html"
+      },
+      {
+        "source": "/streamdeck",
+        "destination": "/streamdeck.html"
+      },
+      {
+        "source": "/streamdeck/**",
+        "destination": "/streamdeck.html"
+      },
+      {
         "source": "/freeboard",
         "destination": "/freeboard/index.html"
       },

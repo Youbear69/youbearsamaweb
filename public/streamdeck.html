@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Deck Action Trigger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at center, #1b1136 0%, #0d071e 100%);
+      color: #ffffff;
+      font-family: 'Prompt', 'Noto Sans Thai', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 2px solid rgba(168, 85, 247, 0.4);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(168, 85, 247, 0.2);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .badge {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #7dd3fc;
+    }
+    .icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(168, 85, 247, 0.2);
+      border: 2px solid #a855f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e9d5ff;
+    }
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .status-msg {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #6ee7b7;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 8px 18px;
+      border-radius: 12px;
+      width: 100%;
+    }
+    .status-msg.error {
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .countdown-text {
+      font-size: 0.88rem;
+      color: #94a3b8;
+    }
+    .btn-close {
+      margin-top: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 24px;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-close:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Stream Deck Trigger</span>
+    <div class="icon-wrap" id="icon-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1 id="action-title">กำลังประมวลผลคำสั่ง...</h1>
+    <div class="status-msg" id="status-box">กำลังเชื่อมต่อฐานข้อมูล...</div>
+    <div class="countdown-text" id="countdown-text">หน้าต่างนี้จะปิดอัตโนมัติใน 2 วินาที</div>
+    <button type="button" class="btn-close" onclick="window.close()">ปิดหน้าต่างนี้</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script>
+    (async function() {
+      const titleEl = document.getElementById('action-title');
+      const statusEl = document.getElementById('status-box');
+      const iconWrap = document.getElementById('icon-wrap');
+      const countdownEl = document.getElementById('countdown-text');
+
+      const path = (window.location.pathname || '').toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      let action = params.get('action') || '';
+
+      if (!action) {
+        if (path.includes('page-toggle')) action = 'page-toggle';
+        else if (path.includes('page-open')) action = 'page-open';
+        else if (path.includes('page-close')) action = 'page-close';
+        else if (path.includes('toggle')) action = 'toggle';
+        else if (path.includes('open')) action = 'open';
+        else if (path.includes('close')) action = 'close';
+        else if (path.includes('reset')) action = 'reset';
+      }
+
+      const actionNames = {
+        'page-toggle': 'สลับเปิด/ปิดหน้าเว็บโหวต',
+        'page-open': 'เปิดหน้าเว็บโหวต',
+        'page-close': 'ปิดหน้าเว็บโหวตและซ่อนปุ่ม',
+        'toggle': 'สลับเปิด/ปิดรอบโหวต',
+        'open': 'เปิดรับคะแนนโหวต',
+        'close': 'ปิดรับคะแนนโหวต',
+        'reset': 'รีเซ็ตคะแนนโหวตทั้งหมด'
+      };
+
+      if (!action || !actionNames[action]) {
+        titleEl.textContent = 'ไม่พบคำสั่งที่ระบุ';
+        statusEl.textContent = 'กรุณาระบุ action เช่น ?action=page-toggle หรือ ?action=toggle';
+        statusEl.className = 'status-msg error';
+        countdownEl.textContent = 'ไม่สามารถดำเนินการได้';
+        return;
+      }
+
+      titleEl.textContent = actionNames[action];
+
+      // 1. Sync with Firebase Realtime Database
+      let success = false;
+      let resultText = '';
+
+      try {
+        if (typeof rtdb !== 'undefined') {
+          const now = Date.now();
+          if (action === 'page-toggle') {
+            const snap = await rtdb.ref('audience_vote/isPageOpen').once('value');
+            const cur = snap.val() !== false;
+            const target = !cur;
+            await rtdb.ref('audience_vote/isPageOpen').set(target);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = target ? 'เปิดหน้าเว็บโหวตเรียบร้อยแล้ว' : 'ปิดหน้าเว็บโหวตและซ่อนปุ่มแล้ว';
+            success = true;
+          } else if (action === 'page-open') {
+            await rtdb.ref('audience_vote/isPageOpen').set(true);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = 'เปิดหน้าเว็บโหวตเรียบร้อยแล้ว';
+            success = true;
+          } else if (action === 'page-close') {
+            await rtdb.ref('audience_vote/isPageOpen').set(false);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = 'ปิดหน้าเว็บโหวตและซ่อนปุ่มแล้ว';
+            success = true;
+          } else if (action === 'toggle') {
+            const snap = await rtdb.ref('audience_vote/isOpen').once('value');
+            const cur = snap.val() !== false;
+            const target = !cur;
+            await rtdb.ref('audience_vote/isOpen').set(target);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = target ? 'เปิดรับคะแนนโหวตเรียบร้อยแล้ว' : 'ปิดรับคะแนนโหวตเรียบร้อยแล้ว';
+            success = true;
+          } else if (action === 'open') {
+            await rtdb.ref('audience_vote/isOpen').set(true);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = 'เปิดรับคะแนนโหวตเรียบร้อยแล้ว';
+            success = true;
+          } else if (action === 'close') {
+            await rtdb.ref('audience_vote/isOpen').set(false);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = 'ปิดรับคะแนนโหวตเรียบร้อยแล้ว';
+            success = true;
+          } else if (action === 'reset') {
+            await rtdb.ref('audience_vote/votes').set({});
+            await rtdb.ref('audience_vote/resetEpoch').set(now);
+            await rtdb.ref('audience_vote/lastUpdated').set(now);
+            resultText = 'รีเซ็ตคะแนนโหวตทั้งหมดเรียบร้อยแล้ว';
+            success = true;
+          }
+        }
+      } catch (err) {
+        console.error('Firebase update failed:', err);
+      }
+
+      // 2. Also notify local Node.js server if reachable
+      try {
+        fetch(`http://localhost:3000/api/audience-vote/streamdeck/${action}`, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+      } catch (e) {}
+
+      if (success) {
+        statusEl.textContent = resultText;
+        statusEl.className = 'status-msg';
+
+        let count = 2;
+        countdownEl.textContent = `หน้าต่างนี้จะปิดอัตโนมัติใน ${count} วินาที...`;
+        const timer = setInterval(() => {
+          count--;
+          if (count <= 0) {
+            clearInterval(timer);
+            window.close();
+            countdownEl.textContent = 'ดำเนินการเรียบร้อย สามารถปิดแท็บนี้ได้';
+          } else {
+            countdownEl.textContent = `หน้าต่างนี้จะปิดอัตโนมัติใน ${count} วินาที...`;
+          }
+        }, 1000);
+      } else {
+        statusEl.textContent = 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
+        statusEl.className = 'status-msg error';
+        countdownEl.textContent = 'เกิดข้อผิดพลาดในการสั่งการ';
+      }
+    })();
+  </script>
+</body>
+</html>
